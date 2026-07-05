@@ -1,25 +1,66 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { User, Edit2 } from "lucide-react";
+import { Edit2, User } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import PageLoader from "@/components/shared/PageLoader";
+import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/shared/PageHeader";
-import ProfileForm from "@/features/profile/components/ProfileForm";
+import PageLoader from "@/components/shared/PageLoader";
 import ProfileDetails from "@/features/profile/components/ProfileDetails";
+import ProfileForm from "@/features/profile/components/ProfileForm";
 import { useProfile } from "@/hooks/profile/useProfile";
 
 export default function ProfilePage() {
-  const { me, profile, editing, setEditing, form, setForm, loading, persistProfile } =
-    useProfile();
+  const {
+    profile,
+    editing,
+    setEditing,
+    form,
+    setForm,
+    availableFieldCatalog,
+    newFieldInterest,
+    setNewFieldInterest,
+    loading,
+    error,
+    savingProfile,
+    savingField,
+    persistProfile,
+    createFieldInterest,
+    deleteFieldInterest,
+  } = useProfile();
   const { toast } = useToast();
 
   const handleSave = async () => {
     try {
       await persistProfile();
       toast({ title: "Profile updated!" });
-    } catch (error) {
-      console.error(error);
-      toast({ title: "Something went wrong", variant: "destructive" });
+    } catch (requestError) {
+      toast({
+        title: requestError.message || "Something went wrong",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddFieldInterest = async () => {
+    try {
+      await createFieldInterest();
+      toast({ title: "Field interest added!" });
+    } catch (requestError) {
+      toast({
+        title: requestError.message || "Could not add field interest",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteFieldInterest = async (id) => {
+    try {
+      await deleteFieldInterest(id);
+      toast({ title: "Field interest removed." });
+    } catch (requestError) {
+      toast({
+        title: requestError.message || "Could not remove field interest",
+        variant: "destructive",
+      });
     }
   };
 
@@ -28,22 +69,22 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <PageHeader
         title="My Profile"
-        description="Your profile is private. Only your skill swap partners can see your display name."
+        description="Your regular-user profile stays private while powering matching, recommendations, and future opportunity relevance."
       />
 
-      <div className="bg-white rounded-2xl border border-border/50 p-6 sm:p-8">
-        <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border/50">
-          <div className="w-16 h-16 rounded-2xl bg-teal-50 flex items-center justify-center">
-            <User className="w-8 h-8 text-teal-600" />
+      <div className="rounded-2xl border border-border/50 bg-white p-6 sm:p-8">
+        <div className="mb-6 flex items-center gap-4 border-b border-border/50 pb-6">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-50">
+            <User className="h-8 w-8 text-teal-600" />
           </div>
           <div>
-            <h2 className="font-heading font-bold text-xl">
-              {profile?.display_name || me?.full_name || "Your Name"}
+            <h2 className="font-heading text-xl font-bold">
+              {profile?.user?.full_name || "Your Name"}
             </h2>
-            <p className="text-sm text-muted-foreground">{me?.email}</p>
+            <p className="text-sm text-muted-foreground">{profile?.user?.email}</p>
           </div>
           {!editing ? (
             <Button
@@ -52,17 +93,32 @@ export default function ProfilePage() {
               onClick={() => setEditing(true)}
               className="ml-auto gap-1.5"
             >
-              <Edit2 className="w-3.5 h-3.5" /> Edit
+              <Edit2 className="h-3.5 w-3.5" />
+              Edit
             </Button>
           ) : null}
         </div>
+
+        {error ? (
+          <div className="mb-5 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        ) : null}
 
         {editing ? (
           <ProfileForm
             form={form}
             setForm={setForm}
+            fieldInterests={profile?.field_interests || []}
+            availableFieldCatalog={availableFieldCatalog}
+            newFieldInterest={newFieldInterest}
+            setNewFieldInterest={setNewFieldInterest}
+            onAddFieldInterest={handleAddFieldInterest}
+            onDeleteFieldInterest={handleDeleteFieldInterest}
             onSave={handleSave}
             onCancel={() => setEditing(false)}
+            savingProfile={savingProfile}
+            savingField={savingField}
           />
         ) : (
           <ProfileDetails

@@ -52,6 +52,7 @@ export default function CourseDetail() {
   const modules = course.modules || [];
   const totalLessons = modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
   const organization = {
+    id: course.organization_id,
     verification_status: course.organization_verification_status,
     is_verified: course.is_verified,
   };
@@ -93,7 +94,16 @@ export default function CourseDetail() {
 
           {course.organization_name && (
             <p className="text-sm text-muted-foreground flex items-center gap-1.5 mb-4">
-              by <span className="font-medium text-foreground">{course.organization_name}</span>
+              by {course.organization_id ? (
+                <Link
+                  to={`/organizations/${course.organization_id}`}
+                  className="font-medium text-foreground hover:text-teal-700 hover:underline"
+                >
+                  {course.organization_name}
+                </Link>
+              ) : (
+                <span className="font-medium text-foreground">{course.organization_name}</span>
+              )}
               <StatusBadge organization={organization} />
             </p>
           )}

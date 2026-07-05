@@ -290,6 +290,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/VerifyEmailResponse'
           description: ''
+  /api/fields/catalog/:
+    get:
+      operationId: fields_catalog_list
+      tags:
+      - skills
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FieldInterest'
+          description: ''
   /api/health/:
     get:
       operationId: health_retrieve
@@ -305,6 +322,330 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthCheckResponse'
+          description: ''
+  /api/organizations/{id}/public/:
+    get:
+      operationId: organizations_public_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - organizations
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationPublicProfile'
+          description: ''
+  /api/organizations/me/:
+    get:
+      operationId: organizations_me_retrieve
+      tags:
+      - organizations
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationProfile'
+          description: ''
+    put:
+      operationId: organizations_me_update
+      tags:
+      - organizations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationProfileUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrganizationProfileUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrganizationProfileUpdateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationProfile'
+          description: ''
+    patch:
+      operationId: organizations_me_partial_update
+      tags:
+      - organizations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrganizationProfileUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOrganizationProfileUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOrganizationProfileUpdateRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationProfile'
+          description: ''
+  /api/profile/fields/:
+    get:
+      operationId: profile_fields_list
+      tags:
+      - profile
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserFieldInterest'
+          description: ''
+    post:
+      operationId: profile_fields_create
+      tags:
+      - profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserFieldInterestCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserFieldInterestCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserFieldInterestCreateRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserFieldInterest'
+          description: ''
+  /api/profile/fields/{id}/:
+    delete:
+      operationId: profile_fields_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - profile
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/profile/me/:
+    get:
+      operationId: profile_me_retrieve
+      tags:
+      - profile
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegularUserProfile'
+          description: ''
+    put:
+      operationId: profile_me_update
+      tags:
+      - profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegularUserProfileUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegularUserProfileUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegularUserProfileUpdateRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegularUserProfile'
+          description: ''
+    patch:
+      operationId: profile_me_partial_update
+      tags:
+      - profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRegularUserProfileUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRegularUserProfileUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRegularUserProfileUpdateRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegularUserProfile'
+          description: ''
+  /api/profile/skills/:
+    get:
+      operationId: profile_skills_list
+      tags:
+      - profile
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSkill'
+          description: ''
+    post:
+      operationId: profile_skills_create
+      tags:
+      - profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSkillCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserSkillCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserSkillCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSkill'
+          description: ''
+  /api/profile/skills/{id}/:
+    patch:
+      operationId: profile_skills_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserSkillUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserSkillUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserSkillUpdateRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSkill'
+          description: ''
+    delete:
+      operationId: profile_skills_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - profile
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSkill'
+          description: ''
+  /api/skills/catalog/:
+    get:
+      operationId: skills_catalog_list
+      tags:
+      - skills
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Skill'
           description: ''
 components:
   schemas:
@@ -353,6 +694,19 @@ components:
       - is_staff
       - is_superuser
       - role
+    BlankEnum:
+      enum:
+      - ''
+    DirectionEnum:
+      enum:
+      - offering
+      - requesting
+      - both
+      type: string
+      description: |-
+        * `offering` - Offering
+        * `requesting` - Requesting
+        * `both` - Both
     EmailTokenObtainPairRequest:
       type: object
       properties:
@@ -367,6 +721,35 @@ components:
       required:
       - email
       - password
+    ExperienceLevelEnum:
+      enum:
+      - student
+      - early_career
+      - mid_career
+      - experienced
+      type: string
+      description: |-
+        * `student` - Student
+        * `early_career` - Early Career
+        * `mid_career` - Mid Career
+        * `experienced` - Experienced
+    FieldInterest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+      - slug
     GenericDetail:
       type: object
       properties:
@@ -389,6 +772,164 @@ components:
       properties:
         refresh:
           type: string
+    OrganizationProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/OrganizationTypeEnum'
+        description:
+          type: string
+        contact_email:
+          type: string
+          format: email
+          maxLength: 254
+        country:
+          type: string
+          maxLength: 120
+        location:
+          type: string
+          maxLength: 255
+        website_url:
+          type: string
+          format: uri
+          maxLength: 200
+        contact_phone:
+          type: string
+          maxLength: 32
+        offerings_summary:
+          type: string
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationVerificationStatusEnum'
+          readOnly: true
+        has_business_license:
+          type: boolean
+          readOnly: true
+        business_license:
+          type: string
+          format: uri
+          nullable: true
+        owner_email:
+          type: string
+          format: email
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - contact_email
+      - created_at
+      - description
+      - has_business_license
+      - id
+      - name
+      - owner_email
+      - type
+      - updated_at
+      - verification_status
+    OrganizationProfileUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/OrganizationTypeEnum'
+        description:
+          type: string
+          minLength: 1
+        contact_email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        country:
+          type: string
+          maxLength: 120
+        location:
+          type: string
+          maxLength: 255
+        website_url:
+          type: string
+          format: uri
+          maxLength: 200
+        contact_phone:
+          type: string
+          maxLength: 32
+        offerings_summary:
+          type: string
+        business_license:
+          type: string
+          format: binary
+          nullable: true
+      required:
+      - contact_email
+      - description
+      - name
+      - type
+    OrganizationPublicProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationTypeEnum'
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        country:
+          type: string
+          readOnly: true
+        location:
+          type: string
+          readOnly: true
+        website_url:
+          type: string
+          format: uri
+          readOnly: true
+        contact_phone:
+          type: string
+          readOnly: true
+        offerings_summary:
+          type: string
+          readOnly: true
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationVerificationStatusEnum'
+          readOnly: true
+        has_business_license:
+          type: boolean
+          readOnly: true
+      required:
+      - contact_phone
+      - country
+      - description
+      - has_business_license
+      - id
+      - location
+      - name
+      - offerings_summary
+      - type
+      - verification_status
+      - website_url
     OrganizationRegisterRequest:
       type: object
       properties:
@@ -455,6 +996,9 @@ components:
           allOf:
           - $ref: '#/components/schemas/OrganizationTypeEnum'
           readOnly: true
+        description:
+          type: string
+          readOnly: true
         contact_email:
           type: string
           format: email
@@ -463,6 +1007,16 @@ components:
           type: string
           readOnly: true
         location:
+          type: string
+          readOnly: true
+        website_url:
+          type: string
+          format: uri
+          readOnly: true
+        contact_phone:
+          type: string
+          readOnly: true
+        offerings_summary:
           type: string
           readOnly: true
         verification_status:
@@ -474,13 +1028,17 @@ components:
           readOnly: true
       required:
       - contact_email
+      - contact_phone
       - country
+      - description
       - has_business_license
       - id
       - location
       - name
+      - offerings_summary
       - type
       - verification_status
+      - website_url
     OrganizationTypeEnum:
       enum:
       - company
@@ -527,6 +1085,81 @@ components:
           minLength: 1
       required:
       - email
+    PatchedOrganizationProfileUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/OrganizationTypeEnum'
+        description:
+          type: string
+          minLength: 1
+        contact_email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        country:
+          type: string
+          maxLength: 120
+        location:
+          type: string
+          maxLength: 255
+        website_url:
+          type: string
+          format: uri
+          maxLength: 200
+        contact_phone:
+          type: string
+          maxLength: 32
+        offerings_summary:
+          type: string
+        business_license:
+          type: string
+          format: binary
+          nullable: true
+    PatchedRegularUserProfileUpdateRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          maxLength: 255
+        bio:
+          type: string
+        interests_summary:
+          type: string
+        experience_level:
+          oneOf:
+          - $ref: '#/components/schemas/ExperienceLevelEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+    PatchedUserSkillUpdateRequest:
+      type: object
+      properties:
+        direction:
+          $ref: '#/components/schemas/DirectionEnum'
+        experience_note:
+          type: string
+          maxLength: 255
+    ProfileUserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        role:
+          type: string
+      required:
+      - email
+      - full_name
+      - id
+      - role
     RegisterRequest:
       type: object
       properties:
@@ -559,6 +1192,54 @@ components:
       - detail
       - email
       - verification_required
+    RegularUserProfile:
+      type: object
+      properties:
+        user:
+          allOf:
+          - $ref: '#/components/schemas/ProfileUserSummary'
+          readOnly: true
+        bio:
+          type: string
+        interests_summary:
+          type: string
+        experience_level:
+          oneOf:
+          - $ref: '#/components/schemas/ExperienceLevelEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        field_interests:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserFieldInterest'
+          readOnly: true
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSkill'
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - field_interests
+      - skills
+      - updated_at
+      - user
+    RegularUserProfileUpdateRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          maxLength: 255
+        bio:
+          type: string
+        interests_summary:
+          type: string
+        experience_level:
+          oneOf:
+          - $ref: '#/components/schemas/ExperienceLevelEnum'
+          - $ref: '#/components/schemas/BlankEnum'
     ResendVerificationRequest:
       type: object
       properties:
@@ -580,6 +1261,27 @@ components:
         * `regular_user` - Regular User
         * `organization` - Organization
         * `admin` - Admin
+    Skill:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          readOnly: true
+      required:
+      - description
+      - id
+      - name
+      - slug
     TestEmailRequestRequest:
       type: object
       properties:
@@ -626,6 +1328,78 @@ components:
           minLength: 1
       required:
       - refresh
+    UserFieldInterest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        field_interest:
+          allOf:
+          - $ref: '#/components/schemas/FieldInterest'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - field_interest
+      - id
+    UserFieldInterestCreateRequest:
+      type: object
+      properties:
+        field_interest_id:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+    UserSkill:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        skill:
+          allOf:
+          - $ref: '#/components/schemas/Skill'
+          readOnly: true
+        direction:
+          $ref: '#/components/schemas/DirectionEnum'
+        experience_note:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - direction
+      - id
+      - skill
+      - updated_at
+    UserSkillCreateRequest:
+      type: object
+      properties:
+        skill_id:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        direction:
+          $ref: '#/components/schemas/DirectionEnum'
+        experience_note:
+          type: string
+          maxLength: 255
+      required:
+      - direction
     VerifyEmailRequest:
       type: object
       properties:

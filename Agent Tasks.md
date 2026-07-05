@@ -209,6 +209,7 @@ At the end of this phase, regular users can maintain private profiles and skill 
 
 ### TASK-301: Implement Regular User Profile and Field Models
 - **Phase:** Phase 3: Profiles, Skills, and Organization Public Presence
+- **Status:** Complete
 - **Owner:** Backend
 - **Files touched:** `backend/apps/accounts/`, `backend/apps/skills/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-206`
@@ -221,6 +222,7 @@ At the end of this phase, regular users can maintain private profiles and skill 
 
 ### TASK-302: Build Regular User Profile and Skill UI
 - **Phase:** Phase 3: Profiles, Skills, and Organization Public Presence
+- **Status:** Complete
 - **Owner:** Frontend
 - **Files touched:** `frontend/src/features/profile/`, `frontend/src/features/skills/`, `frontend/src/hooks/profile/`, `frontend/src/hooks/skills/`, `frontend/src/services/profile/`, `frontend/src/services/skills/`
 - **Depends on:** `TASK-301`
@@ -233,6 +235,7 @@ At the end of this phase, regular users can maintain private profiles and skill 
 
 ### TASK-303: Implement Organization Profile and Trust Fields
 - **Phase:** Phase 3: Profiles, Skills, and Organization Public Presence
+- **Status:** Complete
 - **Owner:** Backend
 - **Files touched:** `backend/apps/organizations/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-204`, `TASK-301`
@@ -245,6 +248,7 @@ At the end of this phase, regular users can maintain private profiles and skill 
 
 ### TASK-304: Build Organization Public/Profile Management UI
 - **Phase:** Phase 3: Profiles, Skills, and Organization Public Presence
+- **Status:** Complete
 - **Owner:** Frontend
 - **Files touched:** `frontend/src/features/organizations/`, `frontend/src/services/organizations/`, `frontend/src/components/shared/`
 - **Depends on:** `TASK-303`
@@ -257,6 +261,7 @@ At the end of this phase, regular users can maintain private profiles and skill 
 
 ### TASK-305: Enforce Visibility and Privacy Rules
 - **Phase:** Phase 3: Profiles, Skills, and Organization Public Presence
+- **Status:** Complete
 - **Owner:** Both
 - **Files touched:** `backend/apps/accounts/`, `backend/apps/organizations/`, `frontend/src/features/profile/`, `frontend/src/features/organizations/`, `frontend/src/app/`
 - **Depends on:** `TASK-302`, `TASK-304`

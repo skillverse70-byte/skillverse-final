@@ -1,9 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { getActorProfilePath } from "@/lib/access-control";
 
 export default function Footer() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, actorRole } = useAuth();
+  const profilePath = getActorProfilePath(actorRole);
 
   return (
     <footer className="bg-white border-t border-border/50 mt-auto">
@@ -73,7 +75,7 @@ export default function Footer() {
                 {isAuthenticated ? "Dashboard" : "Create Account"}
               </Link>
               <Link
-                to={isAuthenticated ? "/profile" : "/login"}
+                to={isAuthenticated ? profilePath : "/login"}
                 className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 {isAuthenticated ? "Profile" : "Sign In"}

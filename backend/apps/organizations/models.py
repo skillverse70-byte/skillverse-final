@@ -20,6 +20,9 @@ class Organization(models.Model):
     contact_email = models.EmailField()
     country = models.CharField(max_length=120, blank=True)
     location = models.CharField(max_length=255, blank=True)
+    website_url = models.URLField(blank=True)
+    contact_phone = models.CharField(max_length=32, blank=True)
+    offerings_summary = models.TextField(blank=True)
     verification_status = models.CharField(
         max_length=32,
         choices=OrganizationVerificationStatus.choices,

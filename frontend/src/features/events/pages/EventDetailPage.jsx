@@ -46,6 +46,11 @@ export default function EventDetail() {
   }
 
   const spotsLeft = event.max_attendees ? event.max_attendees - (event.current_attendees || 0) : null;
+  const organization = {
+    id: event.organization_id,
+    verification_status: event.organization_verification_status,
+    is_verified: event.is_verified,
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
@@ -100,12 +105,20 @@ export default function EventDetail() {
 
           {event.organization_name && (
             <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary/50 mb-6 text-sm">
-              <span>Hosted by <span className="font-medium">{event.organization_name}</span></span>
-              {event.is_verified && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-200">
-                  <CheckCircle className="w-3 h-3" /> Verified
-                </span>
-              )}
+              <span>
+                Hosted by{" "}
+                {event.organization_id ? (
+                  <Link
+                    to={`/organizations/${event.organization_id}`}
+                    className="font-medium text-foreground hover:text-teal-700 hover:underline"
+                  >
+                    {event.organization_name}
+                  </Link>
+                ) : (
+                  <span className="font-medium">{event.organization_name}</span>
+                )}
+              </span>
+              <StatusBadge organization={organization} />
             </div>
           )}
 

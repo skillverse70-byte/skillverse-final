@@ -1,25 +1,40 @@
-import { authService } from "@/services/auth/auth.service";
-import { appClient } from "@/services/appClient";
+import { authenticatedApiRequest } from "@/services/auth/backend-auth-client";
 
-export async function fetchProfileData() {
-  const user = await authService.me();
-  const profiles = await appClient.entities.UserProfile.filter({
-    user_id: user.id,
-  });
-
-  return {
-    user,
-    profile: profiles[0] || null,
-  };
+export function fetchProfileData() {
+  return authenticatedApiRequest("/profile/me/", { method: "GET" });
 }
 
-export async function saveProfile({ profileId, form, userId }) {
-  if (profileId) {
-    return appClient.entities.UserProfile.update(profileId, form);
-  }
+export function saveProfile(form) {
+  return authenticatedApiRequest("/profile/me/", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      full_name: form.full_name,
+      bio: form.bio,
+      interests_summary: form.interests_summary,
+      experience_level: form.experience_level,
+    }),
+  });
+}
 
-  return appClient.entities.UserProfile.create({
-    ...form,
-    user_id: userId,
+export function fetchFieldInterestCatalog() {
+  return authenticatedApiRequest("/fields/catalog/", { method: "GET" });
+}
+
+export function addFieldInterest(payload) {
+  return authenticatedApiRequest("/profile/fields/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function removeFieldInterest(id) {
+  return authenticatedApiRequest(`/profile/fields/${id}/`, {
+    method: "DELETE",
   });
 }

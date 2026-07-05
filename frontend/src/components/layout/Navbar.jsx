@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { getActorProfilePath } from "@/lib/access-control";
 import {
   Menu,
   X,
@@ -30,7 +31,8 @@ const navLinks = [
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
-  const { hasAnyRole, isAuthenticated, logout } = useAuth();
+  const { hasAnyRole, isAuthenticated, logout, actorRole } = useAuth();
+  const profilePath = getActorProfilePath(actorRole);
   const quickLinks = [
     { path: "/messages", label: "Messages", icon: MessageCircle },
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -92,7 +94,7 @@ export default function Navbar() {
                   </Link>
                 );
               })}
-              <Link to="/profile">
+              <Link to={profilePath}>
                 <Button variant="ghost" size="icon">
                   <User className="w-5 h-5" />
                 </Button>
@@ -175,7 +177,7 @@ export default function Navbar() {
                     );
                   })}
                   <Link
-                    to="/profile"
+                    to={profilePath}
                     onClick={() => setMobileOpen(false)}
                     className="flex-1"
                   >

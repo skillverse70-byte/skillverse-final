@@ -1,44 +1,58 @@
-import { authService } from "@/services/auth/auth.service";
-import { appClient } from "@/services/appClient";
+import { authenticatedApiRequest } from "@/services/auth/backend-auth-client";
 import { apiRequest } from "@/lib/http-client";
 
 export async function fetchOrganizationProfileData() {
-  const user = await authService.me();
-  const organizations = await appClient.entities.Organization.filter({
-    owner_id: user.id,
+  const organization = await authenticatedApiRequest("/organizations/me/", {
+    method: "GET",
   });
 
-  return {
-    user,
-    organization: organizations[0] || null,
-  };
+  return { organization };
 }
 
-export async function saveOrganizationProfile({ organizationId, form, userId }) {
-  if (organizationId) {
-    return appClient.entities.Organization.update(organizationId, form);
+function buildOrganizationFormData(form) {
+  const formData = new FormData();
+  const fields = [
+    "name",
+    "type",
+    "description",
+    "contact_email",
+    "country",
+    "location",
+    "website_url",
+    "contact_phone",
+    "offerings_summary",
+  ];
+
+  fields.forEach((field) => {
+    formData.append(field, form[field] || "");
+  });
+
+  if (form.business_license instanceof File) {
+    formData.append("business_license", form.business_license);
   }
 
-  return appClient.entities.Organization.create({
-    ...form,
-    owner_id: userId,
-  });
+  return formData;
 }
 
-export function uploadOrganizationLogo(file) {
-  return appClient.integrations.Core.UploadFile({ file });
+export async function saveOrganizationProfile({ form }) {
+  return authenticatedApiRequest("/organizations/me/", {
+    method: "PATCH",
+    body: buildOrganizationFormData(form),
+  });
 }
 
 export async function fetchOrganizationManagementData() {
-  const user = await authService.me();
-  const organizations = await appClient.entities.Organization.filter({
-    owner_id: user.id,
+  const organization = await authenticatedApiRequest("/organizations/me/", {
+    method: "GET",
   });
 
-  return {
-    user,
-    organizations,
-  };
+  return { organization };
+}
+
+export async function fetchPublicOrganizationProfile(organizationId) {
+  return apiRequest(`/organizations/${organizationId}/public/`, {
+    method: "GET",
+  });
 }
 
 export async function registerOrganization({

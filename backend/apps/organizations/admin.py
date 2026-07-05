@@ -10,10 +10,11 @@ class OrganizationAdmin(admin.ModelAdmin):
         "type",
         "verification_status",
         "contact_email",
+        "website_url",
         "country",
         "location",
         "owner",
     )
     list_filter = ("type", "verification_status")
-    search_fields = ("name", "contact_email", "owner__email")
+    search_fields = ("name", "contact_email", "website_url", "owner__email")
     readonly_fields = ("created_at", "updated_at")

@@ -126,7 +126,9 @@ export default function SkillSwap() {
           title="No skill swap offers yet"
           description="Be the first! Add skills you can teach to your profile, and start matching with learners."
           actionLabel="Add Your Skills"
-          onAction={() => {}}
+          onAction={() => {
+            window.location.href = "/skill-portfolio";
+          }}
         />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

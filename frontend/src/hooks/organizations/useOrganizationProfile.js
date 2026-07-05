@@ -2,25 +2,27 @@ import { useEffect, useState } from "react";
 import {
   fetchOrganizationProfileData,
   saveOrganizationProfile,
-  uploadOrganizationLogo,
 } from "@/services/organizations/organization.service";
+import { organizationTypes } from "@/lib/domain-enums";
 
 const emptyOrganizationForm = {
   name: "",
   description: "",
-  logo_url: "",
-  website: "",
-  category: "",
+  type: organizationTypes.company,
   contact_email: "",
+  country: "",
+  location: "",
+  website_url: "",
+  contact_phone: "",
+  offerings_summary: "",
+  business_license: null,
 };
 
 export function useOrganizationProfile() {
-  const [me, setMe] = useState(null);
   const [organization, setOrganization] = useState(null);
   const [form, setForm] = useState(emptyOrganizationForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -31,16 +33,19 @@ export function useOrganizationProfile() {
         if (!active) {
           return;
         }
-        setMe(data.user);
         setOrganization(data.organization);
         if (data.organization) {
           setForm({
             name: data.organization.name || "",
             description: data.organization.description || "",
-            logo_url: data.organization.logo_url || "",
-            website: data.organization.website || "",
-            category: data.organization.category || "",
+            type: data.organization.type || organizationTypes.company,
             contact_email: data.organization.contact_email || "",
+            country: data.organization.country || "",
+            location: data.organization.location || "",
+            website_url: data.organization.website_url || "",
+            contact_phone: data.organization.contact_phone || "",
+            offerings_summary: data.organization.offerings_summary || "",
+            business_license: null,
           });
         }
       } catch (error) {
@@ -66,38 +71,24 @@ export function useOrganizationProfile() {
   const persistOrganization = async () => {
     setSaving(true);
     try {
-      const nextOrganization = await saveOrganizationProfile({
-        organizationId: organization?.id,
-        form,
-        userId: me.id,
-      });
+      const nextOrganization = await saveOrganizationProfile({ form });
       setOrganization(nextOrganization);
+      setForm((current) => ({
+        ...current,
+        business_license: null,
+      }));
       return nextOrganization;
     } finally {
       setSaving(false);
     }
   };
 
-  const uploadLogo = async (file) => {
-    setUploading(true);
-    try {
-      const result = await uploadOrganizationLogo(file);
-      setField("logo_url", result.file_url);
-      return result;
-    } finally {
-      setUploading(false);
-    }
-  };
-
   return {
-    me,
     organization,
     form,
     setField,
     loading,
     saving,
-    uploading,
     persistOrganization,
-    uploadLogo,
   };
 }

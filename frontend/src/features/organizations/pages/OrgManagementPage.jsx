@@ -1,35 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { appClient } from "@/api/appClient";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building, Plus, BookOpen, Calendar, Briefcase } from "lucide-react";
+import { Building, BookOpen, Calendar, Briefcase, ExternalLink } from "lucide-react";
 import StatusBadge from "@/components/shared/StatusBadge";
 import EmptyState from "@/components/shared/EmptyState";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { fetchOrganizationManagementData } from "@/services/organizations/organization.service";
 
 export default function OrgManagement() {
-  const [orgs, setOrgs] = useState([]);
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [courses, setCourses] = useState([]);
   const [events, setEvents] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showNewOrg, setShowNewOrg] = useState(false);
-  const [newOrg, setNewOrg] = useState({ name: "", description: "", contact_email: "" });
 
   useEffect(() => {
     const load = async () => {
       try {
-        const me = await appClient.auth.me();
-        const data = await appClient.entities.Organization.filter({ owner_id: me.id });
-        setOrgs(data);
-        if (data.length > 0) {
-          setSelectedOrg(data[0]);
-          await loadOrgData(data[0].id);
+        const data = await fetchOrganizationManagementData();
+        if (data.organization) {
+          setSelectedOrg(data.organization);
+          await loadOrgData(data.organization.id);
         }
       } catch(e) { console.error(e); }
       setLoading(false);
@@ -38,25 +29,10 @@ export default function OrgManagement() {
   }, []);
 
   const loadOrgData = async (orgId) => {
-    const [c, e, j] = await Promise.all([
-      appClient.entities.Course.filter({ organization_id: orgId }),
-      appClient.entities.Event.filter({ organization_id: orgId }),
-      appClient.entities.Job.filter({ organization_id: orgId }),
-    ]);
-    setCourses(c);
-    setEvents(e);
-    setJobs(j);
-  };
-
-  const createOrg = async () => {
-    try {
-      const me = await appClient.auth.me();
-      const org = await appClient.entities.Organization.create({ ...newOrg, owner_id: me.id });
-      setOrgs(prev => [...prev, org]);
-      setSelectedOrg(org);
-      setShowNewOrg(false);
-      setNewOrg({ name: "", description: "", contact_email: "" });
-    } catch(e) { console.error(e); }
+    void orgId;
+    setCourses([]);
+    setEvents([]);
+    setJobs([]);
   };
 
   if (loading) {
@@ -70,24 +46,11 @@ export default function OrgManagement() {
           <h1 className="font-heading font-bold text-3xl text-foreground mb-1">Organization</h1>
           <p className="text-muted-foreground text-sm">Manage your organization, courses, events, and job postings.</p>
         </div>
-        <Dialog open={showNewOrg} onOpenChange={setShowNewOrg}>
-          <DialogTrigger asChild>
-            <Button className="bg-teal-600 hover:bg-teal-700 gap-2"><Plus className="w-4 h-4" /> New Org</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Create Organization</DialogTitle></DialogHeader>
-            <div className="space-y-4 mt-4">
-              <div><Label>Name</Label><Input value={newOrg.name} onChange={e => setNewOrg({...newOrg, name: e.target.value})} className="mt-1.5" /></div>
-              <div><Label>Description</Label><Textarea value={newOrg.description} onChange={e => setNewOrg({...newOrg, description: e.target.value})} className="mt-1.5" rows={3} /></div>
-              <div><Label>Contact Email</Label><Input value={newOrg.contact_email} onChange={e => setNewOrg({...newOrg, contact_email: e.target.value})} className="mt-1.5" /></div>
-              <Button onClick={createOrg} className="w-full bg-teal-600 hover:bg-teal-700">Create Organization</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Link to="/organization-profile"><Button className="bg-teal-600 hover:bg-teal-700 gap-2"><Building className="w-4 h-4" /> Edit Profile</Button></Link>
       </div>
 
-      {orgs.length === 0 ? (
-        <EmptyState icon={Building} title="No organization yet" description="Create an organization to start posting courses, events, and jobs." actionLabel="Create Organization" onAction={() => setShowNewOrg(true)} />
+      {!selectedOrg ? (
+        <EmptyState icon={Building} title="No organization profile found" description="Finish your organization profile to prepare for courses, events, and job postings." actionLabel="Open Organization Profile" onAction={() => { window.location.href = "/organization-profile"; }} />
       ) : (
         <>
           {/* Org Card */}
@@ -107,6 +70,7 @@ export default function OrgManagement() {
           <div className="flex gap-3 mb-8">
             <Link to="/course-builder"><Button variant="outline" className="gap-2"><BookOpen className="w-4 h-4" /> Course Builder</Button></Link>
             <Link to="/organization-profile"><Button variant="outline" className="gap-2"><Building className="w-4 h-4" /> Edit Profile</Button></Link>
+            <Link to={`/organizations/${selectedOrg.id}`}><Button variant="outline" className="gap-2"><ExternalLink className="w-4 h-4" /> Public View</Button></Link>
           </div>
 
           <Tabs defaultValue="courses">

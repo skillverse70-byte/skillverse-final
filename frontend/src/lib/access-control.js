@@ -55,3 +55,17 @@ export function getActorHomePath(userOrRole) {
 
   return "/discover";
 }
+
+export function getActorProfilePath(userOrRole) {
+  const role = normalizeActorRole(userOrRole);
+
+  if (role === roles.organization) {
+    return "/organization-profile";
+  }
+
+  if (role === roles.admin || role === roles.regularUser) {
+    return "/profile";
+  }
+
+  return "/login";
+}

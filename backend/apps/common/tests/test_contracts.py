@@ -4,6 +4,7 @@ from apps.common.contracts import CORE_DOMAIN_STATUS_FIELDS, DOMAIN_ENTITIES
 from apps.common.enums import (
     CourseProgramStatus,
     EnrollmentStatus,
+    ExperienceLevel,
     EventStatus,
     FinancialAccountStatus,
     JobApplicationStatus,
@@ -62,6 +63,7 @@ class DomainContractTests(SimpleTestCase):
         self.assertEqual(set(SkillDirection.values), {"offering", "requesting", "both"})
         self.assertEqual(set(ReviewContext.values), {"skill_swap", "course", "event"})
         self.assertIn("message", NotificationType.values)
+        self.assertIn("student", ExperienceLevel.values)
 
     def test_trust_gating_uses_enrollment_unavailable_language(self):
         gate = get_paid_course_enrollment_gate(

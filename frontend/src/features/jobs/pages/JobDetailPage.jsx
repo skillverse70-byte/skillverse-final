@@ -61,6 +61,12 @@ export default function JobDetail() {
     );
   }
 
+  const organization = {
+    id: job.organization_id,
+    verification_status: job.organization_verification_status,
+    is_verified: job.is_verified,
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
       <Link to="/jobs" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
@@ -75,9 +81,20 @@ export default function JobDetail() {
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h1 className="font-heading font-bold text-2xl">{job.title}</h1>
-              {job.is_verified && <StatusBadge status="verified" />}
+              <StatusBadge organization={organization} />
             </div>
-            <p className="text-muted-foreground">{job.company_name}</p>
+            <p className="text-muted-foreground">
+              {job.organization_id ? (
+                <Link
+                  to={`/organizations/${job.organization_id}`}
+                  className="hover:text-teal-700 hover:underline"
+                >
+                  {job.company_name}
+                </Link>
+              ) : (
+                job.company_name
+              )}
+            </p>
           </div>
           <BookmarkButton itemType="job" itemId={job.id} itemTitle={job.title} itemSubtitle={job.company_name} itemCategory={job.category} />
         </div>

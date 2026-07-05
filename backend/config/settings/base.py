@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.common",
     "apps.organizations",
+    "apps.skills",
     "corsheaders",
     "rest_framework",
     "drf_spectacular",

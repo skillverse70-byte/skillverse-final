@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from apps.accounts.models import AccountActionToken, User
+from apps.accounts.models import AccountActionToken, RegularUserProfile, User
 
 
 @admin.register(User)
@@ -53,3 +53,9 @@ class AccountActionTokenAdmin(admin.ModelAdmin):
     search_fields = ("user__email", "token")
     readonly_fields = ("created_at",)
 
+
+@admin.register(RegularUserProfile)
+class RegularUserProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "experience_level", "updated_at")
+    search_fields = ("user__email", "user__full_name")
+    readonly_fields = ("created_at", "updated_at")

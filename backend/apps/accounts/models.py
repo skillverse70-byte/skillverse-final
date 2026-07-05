@@ -7,7 +7,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.accounts.managers import UserManager
-from apps.common.enums import Role
+from apps.common.enums import ExperienceLevel, Role
 
 
 class User(AbstractUser):
@@ -41,6 +41,29 @@ class User(AbstractUser):
     def mark_email_verified(self):
         self.email_verified_at = timezone.now()
         self.save(update_fields=["email_verified_at"])
+
+
+class RegularUserProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="regular_profile",
+    )
+    bio = models.TextField(blank=True)
+    interests_summary = models.TextField(blank=True)
+    experience_level = models.CharField(
+        max_length=32,
+        choices=ExperienceLevel.choices,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["user_id"]
+
+    def __str__(self):
+        return f"Profile for {self.user.email}"
 
 
 class AccountActionToken(models.Model):
@@ -101,4 +124,3 @@ class AccountActionToken(models.Model):
             token=secrets.token_urlsafe(32),
             expires_at=timezone.now() + timedelta(hours=1),
         )
-

@@ -22,6 +22,13 @@ class OrganizationVerificationStatus(models.TextChoices):
     VERIFIED = "verified", "Verified"
 
 
+class ExperienceLevel(models.TextChoices):
+    STUDENT = "student", "Student"
+    EARLY_CAREER = "early_career", "Early Career"
+    MID_CAREER = "mid_career", "Mid Career"
+    EXPERIENCED = "experienced", "Experienced"
+
+
 class SkillDirection(models.TextChoices):
     OFFERING = "offering", "Offering"
     REQUESTING = "requesting", "Requesting"

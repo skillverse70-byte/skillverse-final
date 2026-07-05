@@ -1,23 +1,35 @@
-import { authService } from "@/services/auth/auth.service";
-import { appClient } from "@/services/appClient";
+import { authenticatedApiRequest } from "@/services/auth/backend-auth-client";
 
-export async function fetchSkillPortfolioData() {
-  const user = await authService.me();
-  const skills = await appClient.entities.UserSkill.filter({
-    user_id: user.id,
-  });
+export function fetchSkillPortfolioData() {
+  return authenticatedApiRequest("/profile/skills/", { method: "GET" });
+}
 
-  return { user, skills };
+export function fetchSkillCatalog() {
+  return authenticatedApiRequest("/skills/catalog/", { method: "GET" });
 }
 
 export function createUserSkill(payload) {
-  return appClient.entities.UserSkill.create(payload);
+  return authenticatedApiRequest("/profile/skills/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
 }
 
 export function updateUserSkill(id, updates) {
-  return appClient.entities.UserSkill.update(id, updates);
+  return authenticatedApiRequest(`/profile/skills/${id}/`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(updates),
+  });
 }
 
 export function deleteUserSkill(id) {
-  return appClient.entities.UserSkill.delete(id);
+  return authenticatedApiRequest(`/profile/skills/${id}/`, {
+    method: "DELETE",
+  });
 }

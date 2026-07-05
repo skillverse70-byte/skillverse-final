@@ -120,6 +120,10 @@ async function authenticatedRequest(path, options = {}, retryOnUnauthorized = tr
   }
 }
 
+export function authenticatedApiRequest(path, options = {}, retryOnUnauthorized = true) {
+  return authenticatedRequest(path, options, retryOnUnauthorized);
+}
+
 export const backendAuthClient = {
   async me() {
     return authenticatedRequest("/auth/me/", { method: "GET" });

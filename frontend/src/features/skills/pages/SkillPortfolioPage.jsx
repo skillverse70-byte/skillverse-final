@@ -1,23 +1,52 @@
 import React from "react";
-import { BookOpen, GraduationCap } from "lucide-react";
+import { BookOpen, GraduationCap, Repeat2, Sparkles } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import PageHeader from "@/components/shared/PageHeader";
 import PageLoader from "@/components/shared/PageLoader";
-import SkillCard from "@/features/skills/components/SkillCard";
 import AddSkillDialog from "@/features/skills/components/AddSkillDialog";
+import SkillCard from "@/features/skills/components/SkillCard";
 import { useSkillPortfolio } from "@/hooks/skills/useSkillPortfolio";
+
+function SkillSection({ icon: Icon, title, count, emptyLabel, skills, onSave, onDelete, saving }) {
+  return (
+    <div>
+      <div className="mb-3 flex items-center gap-2">
+        <Icon className="h-5 w-5 text-teal-600" />
+        <h2 className="font-heading text-lg font-semibold">{title}</h2>
+        <span className="text-sm text-muted-foreground">({count})</span>
+      </div>
+      {skills.length === 0 ? (
+        <p className="py-4 text-sm text-muted-foreground">{emptyLabel}</p>
+      ) : (
+        <div className="space-y-3">
+          {skills.map((skill) => (
+            <SkillCard
+              key={skill.id}
+              skill={skill}
+              onSave={onSave}
+              onDelete={onDelete}
+              saving={saving}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SkillPortfolioPage() {
   const {
-    teaching,
-    learning,
+    groupedSkills,
+    catalog,
     showAdd,
     setShowAdd,
     form,
     setField,
     loading,
+    saving,
+    error,
     addSkill,
-    changeSkillLevel,
+    updateSkill,
     removeSkill,
   } = useSkillPortfolio();
   const { toast } = useToast();
@@ -26,8 +55,35 @@ export default function SkillPortfolioPage() {
     try {
       await addSkill();
       toast({ title: "Skill added!" });
-    } catch (error) {
-      console.error(error);
+    } catch (requestError) {
+      toast({
+        title: requestError.message || "Could not add skill",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSaveSkill = async (id, updates) => {
+    try {
+      await updateSkill(id, updates);
+      toast({ title: "Skill updated!" });
+    } catch (requestError) {
+      toast({
+        title: requestError.message || "Could not update skill",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSkill = async (id) => {
+    try {
+      await removeSkill(id);
+      toast({ title: "Skill removed." });
+    } catch (requestError) {
+      toast({
+        title: requestError.message || "Could not remove skill",
+        variant: "destructive",
+      });
     }
   };
 
@@ -36,77 +92,73 @@ export default function SkillPortfolioPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <PageHeader
         title="Skill Portfolio"
-        description="Manage skills you teach and want to learn."
-        actions={
+        description="Manage the skills you can offer, the skills you want to learn, and the overlaps that power future matching."
+        actions={(
           <AddSkillDialog
             open={showAdd}
             onOpenChange={setShowAdd}
             form={form}
             setField={setField}
+            catalog={catalog}
+            saving={saving}
             onSubmit={handleAdd}
           />
-        }
+        )}
       />
 
-      <div className="space-y-8">
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <GraduationCap className="w-5 h-5 text-amber-600" />
-            <h2 className="font-heading font-semibold text-lg">
-              Skills I Teach
-            </h2>
-            <span className="text-sm text-muted-foreground">
-              ({teaching.length})
-            </span>
-          </div>
-          {teaching.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4">
-              No teaching skills yet.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {teaching.map((skill) => (
-                <SkillCard
-                  key={skill.id}
-                  skill={skill}
-                  onLevelChange={changeSkillLevel}
-                  onDelete={removeSkill}
-                />
-              ))}
-            </div>
-          )}
+      {error ? (
+        <div className="mb-5 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
         </div>
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <BookOpen className="w-5 h-5 text-blue-600" />
-            <h2 className="font-heading font-semibold text-lg">
-              Skills I'm Learning
-            </h2>
-            <span className="text-sm text-muted-foreground">
-              ({learning.length})
-            </span>
-          </div>
-          {learning.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4">
-              No learning skills yet.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {learning.map((skill) => (
-                <SkillCard
-                  key={skill.id}
-                  skill={skill}
-                  onLevelChange={changeSkillLevel}
-                  onDelete={removeSkill}
-                />
-              ))}
-            </div>
-          )}
+      ) : null}
+
+      {!groupedSkills.teaching.length &&
+      !groupedSkills.learning.length &&
+      !groupedSkills.both.length ? (
+        <div className="rounded-2xl border border-dashed border-border/60 bg-white p-10 text-center">
+          <Sparkles className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
+          <h2 className="font-heading text-xl font-semibold">Start your skill graph</h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+            Add at least one offered or requested skill so SkillVerse can use your profile for future matches, recommendations, and discovery.
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-8">
+          <SkillSection
+            icon={GraduationCap}
+            title="Skills I Offer"
+            count={groupedSkills.teaching.length}
+            emptyLabel="No offered skills yet."
+            skills={groupedSkills.teaching}
+            onSave={handleSaveSkill}
+            onDelete={handleDeleteSkill}
+            saving={saving}
+          />
+          <SkillSection
+            icon={BookOpen}
+            title="Skills I Want to Learn"
+            count={groupedSkills.learning.length}
+            emptyLabel="No requested skills yet."
+            skills={groupedSkills.learning}
+            onSave={handleSaveSkill}
+            onDelete={handleDeleteSkill}
+            saving={saving}
+          />
+          <SkillSection
+            icon={Repeat2}
+            title="Skills I Both Offer and Learn"
+            count={groupedSkills.both.length}
+            emptyLabel="No dual-direction skills yet."
+            skills={groupedSkills.both}
+            onSave={handleSaveSkill}
+            onDelete={handleDeleteSkill}
+            saving={saving}
+          />
+        </div>
+      )}
     </div>
   );
 }
