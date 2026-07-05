@@ -29,6 +29,7 @@ export const appRuntime = {
   storageKeys: {
     currentUserId: "currentUserId",
     pendingRegistration: "pendingRegistration",
+    refreshToken: "refreshToken",
     seeded: "seeded",
     token: "token",
     users: "users",

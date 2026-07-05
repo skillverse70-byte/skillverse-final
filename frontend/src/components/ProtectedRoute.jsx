@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import AccessDenied from "@/components/AccessDenied";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
+import { getActorHomePath } from "@/lib/access-control";
 
 const DefaultFallback = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -25,6 +26,7 @@ export default function ProtectedRoute({
     authError,
     checkUserAuth,
     hasAnyRole,
+    actorRole,
   } = useAuth();
   const location = useLocation();
 
@@ -50,10 +52,13 @@ export default function ProtectedRoute({
   }
 
   if (!hasAnyRole(allowedRoles)) {
+    const returnPath = getActorHomePath(actorRole);
     return (
       unauthorizedElement || (
         <AccessDenied
           message={`Your current actor role does not have access to this route.`}
+          returnPath={returnPath}
+          returnLabel="Go to my home"
         />
       )
     );

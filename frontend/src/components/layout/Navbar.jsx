@@ -15,6 +15,8 @@ import {
   LayoutDashboard,
   GraduationCap,
   Bookmark,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 
 const navLinks = [
@@ -28,7 +30,7 @@ const navLinks = [
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
-  const { hasAnyRole } = useAuth();
+  const { hasAnyRole, isAuthenticated, logout } = useAuth();
   const quickLinks = [
     { path: "/messages", label: "Messages", icon: MessageCircle },
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -41,6 +43,10 @@ export default function Navbar() {
     }
     return true;
   });
+  const guestCtas = [
+    { path: "/login", label: "Log in", icon: LogIn, variant: "ghost" },
+    { path: "/get-started", label: "Get Started", icon: UserPlus, variant: "default" },
+  ];
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border/50">
@@ -74,23 +80,46 @@ export default function Navbar() {
             })}
           </div>
 
-          <div className="hidden md:flex items-center gap-2">
-            {visibleQuickLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Link key={link.path} to={link.path}>
-                  <Button variant="ghost" size="icon" className={link.path === "/messages" ? "relative" : ""}>
-                    <Icon className="w-5 h-5" />
-                  </Button>
-                </Link>
-              );
-            })}
-            <Link to="/profile">
-              <Button variant="ghost" size="icon">
-                <User className="w-5 h-5" />
+          {isAuthenticated ? (
+            <div className="hidden md:flex items-center gap-2">
+              {visibleQuickLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link key={link.path} to={link.path}>
+                    <Button variant="ghost" size="icon" className={link.path === "/messages" ? "relative" : ""}>
+                      <Icon className="w-5 h-5" />
+                    </Button>
+                  </Link>
+                );
+              })}
+              <Link to="/profile">
+                <Button variant="ghost" size="icon">
+                  <User className="w-5 h-5" />
+                </Button>
+              </Link>
+              <Button variant="outline" size="sm" onClick={() => logout()}>
+                Log out
               </Button>
-            </Link>
-          </div>
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-2">
+              {guestCtas.map((cta) => {
+                const Icon = cta.icon;
+                return (
+                  <Link key={cta.path} to={cta.path}>
+                    <Button
+                      variant={cta.variant}
+                      size="sm"
+                      className={cta.variant === "default" ? "bg-teal-600 hover:bg-teal-700" : ""}
+                    >
+                      <Icon className="mr-2 w-4 h-4" />
+                      {cta.label}
+                    </Button>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
 
           <button
             className="md:hidden p-2 rounded-lg hover:bg-secondary"
@@ -128,21 +157,67 @@ export default function Navbar() {
               );
             })}
             <div className="border-t border-border/50 pt-2 mt-2 grid grid-cols-2 gap-2">
-              {visibleQuickLinks.map((link) => {
-                const Icon = link.icon;
-                return (
+              {isAuthenticated ? (
+                <>
+                  {visibleQuickLinks.map((link) => {
+                    const Icon = link.icon;
+                    return (
+                      <Link
+                        key={link.path}
+                        to={link.path}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex-1"
+                      >
+                        <Button variant="outline" size="sm" className="w-full gap-2">
+                          <Icon className="w-4 h-4" /> {link.label}
+                        </Button>
+                      </Link>
+                    );
+                  })}
                   <Link
-                    key={link.path}
-                    to={link.path}
+                    to="/profile"
                     onClick={() => setMobileOpen(false)}
                     className="flex-1"
                   >
                     <Button variant="outline" size="sm" className="w-full gap-2">
-                      <Icon className="w-4 h-4" /> {link.label}
+                      <User className="w-4 h-4" /> Profile
                     </Button>
                   </Link>
-                );
-              })}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      logout();
+                    }}
+                  >
+                    <LogIn className="w-4 h-4 rotate-180" /> Log out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {guestCtas.map((cta) => {
+                    const Icon = cta.icon;
+                    return (
+                      <Link
+                        key={cta.path}
+                        to={cta.path}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex-1"
+                      >
+                        <Button
+                          variant={cta.variant === "default" ? "default" : "outline"}
+                          size="sm"
+                          className={`w-full gap-2 ${cta.variant === "default" ? "bg-teal-600 hover:bg-teal-700" : ""}`}
+                        >
+                          <Icon className="w-4 h-4" /> {cta.label}
+                        </Button>
+                      </Link>
+                    );
+                  })}
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -1,20 +1,21 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { Loader2, Lock, Mail, UserPlus } from "lucide-react";
 import { authService } from "@/services/auth/auth.service";
+import { isBackendApiMode } from "@/lib/runtime-config";
+import AuthLayout from "@/features/auth/components/AuthLayout";
+import GoogleIcon from "@/features/auth/components/GoogleIcon";
+import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import AuthLayout from "@/features/auth/components/AuthLayout";
-import GoogleIcon from "@/features/auth/components/GoogleIcon";
-import { toast } from "@/components/ui/use-toast";
 
-export default function Register() {
+export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -22,20 +23,22 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  const showGoogleOption = !isBackendApiMode();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
+
     setLoading(true);
     try {
       await authService.register({ email, password });
       setShowOtp(true);
-    } catch (err) {
-      setError(err.message || "Registration failed");
+    } catch (requestError) {
+      setError(requestError.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -45,13 +48,10 @@ export default function Register() {
     setError("");
     setLoading(true);
     try {
-      const result = await authService.verifyOtp({ email, otpCode });
-      if (result?.access_token) {
-        authService.setToken(result.access_token);
-      }
-      window.location.href = "/";
-    } catch (err) {
-      setError(err.message || "Invalid verification code");
+      await authService.verifyEmail({ email, code: otpCode });
+      window.location.href = "/welcome";
+    } catch (requestError) {
+      setError(requestError.message || "Invalid verification code");
     } finally {
       setLoading(false);
     }
@@ -60,13 +60,13 @@ export default function Register() {
   const handleResend = async () => {
     setError("");
     try {
-      await authService.resendOtp(email);
+      await authService.resendVerification(email);
       toast({
         title: "Code sent",
         description: "Check your email for the new code.",
       });
-    } catch (err) {
-      setError(err.message || "Failed to resend code");
+    } catch (requestError) {
+      setError(requestError.message || "Failed to resend code");
     }
   };
 
@@ -82,11 +82,11 @@ export default function Register() {
         subtitle={`We sent a code to ${email}`}
       >
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+          <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </div>
         )}
-        <div className="flex justify-center mb-6">
+        <div className="mb-6 flex justify-center">
           <InputOTP
             maxLength={6}
             value={otpCode}
@@ -105,24 +105,25 @@ export default function Register() {
           </InputOTP>
         </div>
         <Button
-          className="w-full h-12 font-medium"
+          className="h-12 w-full font-medium"
           onClick={handleVerify}
           disabled={loading || otpCode.length < 6}
         >
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Verifying...
             </>
           ) : (
             "Verify"
           )}
         </Button>
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          Didn't receive the code?{" "}
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Didn&apos;t receive the code?{" "}
           <button
+            type="button"
             onClick={handleResend}
-            className="text-primary font-medium hover:underline"
+            className="font-medium text-primary hover:underline"
           >
             Resend
           </button>
@@ -135,39 +136,51 @@ export default function Register() {
     <AuthLayout
       icon={UserPlus}
       title="Create your account"
-      subtitle="Sign up to get started"
-      footer={
+      subtitle="Join as a regular user and unlock profile, swaps, messaging, and protected learning flows"
+      footer={(
         <>
           Already have an account?{" "}
-          <Link
-            to="/login"
-            className="text-primary font-medium hover:underline"
-          >
+          <Link to="/login" className="font-medium text-primary hover:underline">
             Log in
           </Link>
+          {" · "}
+          <Link
+            to="/organizations/register"
+            className="font-medium text-primary hover:underline"
+          >
+            Register an organization
+          </Link>
+          {" · "}
+          <Link to="/get-started" className="font-medium text-primary hover:underline">
+            Review entry options
+          </Link>
         </>
-      }
+      )}
     >
-      <Button
-        variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
-        onClick={handleGoogle}
-      >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
-      </Button>
+      {showGoogleOption && (
+        <>
+          <Button
+            variant="outline"
+            className="mb-6 h-12 w-full text-sm font-medium"
+            onClick={handleGoogle}
+          >
+            <GoogleIcon className="mr-2 h-5 w-5" />
+            Continue with Google
+          </Button>
 
-      <div className="relative mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">or</span>
-        </div>
-      </div>
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-3 text-muted-foreground">or</span>
+            </div>
+          </div>
+        </>
+      )}
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -177,7 +190,7 @@ export default function Register() {
           <Label htmlFor="email">Email</Label>
           <div className="relative">
             <Mail
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
             <Input
@@ -187,8 +200,8 @@ export default function Register() {
               autoFocus
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
+              onChange={(event) => setEmail(event.target.value)}
+              className="h-12 pl-10"
               required
             />
           </div>
@@ -197,48 +210,44 @@ export default function Register() {
           <Label htmlFor="password">Password</Label>
           <div className="relative">
             <Lock
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
             <Input
               id="password"
               type="password"
               autoComplete="new-password"
-              placeholder="••••••••"
+              placeholder="Create a strong password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 h-12"
+              onChange={(event) => setPassword(event.target.value)}
+              className="h-12 pl-10"
               required
             />
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="confirm">Confirm Password</Label>
+          <Label htmlFor="confirm">Confirm password</Label>
           <div className="relative">
             <Lock
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
             <Input
               id="confirm"
               type="password"
               autoComplete="new-password"
-              placeholder="••••••••"
+              placeholder="Repeat your password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="pl-10 h-12"
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className="h-12 pl-10"
               required
             />
           </div>
         </div>
-        <Button
-          type="submit"
-          className="w-full h-12 font-medium"
-          disabled={loading}
-        >
+        <Button type="submit" className="h-12 w-full font-medium" disabled={loading}>
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Creating account...
             </>
           ) : (

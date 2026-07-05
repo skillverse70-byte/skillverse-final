@@ -37,3 +37,21 @@ export function hasAnyActorRole(user, allowedRoles = []) {
 export function isAuthenticatedActor(user) {
   return normalizeActorRole(user) !== roles.guest;
 }
+
+export function getActorHomePath(userOrRole) {
+  const role = normalizeActorRole(userOrRole);
+
+  if (role === roles.admin) {
+    return "/admin";
+  }
+
+  if (role === roles.organization) {
+    return "/org";
+  }
+
+  if (role === roles.regularUser) {
+    return "/dashboard";
+  }
+
+  return "/discover";
+}

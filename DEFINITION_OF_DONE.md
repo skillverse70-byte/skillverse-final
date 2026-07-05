@@ -23,5 +23,6 @@ Read together with:
 - No secrets, `.env` files, or private credentials were committed.
 - For new backend endpoints, CORS expectations were checked.
 - For auth-sensitive or abuse-sensitive new endpoints, rate-limiting needs were considered and noted if not yet implemented.
+- If a task sends email, it uses the configured Django email backend and remains compatible with the project's Resend email setup.
 - If docs or planning state changed, the relevant governance file or [Agent Tasks.md](./Agent%20Tasks.md) section was updated.
 - If blocked, [BLOCKERS.md](./BLOCKERS.md) was updated instead of silently skipping work.

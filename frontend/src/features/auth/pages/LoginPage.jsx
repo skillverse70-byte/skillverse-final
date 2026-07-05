@@ -1,28 +1,36 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { LogIn, Lock, Loader2, Mail } from "lucide-react";
 import { authService } from "@/services/auth/auth.service";
+import { isBackendApiMode } from "@/lib/runtime-config";
+import AuthLayout from "@/features/auth/components/AuthLayout";
+import GoogleIcon from "@/features/auth/components/GoogleIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
-import AuthLayout from "@/features/auth/components/AuthLayout";
-import GoogleIcon from "@/features/auth/components/GoogleIcon";
 
-export default function Login() {
+export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const redirectTarget =
+    location.state?.from?.pathname ||
+    searchParams.get("from") ||
+    "/dashboard";
+  const showGoogleOption = !isBackendApiMode();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
     setLoading(true);
     try {
       await authService.login(email, password);
-      window.location.href = "/";
-    } catch (err) {
-      setError(err.message || "Invalid email or password");
+      window.location.href = redirectTarget;
+    } catch (requestError) {
+      setError(requestError.message || "Invalid email or password");
     } finally {
       setLoading(false);
     }
@@ -36,36 +44,51 @@ export default function Login() {
     <AuthLayout
       icon={LogIn}
       title="Welcome back"
-      subtitle="Log in to your account"
-      footer={
+      subtitle="Log in to continue into protected SkillVerse workflows"
+      footer={(
         <>
-          Don't have an account?{" "}
-          <Link to="/register" className="text-primary font-medium hover:underline">
+          Don&apos;t have an account?{" "}
+          <Link to="/register" className="font-medium text-primary hover:underline">
             Create one
           </Link>
+          {" · "}
+          <Link
+            to="/organizations/register"
+            className="font-medium text-primary hover:underline"
+          >
+            Register an organization
+          </Link>
+          {" · "}
+          <Link to="/get-started" className="font-medium text-primary hover:underline">
+            Compare entry paths
+          </Link>
         </>
-      }
+      )}
     >
-      <Button
-        variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
-        onClick={handleGoogle}
-      >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
-      </Button>
+      {showGoogleOption && (
+        <>
+          <Button
+            variant="outline"
+            className="mb-6 h-12 w-full text-sm font-medium"
+            onClick={handleGoogle}
+          >
+            <GoogleIcon className="mr-2 h-5 w-5" />
+            Continue with Google
+          </Button>
 
-      <div className="relative mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">or</span>
-        </div>
-      </div>
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-3 text-muted-foreground">or</span>
+            </div>
+          </div>
+        </>
+      )}
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -74,7 +97,10 @@ export default function Login() {
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Mail
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
             <Input
               id="email"
               type="email"
@@ -82,8 +108,8 @@ export default function Login() {
               autoFocus
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
+              onChange={(event) => setEmail(event.target.value)}
+              className="h-12 pl-10"
               required
             />
           </div>
@@ -96,23 +122,26 @@ export default function Login() {
             </Link>
           </div>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Lock
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
             <Input
               id="password"
               type="password"
               autoComplete="current-password"
-              placeholder="••••••••"
+              placeholder="Enter your password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 h-12"
+              onChange={(event) => setPassword(event.target.value)}
+              className="h-12 pl-10"
               required
             />
           </div>
         </div>
-        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+        <Button type="submit" className="h-12 w-full font-medium" disabled={loading}>
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Logging in...
             </>
           ) : (

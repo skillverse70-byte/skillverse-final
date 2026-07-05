@@ -43,20 +43,252 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenObtainPairRequest'
+              $ref: '#/components/schemas/EmailTokenObtainPairRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenObtainPairRequest'
+              $ref: '#/components/schemas/EmailTokenObtainPairRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenObtainPairRequest'
+              $ref: '#/components/schemas/EmailTokenObtainPairRequest'
         required: true
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenObtainPair'
+                $ref: '#/components/schemas/TokenPairWithUserResponse'
+          description: ''
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUser'
+          description: ''
+  /api/auth/organizations/register/:
+    post:
+      operationId: auth_organizations_register_create
+      tags:
+      - auth
+      - organizations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationRegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrganizationRegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrganizationRegisterRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationRegisterResponse'
+          description: ''
+  /api/auth/password-reset/confirm/:
+    post:
+      operationId: auth_password_reset_confirm_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDetail'
+          description: ''
+  /api/auth/password-reset/request/:
+    post:
+      operationId: auth_password_reset_request_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDetail'
+          description: ''
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+          description: ''
+  /api/auth/resend-verification/:
+    post:
+      operationId: auth_resend_verification_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResendVerificationRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDetail'
+          description: ''
+  /api/auth/test-email/:
+    post:
+      operationId: auth_test_email_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestEmailRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TestEmailRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TestEmailRequestRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericDetail'
+          description: ''
+  /api/auth/verify-email/:
+    post:
+      operationId: auth_verify_email_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyEmailResponse'
           description: ''
   /api/health/:
     get:
@@ -76,6 +308,72 @@ paths:
           description: ''
 components:
   schemas:
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        is_staff:
+          type: boolean
+          readOnly: true
+          title: Staff status
+          description: Designates whether the user can log into this admin site.
+        is_superuser:
+          type: boolean
+          readOnly: true
+          title: Superuser status
+          description: Designates that this user has all permissions without explicitly
+            assigning them.
+        is_email_verified:
+          type: boolean
+          readOnly: true
+        email_verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - email
+      - email_verified_at
+      - full_name
+      - id
+      - is_email_verified
+      - is_staff
+      - is_superuser
+      - role
+    EmailTokenObtainPairRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    GenericDetail:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
     HealthCheckResponse:
       type: object
       properties:
@@ -86,32 +384,231 @@ components:
       required:
       - service
       - status
-    TokenObtainPair:
+    LogoutRequest:
       type: object
       properties:
-        access:
-          type: string
-          readOnly: true
         refresh:
           type: string
-          readOnly: true
-      required:
-      - access
-      - refresh
-    TokenObtainPairRequest:
+    OrganizationRegisterRequest:
       type: object
       properties:
-        username:
+        organization_name:
           type: string
-          writeOnly: true
+          minLength: 1
+          maxLength: 255
+        organization_type:
+          $ref: '#/components/schemas/OrganizationTypeEnum'
+        email:
+          type: string
+          format: email
           minLength: 1
         password:
           type: string
           writeOnly: true
           minLength: 1
+        description:
+          type: string
+          minLength: 1
+        country:
+          type: string
+          maxLength: 120
+        location:
+          type: string
+          maxLength: 255
+        business_license:
+          type: string
+          format: binary
+          nullable: true
       required:
+      - description
+      - email
+      - organization_name
+      - organization_type
       - password
-      - username
+    OrganizationRegisterResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+        email:
+          type: string
+          format: email
+        verification_required:
+          type: boolean
+        organization:
+          $ref: '#/components/schemas/OrganizationSummary'
+      required:
+      - detail
+      - email
+      - organization
+      - verification_required
+    OrganizationSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationTypeEnum'
+          readOnly: true
+        contact_email:
+          type: string
+          format: email
+          readOnly: true
+        country:
+          type: string
+          readOnly: true
+        location:
+          type: string
+          readOnly: true
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationVerificationStatusEnum'
+          readOnly: true
+        has_business_license:
+          type: boolean
+          readOnly: true
+      required:
+      - contact_email
+      - country
+      - has_business_license
+      - id
+      - location
+      - name
+      - type
+      - verification_status
+    OrganizationTypeEnum:
+      enum:
+      - company
+      - ngo
+      - institution
+      - training_center
+      - community
+      - other
+      type: string
+      description: |-
+        * `company` - Company
+        * `ngo` - NGO
+        * `institution` - Institution
+        * `training_center` - Training Center
+        * `community` - Community
+        * `other` - Other
+    OrganizationVerificationStatusEnum:
+      enum:
+      - unverified
+      - verified
+      type: string
+      description: |-
+        * `unverified` - Unverified
+        * `verified` - Verified
+    PasswordResetConfirmRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - new_password
+      - token
+    PasswordResetRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        full_name:
+          type: string
+          maxLength: 255
+      required:
+      - email
+      - password
+    RegisterResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+        email:
+          type: string
+          format: email
+        verification_required:
+          type: boolean
+      required:
+      - detail
+      - email
+      - verification_required
+    ResendVerificationRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+    RoleEnum:
+      enum:
+      - guest
+      - regular_user
+      - organization
+      - admin
+      type: string
+      description: |-
+        * `guest` - Guest
+        * `regular_user` - Regular User
+        * `organization` - Organization
+        * `admin` - Admin
+    TestEmailRequestRequest:
+      type: object
+      properties:
+        to_email:
+          type: string
+          format: email
+          minLength: 1
+        subject:
+          type: string
+          minLength: 1
+          default: SkillVerse Resend test email
+        message:
+          type: string
+          minLength: 1
+          default: This is a test email from SkillVerse using the configured Resend
+            email backend.
+    TokenPairWithUserResponse:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        user:
+          $ref: '#/components/schemas/AuthUser'
+      required:
+      - access
+      - refresh
+      - user
     TokenRefresh:
       type: object
       properties:
@@ -129,6 +626,33 @@ components:
           minLength: 1
       required:
       - refresh
+    VerifyEmailRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+      required:
+      - code
+      - email
+    VerifyEmailResponse:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        user:
+          $ref: '#/components/schemas/AuthUser'
+      required:
+      - access
+      - refresh
+      - user
   securitySchemes:
     cookieAuth:
       type: apiKey

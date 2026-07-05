@@ -16,6 +16,14 @@ env = environ.Env(
     REDIS_URL=(str, "redis://127.0.0.1:6379/0"),
     CELERY_RESULT_BACKEND=(str, "redis://127.0.0.1:6379/1"),
     EMAIL_PORT=(int, 587),
+    RESEND_API_KEY=(str, ""),
+    FRONTEND_APP_URL=(str, "http://localhost:5173"),
+    AUTH_RATE_THROTTLE=(str, "20/hour"),
+    AUTH_LOGIN_RATE_THROTTLE=(str, "10/hour"),
+    AUTH_REGISTER_RATE_THROTTLE=(str, "5/hour"),
+    AUTH_VERIFY_EMAIL_RATE_THROTTLE=(str, "10/hour"),
+    AUTH_PASSWORD_RESET_RATE_THROTTLE=(str, "5/hour"),
+    AUTH_ORGANIZATION_REGISTER_RATE_THROTTLE=(str, "3/hour"),
 )
 
 environ.Env.read_env(BASE_DIR / ".env")
@@ -32,7 +40,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "anymail",
+    "rest_framework_simplejwt.token_blacklist",
+    "apps.accounts",
     "apps.common",
+    "apps.organizations",
     "corsheaders",
     "rest_framework",
     "drf_spectacular",
@@ -110,6 +122,8 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+AUTH_USER_MODEL = "accounts.User"
+FRONTEND_APP_URL = env("FRONTEND_APP_URL")
 
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False
@@ -134,6 +148,20 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.FormParser",
         "rest_framework.parsers.MultiPartParser",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": env("AUTH_RATE_THROTTLE"),
+        "user": "120/hour",
+        "auth": env("AUTH_RATE_THROTTLE"),
+        "auth_login": env("AUTH_LOGIN_RATE_THROTTLE"),
+        "auth_register": env("AUTH_REGISTER_RATE_THROTTLE"),
+        "auth_verify_email": env("AUTH_VERIFY_EMAIL_RATE_THROTTLE"),
+        "auth_password_reset": env("AUTH_PASSWORD_RESET_RATE_THROTTLE"),
+        "auth_organization_register": env("AUTH_ORGANIZATION_REGISTER_RATE_THROTTLE"),
+    },
 }
 
 SIMPLE_JWT = {
@@ -154,6 +182,10 @@ SPECTACULAR_SETTINGS = {
     "SWAGGER_UI_SETTINGS": {
         "persistAuthorization": True,
     },
+    "ENUM_NAME_OVERRIDES": {
+        "OrganizationTypeEnum": "apps.common.enums.OrganizationType",
+        "OrganizationVerificationStatusEnum": "apps.common.enums.OrganizationVerificationStatus",
+    },
 }
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS")
@@ -161,7 +193,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",
-    default="django.core.mail.backends.console.EmailBackend",
+    default="anymail.backends.resend.EmailBackend",
 )
 EMAIL_HOST = env("EMAIL_HOST", default="smtp.example.com")
 EMAIL_PORT = env("EMAIL_PORT")
@@ -169,6 +201,11 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@skillverse.local")
+SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+
+ANYMAIL = {
+    "RESEND_API_KEY": env("RESEND_API_KEY", default=""),
+}
 
 REDIS_URL = env("REDIS_URL")
 CELERY_BROKER_URL = REDIS_URL

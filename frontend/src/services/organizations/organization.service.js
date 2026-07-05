@@ -1,5 +1,6 @@
 import { authService } from "@/services/auth/auth.service";
 import { appClient } from "@/services/appClient";
+import { apiRequest } from "@/lib/http-client";
 
 export async function fetchOrganizationProfileData() {
   const user = await authService.me();
@@ -38,4 +39,32 @@ export async function fetchOrganizationManagementData() {
     user,
     organizations,
   };
+}
+
+export async function registerOrganization({
+  organizationName,
+  organizationType,
+  email,
+  password,
+  description,
+  country,
+  location,
+  businessLicense,
+}) {
+  const formData = new FormData();
+  formData.append("organization_name", organizationName);
+  formData.append("organization_type", organizationType);
+  formData.append("email", email);
+  formData.append("password", password);
+  formData.append("description", description);
+  formData.append("country", country || "");
+  formData.append("location", location || "");
+  if (businessLicense) {
+    formData.append("business_license", businessLicense);
+  }
+
+  return apiRequest("/auth/organizations/register/", {
+    method: "POST",
+    body: formData,
+  });
 }

@@ -3,9 +3,10 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import ScrollToTop from "@/components/ScrollToTop";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import GuestOnlyRoute from "@/components/GuestOnlyRoute";
 import PageNotFound from "@/lib/PageNotFound";
 import AuthGate from "@/app/bootstrap/AuthGate";
-import { appRoutes, publicRoutes } from "@/app/routes";
+import { appRoutes, guestRoutes, publicBrowseRoutes } from "@/app/routes";
 import PageLoader from "@/components/shared/PageLoader";
 
 export default function AppRouter() {
@@ -15,9 +16,16 @@ export default function AppRouter() {
       <AuthGate>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            {publicRoutes.map((route) => (
-              <Route key={route.path} path={route.path} element={route.element} />
-            ))}
+            <Route element={<GuestOnlyRoute />}>
+              {guestRoutes.map((route) => (
+                <Route key={route.path} path={route.path} element={route.element} />
+              ))}
+            </Route>
+            <Route element={<AppLayout />}>
+              {publicBrowseRoutes.map((route) => (
+                <Route key={route.path} path={route.path} element={route.element} />
+              ))}
+            </Route>
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 {appRoutes.map((route) => (

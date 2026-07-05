@@ -1,4 +1,6 @@
 import { appRuntime, isLocalDemoMode } from "@/lib/runtime-config";
+import { isBackendApiMode } from "@/lib/runtime-config";
+import { backendAuthClient } from "@/services/auth/backend-auth-client";
 
 const STORAGE_PREFIX = appRuntime.storagePrefix;
 const DEMO_AUTO_LOGIN = appRuntime.demo.autoLogin;
@@ -545,9 +547,15 @@ const requireUser = () => {
 
 const auth = {
   async me() {
+    if (isBackendApiMode()) {
+      return backendAuthClient.me();
+    }
     return clone(requireUser());
   },
   async loginViaEmailPassword(email, password) {
+    if (isBackendApiMode()) {
+      return backendAuthClient.loginViaEmailPassword(email, password);
+    }
     const user = readUsers().find(
       (candidate) =>
         candidate.email.toLowerCase() === email.toLowerCase() &&
@@ -560,6 +568,9 @@ const auth = {
     return clone(user);
   },
   async register({ email, password }) {
+    if (isBackendApiMode()) {
+      return backendAuthClient.register({ email, password });
+    }
     const users = readUsers();
     if (users.some((user) => user.email.toLowerCase() === email.toLowerCase())) {
       throw new Error("An account with this email already exists");
@@ -575,6 +586,9 @@ const auth = {
     return { success: true };
   },
   async verifyOtp({ email, otpCode }) {
+    if (isBackendApiMode()) {
+      return backendAuthClient.verifyEmail({ email, code: otpCode });
+    }
     const pendingRegistration = read(appRuntime.storageKeys.pendingRegistration, null);
     if (
       !pendingRegistration ||
@@ -597,10 +611,16 @@ const auth = {
     setCurrentUser(newUser);
     return { access_token: `token-${newUser.id}` };
   },
-  async resendOtp() {
+  async resendOtp(email) {
+    if (isBackendApiMode()) {
+      return backendAuthClient.resendVerification(email);
+    }
     return { success: true };
   },
   loginWithProvider(_provider, redirectPath = "/") {
+    if (isBackendApiMode()) {
+      return backendAuthClient.loginWithProvider(_provider, redirectPath);
+    }
     const user = readUsers().find((candidate) => candidate.email === DEMO_EMAIL);
     if (user) {
       setCurrentUser(user);
@@ -610,6 +630,9 @@ const auth = {
     }
   },
   logout(redirectPath) {
+    if (isBackendApiMode()) {
+      return backendAuthClient.logout(redirectPath);
+    }
     write(appRuntime.storageKeys.currentUserId, null);
     write(appRuntime.storageKeys.token, null);
     if (typeof window !== "undefined" && redirectPath) {
@@ -617,15 +640,27 @@ const auth = {
     }
   },
   redirectToLogin(fromUrl) {
+    if (isBackendApiMode()) {
+      return backendAuthClient.redirectToLogin(fromUrl);
+    }
     if (typeof window !== "undefined") {
       const target = fromUrl ? `/login?from=${encodeURIComponent(fromUrl)}` : "/login";
       window.location.href = target;
     }
   },
-  async resetPasswordRequest() {
+  async resetPasswordRequest(email) {
+    if (isBackendApiMode()) {
+      return backendAuthClient.requestPasswordReset(email);
+    }
     return { success: true, otp_hint: DEMO_OTP };
   },
-  async resetPassword({ newPassword }) {
+  async resetPassword({ resetToken, newPassword }) {
+    if (isBackendApiMode()) {
+      return backendAuthClient.resetPassword({
+        token: resetToken,
+        newPassword,
+      });
+    }
     const user = requireUser();
     const users = readUsers().map((candidate) =>
       candidate.id === user.id ? { ...candidate, password: newPassword } : candidate,
@@ -634,6 +669,10 @@ const auth = {
     return { success: true };
   },
   setToken(token) {
+    if (isBackendApiMode()) {
+      backendAuthClient.setToken(token);
+      return;
+    }
     write("token", token);
   },
 };

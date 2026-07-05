@@ -72,6 +72,7 @@ Examples:
 - Permission failures must return proper auth/permission status codes.
 - Domain rule failures should produce explicit validation/business-rule messages.
 - Background or optional integration failures must not corrupt core records.
+- Use `backend/apps/common/email.py` for outbound email so delivery continues through the project's Resend integration unless an explicitly approved exception is documented.
 
 ### Frontend
 
@@ -89,5 +90,6 @@ Examples:
 - Never bypass DRF serializers, permission classes, or validation for writable endpoints.
 - Never enforce access rules only in the frontend.
 - Never hardcode trust-state, role, or monetization decisions in UI without backend enforcement.
+- Never add a separate SMTP/client-side/custom email sender path when the project's Resend-backed `backend/apps/common/email.py` flow can be used.
 - Never place new domain code outside the folders defined in [OWNERSHIP.md](./OWNERSHIP.md) unless the task explicitly documents an exception.
 - Never update [Agent Tasks.md](./Agent%20Tasks.md) task status or coverage without also updating [BLOCKERS.md](./BLOCKERS.md) if a blocker affected the work.

@@ -10,6 +10,29 @@ export class ApiError extends Error {
   }
 }
 
+function extractApiErrorMessage(data, response) {
+  if (typeof data === "string" && data.trim()) {
+    return data;
+  }
+
+  if (data && typeof data === "object") {
+    if (typeof data.detail === "string" && data.detail.trim()) {
+      return data.detail;
+    }
+
+    for (const value of Object.values(data)) {
+      if (typeof value === "string" && value.trim()) {
+        return value;
+      }
+      if (Array.isArray(value) && typeof value[0] === "string") {
+        return value[0];
+      }
+    }
+  }
+
+  return `Request failed with status ${response.status}`;
+}
+
 export function buildApiUrl(path) {
   const normalizedBase = appRuntime.apiBaseUrl.replace(/\/$/, "");
   const normalizedApiPath = appRuntime.apiBasePath.replace(/\/$/, "");
@@ -35,9 +58,7 @@ export async function apiRequest(path, options = {}) {
 
   if (!response.ok) {
     throw new ApiError(
-      typeof data === "object" && data?.detail
-        ? data.detail
-        : `Request failed with status ${response.status}`,
+      extractApiErrorMessage(data, response),
       {
         status: response.status,
         data,

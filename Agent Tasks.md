@@ -26,6 +26,7 @@ Rules:
 - Update [schema.yaml](./schema.yaml) whenever an endpoint changes.
 - Update [BLOCKERS.md](./BLOCKERS.md) whenever a task becomes blocked.
 - Use the PRD coverage checklist at the bottom to ensure nothing is dropped.
+- For backend email work, use the shared helper in `backend/apps/common/email.py` so all outbound email stays on the project's Resend-backed Django email path.
 
 ## Phase 1: Foundation, Contracts, and Runtime Boundaries
 
@@ -110,8 +111,12 @@ Complete
 Goal:
 At the end of this phase, guests can enter the product safely, regular users can authenticate and verify, and organizations can onboard through a separate path.
 
+Status:
+Complete
+
 ### TASK-201: Build Public Guest Entry Flow
 - **Phase:** Phase 2: Guest Access, Authentication, and Onboarding
+- **Status:** Complete
 - **Owner:** Frontend
 - **Files touched:** `frontend/src/features/landing/`, `frontend/src/features/auth/`, `frontend/src/app/routes.jsx`, `frontend/src/components/layout/`
 - **Depends on:** `TASK-102`, `TASK-104`
@@ -124,6 +129,7 @@ At the end of this phase, guests can enter the product safely, regular users can
 
 ### TASK-202: Implement Regular User Authentication
 - **Phase:** Phase 2: Guest Access, Authentication, and Onboarding
+- **Status:** Complete
 - **Owner:** Backend
 - **Files touched:** `backend/apps/accounts/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-101`, `TASK-104`
@@ -136,6 +142,7 @@ At the end of this phase, guests can enter the product safely, regular users can
 
 ### TASK-203: Wire Regular User Auth UI to Real Backend Contracts
 - **Phase:** Phase 2: Guest Access, Authentication, and Onboarding
+- **Status:** Complete
 - **Owner:** Frontend
 - **Files touched:** `frontend/src/features/auth/`, `frontend/src/contexts/`, `frontend/src/services/auth/`, `frontend/src/app/`
 - **Depends on:** `TASK-201`, `TASK-202`
@@ -148,6 +155,7 @@ At the end of this phase, guests can enter the product safely, regular users can
 
 ### TASK-204: Implement Separate Organization Onboarding Backend Flow
 - **Phase:** Phase 2: Guest Access, Authentication, and Onboarding
+- **Status:** Complete
 - **Owner:** Backend
 - **Files touched:** `backend/apps/accounts/`, `backend/apps/organizations/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-202`
@@ -160,6 +168,7 @@ At the end of this phase, guests can enter the product safely, regular users can
 
 ### TASK-205: Implement Separate Organization Onboarding Frontend Flow
 - **Phase:** Phase 2: Guest Access, Authentication, and Onboarding
+- **Status:** Complete
 - **Owner:** Frontend
 - **Files touched:** `frontend/src/features/onboarding/`, `frontend/src/features/auth/`, `frontend/src/services/organizations/`, `frontend/src/app/routes.jsx`
 - **Depends on:** `TASK-201`, `TASK-204`
@@ -172,6 +181,7 @@ At the end of this phase, guests can enter the product safely, regular users can
 
 ### TASK-206: Enforce Protected Access and Admin Baseline
 - **Phase:** Phase 2: Guest Access, Authentication, and Onboarding
+- **Status:** Complete
 - **Owner:** Both
 - **Files touched:** `backend/apps/accounts/`, `backend/apps/common/`, `frontend/src/contexts/`, `frontend/src/components/ProtectedRoute.jsx`, `frontend/src/app/`
 - **Depends on:** `TASK-203`, `TASK-204`, `TASK-205`

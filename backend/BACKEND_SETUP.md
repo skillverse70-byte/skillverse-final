@@ -12,6 +12,7 @@ This document records the backend foundation scaffolded from `PRD.md` and `Agent
 - JWT authentication endpoints for API clients
 - OpenAPI schema generation plus Swagger and ReDoc docs endpoints
 - CORS support for the separate React frontend
+- Resend email delivery through Anymail
 - Celery and Redis configuration for background jobs
 - Channels and Redis channel-layer support for future realtime chat/session flows
 - `.env.example` with local defaults
@@ -42,6 +43,10 @@ Chosen to keep secrets and environment-specific configuration out of source cont
 ### `django-cors-headers==4.9.0`
 
 Chosen because the repo already separates `frontend/` and `backend/`, so cross-origin browser requests are expected during development and likely in deployment topologies.
+
+### `django-anymail==15.0`
+
+Chosen to integrate Django email sending with Resend using the backend Anymail officially documents for Resend support. This supports the PRD's email verification, password reset, and essential notification flows without replacing Django's standard mail API.
 
 ### `mysqlclient==2.2.8`
 
@@ -84,6 +89,20 @@ JWT endpoints:
 - `GET /api/docs/swagger/`
 - `GET /api/docs/redoc/`
 
+## Email provider configuration
+
+- Default email backend: `anymail.backends.resend.EmailBackend`
+- Provider API key setting: `RESEND_API_KEY`
+- Anymail config key used: `ANYMAIL["RESEND_API_KEY"]`
+
+The account email service uses the shared helper in `apps/common/email.py`, which sends multipart email through Django's email system and routes delivery through Resend by default.
+
+Shared helper path:
+
+- `apps/common/email.py`
+
+Future backend email work should call the shared helper there so outbound email stays on the same Resend-backed path.
+
 ## Packages intentionally not added yet
 
 No further infrastructure packages were added beyond JWT and API docs.
@@ -117,6 +136,7 @@ Future domain apps should import these shared definitions instead of hardcoding 
 - Your request overrides the PostgreSQL recommendation in `Agent Tasks.md`, so the scaffold is MySQL-first.
 - Realtime foundations are justified now because chat/session coordination is part of V1, but no websocket consumer or chat app has been created yet.
 - Background-task foundations are justified now because email and notification flows are explicit in V1, while payment follow-up is explicit in the build notes.
+- Resend is the configured outbound email provider, using Anymail's Resend backend rather than a custom ESP wrapper.
 - Local development defaults to an in-memory channel layer unless you switch `CHANNEL_LAYER_BACKEND` to Redis in `.env`.
 - No feature/domain apps were created yet, per your instruction.
 - `drf-spectacular` 0.29.0 installed and passed project checks in this Django 6 scaffold, but its PyPI requirements text still lists support through Django 5.2, so that compatibility is a verified local integration result rather than an explicit upstream support claim.

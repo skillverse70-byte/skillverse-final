@@ -3,7 +3,7 @@ import React from "react";
 export default function BrandLogo({
   className = "",
   imageClassName = "",
-  alt = "Sole Safe Trading PLC logo",
+  alt = "Skill Verse logo",
   surface = "brand",
 }) {
   const surfaceClass =

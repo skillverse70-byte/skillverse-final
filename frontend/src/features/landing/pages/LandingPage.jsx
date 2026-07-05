@@ -51,10 +51,10 @@ export default function Landing() {
             <span className="font-heading font-bold text-xl text-foreground">SkillVerse</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/discover">
-              <Button variant="ghost" className="text-sm">Explore</Button>
+            <Link to="/courses">
+              <Button variant="ghost" className="text-sm">Browse Public Courses</Button>
             </Link>
-            <Link to="/onboarding">
+            <Link to="/get-started">
               <Button className="bg-teal-600 hover:bg-teal-700 text-sm">Get Started</Button>
             </Link>
           </div>
@@ -83,7 +83,7 @@ export default function Landing() {
               SkillVerse connects you with courses, skill swaps, events, and career opportunities — all in one place.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Link to="/onboarding">
+              <Link to="/get-started">
                 <Button size="lg" className="bg-teal-600 hover:bg-teal-700 h-12 px-8 text-base gap-2 w-full sm:w-auto">
                   Start Learning <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -190,7 +190,7 @@ export default function Landing() {
           <p className="text-teal-100 text-lg mb-8 max-w-lg mx-auto">
             Join thousands of learners, teachers, and professionals on SkillVerse.
           </p>
-          <Link to="/onboarding">
+          <Link to="/get-started">
             <Button size="lg" className="bg-white text-teal-700 hover:bg-teal-50 h-12 px-8 text-base gap-2">
               Get Started Free <ArrowRight className="w-4 h-4" />
             </Button>

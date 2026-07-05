@@ -1,0 +1,12 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<p style="margin:0 0 16px;">Hello {{ greeting_name }},</p>
+<p style="margin:0 0 16px;">Your SkillVerse verification code is:</p>
+<p style="margin:0 0 20px;">
+    <span style="display:inline-block;padding:12px 18px;background-color:#e2e8f0;border-radius:8px;font-size:24px;font-weight:700;letter-spacing:2px;">
+        {{ verification_code }}
+    </span>
+</p>
+<p style="margin:0;color:#475569;">{{ expiry_text }}</p>
+{% endblock %}
