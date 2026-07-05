@@ -74,9 +74,7 @@ export default function OrganizationProfilePage() {
             </h2>
             {organization ? (
               <div className="mt-1">
-                <StatusBadge
-                  status={organization.verification_status || "unverified"}
-                />
+                <StatusBadge organization={organization} />
               </div>
             ) : null}
           </div>

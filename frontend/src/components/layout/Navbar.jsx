@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Menu,
   X,
@@ -27,6 +28,19 @@ const navLinks = [
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const { hasAnyRole } = useAuth();
+  const quickLinks = [
+    { path: "/messages", label: "Messages", icon: MessageCircle },
+    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/skill-portfolio", label: "Portfolio", icon: GraduationCap },
+    { path: "/saved-opportunities", label: "Saved", icon: Bookmark },
+  ];
+  const visibleQuickLinks = quickLinks.filter((link) => {
+    if (link.path === "/dashboard") {
+      return hasAnyRole([]);
+    }
+    return true;
+  });
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border/50">
@@ -61,26 +75,16 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-2">
-            <Link to="/skill-portfolio">
-              <Button variant="ghost" size="icon">
-                <GraduationCap className="w-5 h-5" />
-              </Button>
-            </Link>
-            <Link to="/saved-opportunities">
-              <Button variant="ghost" size="icon">
-                <Bookmark className="w-5 h-5" />
-              </Button>
-            </Link>
-            <Link to="/messages">
-              <Button variant="ghost" size="icon" className="relative">
-                <MessageCircle className="w-5 h-5" />
-              </Button>
-            </Link>
-            <Link to="/dashboard">
-              <Button variant="ghost" size="icon">
-                <LayoutDashboard className="w-5 h-5" />
-              </Button>
-            </Link>
+            {visibleQuickLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link key={link.path} to={link.path}>
+                  <Button variant="ghost" size="icon" className={link.path === "/messages" ? "relative" : ""}>
+                    <Icon className="w-5 h-5" />
+                  </Button>
+                </Link>
+              );
+            })}
             <Link to="/profile">
               <Button variant="ghost" size="icon">
                 <User className="w-5 h-5" />
@@ -124,42 +128,21 @@ export default function Navbar() {
               );
             })}
             <div className="border-t border-border/50 pt-2 mt-2 grid grid-cols-2 gap-2">
-              <Link
-                to="/messages"
-                onClick={() => setMobileOpen(false)}
-                className="flex-1"
-              >
-                <Button variant="outline" size="sm" className="w-full gap-2">
-                  <MessageCircle className="w-4 h-4" /> Messages
-                </Button>
-              </Link>
-              <Link
-                to="/dashboard"
-                onClick={() => setMobileOpen(false)}
-                className="flex-1"
-              >
-                <Button variant="outline" size="sm" className="w-full gap-2">
-                  <LayoutDashboard className="w-4 h-4" /> Dashboard
-                </Button>
-              </Link>
-              <Link
-                to="/skill-portfolio"
-                onClick={() => setMobileOpen(false)}
-                className="flex-1"
-              >
-                <Button variant="outline" size="sm" className="w-full gap-2">
-                  <GraduationCap className="w-4 h-4" /> Portfolio
-                </Button>
-              </Link>
-              <Link
-                to="/saved-opportunities"
-                onClick={() => setMobileOpen(false)}
-                className="flex-1"
-              >
-                <Button variant="outline" size="sm" className="w-full gap-2">
-                  <Bookmark className="w-4 h-4" /> Saved
-                </Button>
-              </Link>
+              {visibleQuickLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex-1"
+                  >
+                    <Button variant="outline" size="sm" className="w-full gap-2">
+                      <Icon className="w-4 h-4" /> {link.label}
+                    </Button>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>

@@ -3,18 +3,18 @@
   "type": "object",
   "properties": {
     "user_id": {
-      "type": "string",
+      "type": "string"
     },
     "skill_name": {
-      "type": "string",
+      "type": "string"
     },
     "skill_id": {
-      "type": "string",
+      "type": "string"
     },
     "level": {
       "type": "string",
       "enum": ["beginner", "intermediate", "advanced"],
-      "default": "beginner",
+      "default": "beginner"
     },
     "can_teach": {
       "type": "boolean",
@@ -22,8 +22,8 @@
     },
     "wants_to_learn": {
       "type": "boolean",
-      "default": false,
+      "default": false
     },
   },
-  "required": ["user_id", "skill_name"],
+  "required": ["user_id", "skill_name"]
 }

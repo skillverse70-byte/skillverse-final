@@ -1,0 +1,67 @@
+import {
+  courseProgramStatuses,
+  enrollmentStatuses,
+  eventStatuses,
+  financialAccountStatuses,
+  jobApplicationStatuses,
+  learningSessionStatuses,
+  notificationTypes,
+  organizationVerificationStatuses,
+  reviewContexts,
+  roles,
+  skillDirections,
+  skillSwapStatuses,
+} from "@/lib/domain-enums";
+
+export const domainEntities = Object.freeze({
+  User: "Base account for regular users and admins.",
+  Organization: "Organization account/profile with type and trust state.",
+  OrganizationVerification: "Verification review record for organization trust workflows.",
+  Skill: "Structured skill taxonomy record.",
+  UserSkill: "User-to-skill relationship with direction and experience metadata.",
+  FieldInterest: "User-declared academic, professional, or domain focus.",
+  MatchSuggestion: "System-generated compatibility or recommendation record.",
+  SkillSwapRequest: "Request lifecycle record for skill exchange.",
+  LearningSession: "Planned or completed session tied to learning activity.",
+  CourseProgram: "Structured course or program offering.",
+  CourseModule: "Module or grouped lesson segment inside a course.",
+  LessonItem: "Individual learning item such as a video, resource, checklist, or assessment.",
+  Enrollment: "Learner participation and progression record.",
+  FinancialAccount: "Monetization readiness and payout configuration record.",
+  AssignmentResource: "Learning content or assessment artifact.",
+  MessageThread: "Conversation channel for participant coordination.",
+  RatingReview: "Participation-based review or rating record.",
+  Opportunity: "Job, internship, volunteer role, or similar listing.",
+  JobApplication: "In-platform application and pipeline-state record.",
+  CommunityGroup: "Field-based or interest-based user community.",
+  Event: "Scheduled event, meetup, workshop, or community activity.",
+  EventRSVP: "RSVP or registration record for an event.",
+  CommunityActivity: "Community-service or collaboration initiative record.",
+  ServiceCredit: "Verified contribution or impact record.",
+  Certificate: "Completion or verification artifact with lookup reference.",
+  CategorySuggestion: "Requested addition to a controlled category list.",
+  Notification: "System alert, reminder, or workflow update.",
+  AuditLog: "Important admin or security-sensitive event record.",
+});
+
+export const coreDomainStatusFields = Object.freeze({
+  "User.role": Object.values(roles),
+  "Organization.verification_status": Object.values(organizationVerificationStatuses),
+  "UserSkill.direction": Object.values(skillDirections),
+  "SkillSwapRequest.status": Object.values(skillSwapStatuses),
+  "LearningSession.status": Object.values(learningSessionStatuses),
+  "CourseProgram.status": Object.values(courseProgramStatuses),
+  "Enrollment.status": Object.values(enrollmentStatuses),
+  "FinancialAccount.status": Object.values(financialAccountStatuses),
+  "JobApplication.status": Object.values(jobApplicationStatuses),
+  "Event.status": Object.values(eventStatuses),
+  "RatingReview.context": Object.values(reviewContexts),
+  "Notification.type": Object.values(notificationTypes),
+});
+
+export function enumOptions(enumObject) {
+  return Object.values(enumObject).map((value) => ({
+    label: value.replaceAll("_", " "),
+    value,
+  }));
+}

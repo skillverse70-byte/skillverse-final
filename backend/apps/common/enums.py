@@ -1,0 +1,134 @@
+from django.db import models
+
+
+class Role(models.TextChoices):
+    GUEST = "guest", "Guest"
+    REGULAR_USER = "regular_user", "Regular User"
+    ORGANIZATION = "organization", "Organization"
+    ADMIN = "admin", "Admin"
+
+
+class OrganizationType(models.TextChoices):
+    COMPANY = "company", "Company"
+    NGO = "ngo", "NGO"
+    INSTITUTION = "institution", "Institution"
+    TRAINING_CENTER = "training_center", "Training Center"
+    COMMUNITY = "community", "Community"
+    OTHER = "other", "Other"
+
+
+class OrganizationVerificationStatus(models.TextChoices):
+    UNVERIFIED = "unverified", "Unverified"
+    VERIFIED = "verified", "Verified"
+
+
+class SkillDirection(models.TextChoices):
+    OFFERING = "offering", "Offering"
+    REQUESTING = "requesting", "Requesting"
+    BOTH = "both", "Both"
+
+
+class MatchSuggestionType(models.TextChoices):
+    DIRECT_SWAP = "direct_swap", "Direct Swap"
+    PARTIAL_OVERLAP = "partial_overlap", "Partial Overlap"
+    FIELD_RELEVANT = "field_relevant", "Field Relevant"
+
+
+class SkillSwapStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    ACCEPTED = "accepted", "Accepted"
+    REJECTED = "rejected", "Rejected"
+    CANCELLED = "cancelled", "Cancelled"
+    COMPLETED = "completed", "Completed"
+
+
+class LearningSessionStatus(models.TextChoices):
+    PLANNED = "planned", "Planned"
+    CONFIRMED = "confirmed", "Confirmed"
+    COMPLETED = "completed", "Completed"
+    CANCELLED = "cancelled", "Cancelled"
+
+
+class CourseProgramStatus(models.TextChoices):
+    DRAFT = "draft", "Draft"
+    PUBLISHED = "published", "Published"
+    ARCHIVED = "archived", "Archived"
+
+
+class LessonItemType(models.TextChoices):
+    VIDEO = "video", "Video"
+    RESOURCE = "resource", "Resource"
+    CHECKLIST = "checklist", "Checklist"
+    ASSESSMENT = "assessment", "Assessment"
+    QUIZ = "quiz", "Quiz"
+    ASSIGNMENT = "assignment", "Assignment"
+    READING = "reading", "Reading"
+
+
+class EnrollmentStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    ACTIVE = "active", "Active"
+    COMPLETED = "completed", "Completed"
+    CANCELLED = "cancelled", "Cancelled"
+
+
+class FinancialAccountStatus(models.TextChoices):
+    NOT_STARTED = "not_started", "Not Started"
+    PENDING = "pending", "Pending"
+    READY = "ready", "Ready"
+    RESTRICTED = "restricted", "Restricted"
+
+
+class OpportunityType(models.TextChoices):
+    JOB = "job", "Job"
+    INTERNSHIP = "internship", "Internship"
+    PROGRAM = "program", "Program"
+    VOLUNTEER = "volunteer", "Volunteer"
+
+
+class OpportunityStatus(models.TextChoices):
+    DRAFT = "draft", "Draft"
+    OPEN = "open", "Open"
+    CLOSED = "closed", "Closed"
+    FILLED = "filled", "Filled"
+
+
+class JobApplicationStatus(models.TextChoices):
+    APPLIED = "applied", "Applied"
+    SHORTLISTED = "shortlisted", "Shortlisted"
+    INTERVIEW = "interview", "Interview"
+    HIRED = "hired", "Hired"
+    REJECTED = "rejected", "Rejected"
+    WITHDRAWN = "withdrawn", "Withdrawn"
+
+
+class EventStatus(models.TextChoices):
+    UPCOMING = "upcoming", "Upcoming"
+    LIVE = "live", "Live"
+    COMPLETED = "completed", "Completed"
+    CANCELLED = "cancelled", "Cancelled"
+
+
+class RSVPStatus(models.TextChoices):
+    GOING = "going", "Going"
+    INTERESTED = "interested", "Interested"
+    CANCELLED = "cancelled", "Cancelled"
+
+
+class ReviewContext(models.TextChoices):
+    SKILL_SWAP = "skill_swap", "Skill Swap"
+    COURSE = "course", "Course"
+    EVENT = "event", "Event"
+
+
+class NotificationType(models.TextChoices):
+    AUTH = "auth", "Authentication"
+    VERIFICATION = "verification", "Verification"
+    SWAP = "swap", "Swap"
+    MESSAGE = "message", "Message"
+    SESSION = "session", "Session"
+    COURSE = "course", "Course"
+    ENROLLMENT = "enrollment", "Enrollment"
+    EVENT = "event", "Event"
+    OPPORTUNITY = "opportunity", "Opportunity"
+    ADMIN = "admin", "Admin"

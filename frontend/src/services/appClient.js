@@ -1,8 +1,10 @@
-const STORAGE_PREFIX = import.meta.env.VITE_APP_STORAGE_KEY || "skillverse-local";
-const DEMO_AUTO_LOGIN = import.meta.env.VITE_DEMO_AUTO_LOGIN !== "false";
-const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL || "demo@skillverse.local";
-const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || "SkillVerse123!";
-const DEMO_OTP = import.meta.env.VITE_DEMO_OTP || "123456";
+import { appRuntime, isLocalDemoMode } from "@/lib/runtime-config";
+
+const STORAGE_PREFIX = appRuntime.storagePrefix;
+const DEMO_AUTO_LOGIN = appRuntime.demo.autoLogin;
+const DEMO_EMAIL = appRuntime.demo.email;
+const DEMO_PASSWORD = appRuntime.demo.password;
+const DEMO_OTP = appRuntime.demo.otp;
 
 const memoryStorage = new Map();
 
@@ -41,7 +43,7 @@ const write = (name, value) => {
 };
 
 const seedDatabase = () => {
-  if (storage.getItem(keyFor("seeded")) === "true") {
+  if (storage.getItem(keyFor(appRuntime.storageKeys.seeded)) === "true") {
     return;
   }
 
@@ -384,13 +386,13 @@ const seedDatabase = () => {
     ],
   });
 
-  storage.setItem(keyFor("seeded"), "true");
+  storage.setItem(keyFor(appRuntime.storageKeys.seeded), "true");
 };
 
-const readUsers = () => read("users", []);
-const writeUsers = (users) => write("users", users);
-const readEntities = () => read("entities", {});
-const writeEntities = (entities) => write("entities", entities);
+const readUsers = () => read(appRuntime.storageKeys.users, []);
+const writeUsers = (users) => write(appRuntime.storageKeys.users, users);
+const readEntities = () => read(appRuntime.storageKeys.entities, {});
+const writeEntities = (entities) => write(appRuntime.storageKeys.entities, entities);
 
 const normalizeValue = (value) => {
   if (typeof value === "string") {
@@ -512,14 +514,14 @@ const createEntityApi = (entityName) => ({
 
 const getCurrentUser = () => {
   const users = readUsers();
-  const currentUserId = read("currentUserId", null);
+  const currentUserId = read(appRuntime.storageKeys.currentUserId, null);
   if (currentUserId) {
     return users.find((user) => user.id === currentUserId) || null;
   }
-  if (DEMO_AUTO_LOGIN) {
+  if (isLocalDemoMode() && DEMO_AUTO_LOGIN) {
     const demoUser = users.find((user) => user.email === DEMO_EMAIL) || null;
     if (demoUser) {
-      write("currentUserId", demoUser.id);
+      write(appRuntime.storageKeys.currentUserId, demoUser.id);
       return demoUser;
     }
   }
@@ -527,8 +529,8 @@ const getCurrentUser = () => {
 };
 
 const setCurrentUser = (user) => {
-  write("currentUserId", user?.id || null);
-  write("token", user ? `token-${user.id}` : null);
+  write(appRuntime.storageKeys.currentUserId, user?.id || null);
+  write(appRuntime.storageKeys.token, user ? `token-${user.id}` : null);
 };
 
 const requireUser = () => {
@@ -562,7 +564,7 @@ const auth = {
     if (users.some((user) => user.email.toLowerCase() === email.toLowerCase())) {
       throw new Error("An account with this email already exists");
     }
-    write("pendingRegistration", {
+    write(appRuntime.storageKeys.pendingRegistration, {
       id: makeId("user"),
       email,
       password,
@@ -573,7 +575,7 @@ const auth = {
     return { success: true };
   },
   async verifyOtp({ email, otpCode }) {
-    const pendingRegistration = read("pendingRegistration", null);
+    const pendingRegistration = read(appRuntime.storageKeys.pendingRegistration, null);
     if (
       !pendingRegistration ||
       pendingRegistration.email.toLowerCase() !== email.toLowerCase() ||
@@ -591,7 +593,7 @@ const auth = {
       created_date: nowIso(),
     };
     writeUsers([newUser, ...users]);
-    write("pendingRegistration", null);
+    write(appRuntime.storageKeys.pendingRegistration, null);
     setCurrentUser(newUser);
     return { access_token: `token-${newUser.id}` };
   },
@@ -608,8 +610,8 @@ const auth = {
     }
   },
   logout(redirectPath) {
-    write("currentUserId", null);
-    write("token", null);
+    write(appRuntime.storageKeys.currentUserId, null);
+    write(appRuntime.storageKeys.token, null);
     if (typeof window !== "undefined" && redirectPath) {
       window.location.href = redirectPath;
     }
@@ -658,6 +660,12 @@ const entities = Object.fromEntries(
 );
 
 export const appClient = {
+  runtime: {
+    appMode: appRuntime.appMode,
+    usesMockData: isLocalDemoMode(),
+    apiBaseUrl: appRuntime.apiBaseUrl,
+    wsBaseUrl: appRuntime.wsBaseUrl,
+  },
   auth,
   entities,
   integrations: {

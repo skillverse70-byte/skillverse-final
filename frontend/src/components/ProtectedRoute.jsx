@@ -1,6 +1,7 @@
 import { useEffect } from "react";
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import AccessDenied from "@/components/AccessDenied";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 
 const DefaultFallback = () => (
@@ -12,14 +13,20 @@ const DefaultFallback = () => (
 export default function ProtectedRoute({
   fallback = <DefaultFallback />,
   unauthenticatedElement,
+  unauthorizedElement,
+  allowedRoles = [],
+  children,
 }) {
   const {
+    user,
     isAuthenticated,
     isLoadingAuth,
     authChecked,
     authError,
     checkUserAuth,
+    hasAnyRole,
   } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
     if (!authChecked && !isLoadingAuth) {
@@ -35,12 +42,22 @@ export default function ProtectedRoute({
     if (authError.type === "user_not_registered") {
       return <UserNotRegisteredError />;
     }
-    return unauthenticatedElement;
+    return unauthenticatedElement || <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   if (!isAuthenticated) {
-    return unauthenticatedElement;
+    return unauthenticatedElement || <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  return <Outlet />;
+  if (!hasAnyRole(allowedRoles)) {
+    return (
+      unauthorizedElement || (
+        <AccessDenied
+          message={`Your current actor role does not have access to this route.`}
+        />
+      )
+    );
+  }
+
+  return children || <Outlet context={{ user }} />;
 }

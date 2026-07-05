@@ -96,6 +96,22 @@ I intentionally did not add extras such as filtering, caching, task scheduling a
 - `config/settings/local.py`: local/dev defaults
 - `config/settings/production.py`: production security defaults
 
+## Shared backend domain vocabulary
+
+Canonical backend-side domain contracts and workflow enums now live in:
+
+- `apps/common/contracts.py`
+- `apps/common/enums.py`
+- `apps/common/trust.py`
+
+Future domain apps should import these shared definitions instead of hardcoding role, trust-state, or lifecycle status strings.
+
+## Runtime entrypoints
+
+- `manage.py`, `config/asgi.py`, `config/wsgi.py`, and `config/celery.py` default to `config.settings.local`
+- If `DJANGO_SETTINGS_MODULE` is already set, they honor that value instead of forcing local settings
+- `config/settings/__init__.py` is intentionally non-executing so `config.settings.production` does not accidentally inherit `local` settings
+
 ## Assumptions made
 
 - Your request overrides the PostgreSQL recommendation in `Agent Tasks.md`, so the scaffold is MySQL-first.

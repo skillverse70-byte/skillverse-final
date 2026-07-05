@@ -1,5 +1,7 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from "react";
 import { authService } from "@/services/auth/auth.service";
+import { normalizeActorRole, hasAnyActorRole } from "@/lib/access-control";
+import { appRuntime, isLocalDemoMode } from "@/lib/runtime-config";
 
 const AuthContext = createContext();
 
@@ -21,18 +23,18 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
       setAppPublicSettings({
-        id: import.meta.env.VITE_APP_STORAGE_KEY || "skillverse-local",
+        id: appRuntime.appId,
         public_settings: {
-          auth_mode: "local",
+          auth_mode: isLocalDemoMode() ? "local-demo" : "backend-api",
         },
       });
       await checkUserAuth();
       setIsLoadingPublicSettings(false);
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error("Unexpected error:", error);
       setAuthError({
-        type: 'unknown',
-        message: error.message || 'An unexpected error occurred'
+        type: "unknown",
+        message: error.message || "An unexpected error occurred",
       });
       setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
@@ -48,7 +50,7 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
       setAuthChecked(true);
     } catch (error) {
-      console.error('User auth check failed:', error);
+      console.error("User auth check failed:", error);
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       setAuthChecked(true);
@@ -71,6 +73,8 @@ export const AuthProvider = ({ children }) => {
     authService.redirectToLogin(window.location.href);
   };
 
+  const actorRole = normalizeActorRole(user);
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -83,7 +87,10 @@ export const AuthProvider = ({ children }) => {
       logout,
       navigateToLogin,
       checkUserAuth,
-      checkAppState
+      checkAppState,
+      appRuntime,
+      actorRole,
+      hasAnyRole: (allowedRoles) => hasAnyActorRole(user, allowedRoles),
     }}>
       {children}
     </AuthContext.Provider>
@@ -93,7 +100,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

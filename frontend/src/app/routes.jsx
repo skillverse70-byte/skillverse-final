@@ -1,4 +1,5 @@
 import { lazy } from "react";
+import { roles } from "@/lib/domain-enums";
 
 const LandingPage = lazy(() => import("@/features/landing/pages/LandingPage"));
 const OnboardingPage = lazy(() => import("@/features/onboarding/pages/OnboardingPage"));
@@ -25,30 +26,50 @@ const SkillPortfolioPage = lazy(() => import("@/features/skills/pages/SkillPortf
 const SavedOpportunitiesPage = lazy(() => import("@/features/saved/pages/SavedOpportunitiesPage"));
 
 export const publicRoutes = [
-  { path: "/", element: <LandingPage /> },
-  { path: "/onboarding", element: <OnboardingPage /> },
-  { path: "/login", element: <LoginPage /> },
-  { path: "/register", element: <RegisterPage /> },
-  { path: "/forgot-password", element: <ForgetPasswordPage /> },
-  { path: "/reset-password", element: <ResetPasswordPage /> },
+  { path: "/", element: <LandingPage />, access: "public" },
+  { path: "/onboarding", element: <OnboardingPage />, access: "public" },
+  { path: "/login", element: <LoginPage />, access: "public" },
+  { path: "/register", element: <RegisterPage />, access: "public" },
+  { path: "/forgot-password", element: <ForgetPasswordPage />, access: "public" },
+  { path: "/reset-password", element: <ResetPasswordPage />, access: "public" },
 ];
 
 export const appRoutes = [
-  { path: "/discover", element: <DiscoverPage /> },
-  { path: "/courses", element: <CoursesPage /> },
-  { path: "/courses/:id", element: <CourseDetailPage /> },
-  { path: "/skill-swap", element: <SkillSwapPage /> },
-  { path: "/events", element: <EventsPage /> },
-  { path: "/events/:id", element: <EventDetailPage /> },
-  { path: "/jobs", element: <JobsPage /> },
-  { path: "/jobs/:id", element: <JobDetailPage /> },
-  { path: "/messages", element: <MessagesPage /> },
-  { path: "/dashboard", element: <DashboardPage /> },
-  { path: "/profile", element: <ProfilePage /> },
-  { path: "/org", element: <OrgManagementPage /> },
-  { path: "/admin", element: <AdminReviewPage /> },
-  { path: "/course-builder", element: <CourseBuilderPage /> },
-  { path: "/organization-profile", element: <OrganizationProfilePage /> },
-  { path: "/skill-portfolio", element: <SkillPortfolioPage /> },
-  { path: "/saved-opportunities", element: <SavedOpportunitiesPage /> },
+  { path: "/discover", element: <DiscoverPage />, access: "authenticated" },
+  { path: "/courses", element: <CoursesPage />, access: "authenticated" },
+  { path: "/courses/:id", element: <CourseDetailPage />, access: "authenticated" },
+  { path: "/skill-swap", element: <SkillSwapPage />, access: "authenticated" },
+  { path: "/events", element: <EventsPage />, access: "authenticated" },
+  { path: "/events/:id", element: <EventDetailPage />, access: "authenticated" },
+  { path: "/jobs", element: <JobsPage />, access: "authenticated" },
+  { path: "/jobs/:id", element: <JobDetailPage />, access: "authenticated" },
+  { path: "/messages", element: <MessagesPage />, access: "authenticated" },
+  { path: "/dashboard", element: <DashboardPage />, access: "authenticated" },
+  { path: "/profile", element: <ProfilePage />, access: "authenticated" },
+  {
+    path: "/org",
+    element: <OrgManagementPage />,
+    access: "authenticated",
+    allowedRoles: [roles.organization, roles.admin],
+  },
+  {
+    path: "/admin",
+    element: <AdminReviewPage />,
+    access: "authenticated",
+    allowedRoles: [roles.admin],
+  },
+  {
+    path: "/course-builder",
+    element: <CourseBuilderPage />,
+    access: "authenticated",
+    allowedRoles: [roles.organization, roles.admin],
+  },
+  {
+    path: "/organization-profile",
+    element: <OrganizationProfilePage />,
+    access: "authenticated",
+    allowedRoles: [roles.organization, roles.admin],
+  },
+  { path: "/skill-portfolio", element: <SkillPortfolioPage />, access: "authenticated" },
+  { path: "/saved-opportunities", element: <SavedOpportunitiesPage />, access: "authenticated" },
 ];

@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { BookOpen, Clock, Users, Star, CheckCircle, FileText, HelpCircle, Clipboard, ArrowLeft, Download, Video } from "lucide-react";
 import StatusBadge from "@/components/shared/StatusBadge";
 import BookmarkButton from "@/components/shared/BookmarkButton";
+import { getPaidCourseEnrollmentGate } from "@/lib/trust-state";
 
 const lessonIcons = {
   video: Video,
@@ -50,6 +51,16 @@ export default function CourseDetail() {
 
   const modules = course.modules || [];
   const totalLessons = modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
+  const organization = {
+    verification_status: course.organization_verification_status,
+    is_verified: course.is_verified,
+  };
+  const enrollmentGate = getPaidCourseEnrollmentGate({
+    organization,
+    financialAccount: course.financial_account || null,
+    isFree: course.is_free,
+    enrollmentOpen: course.enrollment_open,
+  });
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
@@ -75,7 +86,7 @@ export default function CourseDetail() {
             <StatusBadge status={course.is_free ? "free" : "paid"} label={course.is_free ? "Free" : `$${course.price || 0}`} />
             <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-secondary text-muted-foreground">{course.category}</span>
             <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-secondary text-muted-foreground capitalize">{course.difficulty}</span>
-            {!course.enrollment_open && <StatusBadge status="enrollment_unavailable" />}
+            {!enrollmentGate.canEnroll && <StatusBadge status={enrollmentGate.status} label={enrollmentGate.label} />}
           </div>
 
           <h1 className="font-heading font-bold text-2xl sm:text-3xl mb-3">{course.title}</h1>
@@ -83,11 +94,7 @@ export default function CourseDetail() {
           {course.organization_name && (
             <p className="text-sm text-muted-foreground flex items-center gap-1.5 mb-4">
               by <span className="font-medium text-foreground">{course.organization_name}</span>
-              {course.is_verified && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-200">
-                  <CheckCircle className="w-3 h-3" /> Verified
-                </span>
-              )}
+              <StatusBadge organization={organization} />
             </p>
           )}
 
@@ -157,13 +164,13 @@ export default function CourseDetail() {
               )}
             </div>
 
-            {course.enrollment_open ? (
+            {enrollmentGate.canEnroll ? (
               <Button className="w-full bg-teal-600 hover:bg-teal-700 h-11 text-base mb-4">
                 Enroll Now
               </Button>
             ) : (
               <Button className="w-full h-11 text-base mb-4" disabled>
-                Enrollment Unavailable
+                {enrollmentGate.label}
               </Button>
             )}
 

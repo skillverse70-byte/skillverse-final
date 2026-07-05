@@ -32,3 +32,13 @@ This notes the frontend capability gaps implied by `PRD.md` that were not fully 
 - Shared frontend store slices: `src/stores/app-shell-store.js`
 - Upload presets and dropzone config: `src/lib/uploads/upload-presets.js`
 - Environment wiring for API + websocket endpoints: `.env.example`
+
+## Shared domain contract baseline
+
+Canonical frontend domain enums and entity/status references now live in:
+
+- `src/lib/domain-enums.js`
+- `src/lib/domain-contracts.js`
+- `src/lib/trust-state.js`
+
+These are the frontend-side shared vocabulary for roles, trust states, workflow statuses, and major domain entities. Future feature work should import these instead of hardcoding status strings.

@@ -1,6 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
+import { getOrganizationTrustBadgeState } from "@/lib/trust-state";
 
 const configs = {
   verified: {
@@ -95,21 +96,25 @@ const configs = {
   },
 };
 
-export default function StatusBadge({ status, label }) {
+export default function StatusBadge({ status, label, organization }) {
+  const trustState = organization ? getOrganizationTrustBadgeState(organization) : null;
+  const resolvedStatus = trustState?.status || status;
+  const resolvedLabel = trustState?.label || label;
   const config = configs[status] || {
-    label: label || status,
+    label: resolvedLabel || resolvedStatus,
     icon: null,
     className: "bg-gray-100 text-gray-600 border-gray-200",
   };
-  const Icon = config.icon;
+  const finalConfig = configs[resolvedStatus] || config;
+  const Icon = finalConfig.icon;
 
   return (
     <Badge
       variant="outline"
-      className={`${config.className} gap-1 font-medium text-xs`}
+      className={`${finalConfig.className} gap-1 font-medium text-xs`}
     >
       {Icon && <Icon className="w-3 h-3" />}
-      {label || config.label}
+      {resolvedLabel || finalConfig.label}
     </Badge>
   );
 }
