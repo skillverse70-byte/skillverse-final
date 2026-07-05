@@ -1,0 +1,52 @@
+{
+  "name": "SkillSwap",
+  "type": "object",
+  "properties": {
+    "requester_id": {
+      "type": "string"
+    },
+    "responder_id": {
+      "type": "string"
+    },
+    "requester_skill_id": {
+      "type": "string"
+    },
+    "responder_skill_id": {
+      "type": "string"
+    },
+    "requester_skill_name": {
+      "type": "string"
+    },
+    "responder_skill_name": {
+      "type": "string"
+    },
+    "requester_name": {
+      "type": "string"
+    },
+    "responder_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined",
+        "completed",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "requester_id",
+    "requester_skill_name"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "name": "JobApplication",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "job_id": {
+      "type": "string"
+    },
+    "job_title": {
+      "type": "string"
+    },
+    "company_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "submitted",
+        "reviewing",
+        "interview",
+        "offered",
+        "rejected",
+        "withdrawn"
+      ],
+      "default": "submitted"
+    },
+    "cover_letter": {
+      "type": "string"
+    },
+    "resume_url": {
+      "type": "string"
+    },
+    "applied_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "user_id",
+    "job_id"
+  ]
+}

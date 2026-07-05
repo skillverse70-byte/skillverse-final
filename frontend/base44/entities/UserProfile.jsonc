@@ -1,0 +1,49 @@
+{
+  "name": "UserProfile",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+    },
+    "display_name": {
+      "type": "string",
+    },
+    "bio": {
+      "type": "string",
+    },
+    "avatar_url": {
+      "type": "string",
+    },
+    "interests": {
+      "type": "array",
+      "items": {
+        "type": "string",
+      },
+    },
+    "location": {
+      "type": "string",
+    },
+    "experience_level": {
+      "type": "string",
+      "enum": ["student", "early_career", "mid_career", "experienced"],
+      "default": "student",
+    },
+    "is_onboarded": {
+      "type": "boolean",
+      "default": false,
+    },
+    "skills_to_teach": {
+      "type": "array",
+      "items": {
+        "type": "string",
+      },
+    },
+    "skills_to_learn": {
+      "type": "array",
+      "items": {
+        "type": "string",
+      },
+    },
+  },
+  "required": ["user_id"],
+}

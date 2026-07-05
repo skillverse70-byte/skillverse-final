@@ -1,0 +1,79 @@
+{
+  "name": "Job",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "company_name": {
+      "type": "string"
+    },
+    "organization_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "full_time",
+        "part_time",
+        "internship",
+        "freelance",
+        "volunteer"
+      ],
+      "default": "full_time"
+    },
+    "location": {
+      "type": "string"
+    },
+    "is_remote": {
+      "type": "boolean",
+      "default": false
+    },
+    "salary_range": {
+      "type": "string"
+    },
+    "required_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "filled"
+      ],
+      "default": "open"
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date"
+    },
+    "category": {
+      "type": "string"
+    },
+    "experience_level": {
+      "type": "string",
+      "enum": [
+        "entry",
+        "mid",
+        "senior"
+      ],
+      "default": "entry"
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "title",
+    "company_name",
+    "type"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "RSVP",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "going",
+        "maybe",
+        "not_going",
+        "cancelled"
+      ],
+      "default": "going"
+    },
+    "registered_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "user_id",
+    "event_id"
+  ]
+}

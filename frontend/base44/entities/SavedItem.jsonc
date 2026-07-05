@@ -1,0 +1,26 @@
+{
+  "name": "SavedItem",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+    },
+    "item_type": {
+      "type": "string",
+      "enum": ["course", "job", "event"],
+    },
+    "item_id": {
+      "type": "string",
+    },
+    "item_title": {
+      "type": "string",
+    },
+    "item_subtitle": {
+      "type": "string",
+    },
+    "item_category": {
+      "type": "string",
+    },
+  },
+  "required": ["user_id", "item_type", "item_id"],
+}

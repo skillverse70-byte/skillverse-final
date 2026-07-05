@@ -1,0 +1,29 @@
+{
+  "name": "UserSkill",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+    },
+    "skill_name": {
+      "type": "string",
+    },
+    "skill_id": {
+      "type": "string",
+    },
+    "level": {
+      "type": "string",
+      "enum": ["beginner", "intermediate", "advanced"],
+      "default": "beginner",
+    },
+    "can_teach": {
+      "type": "boolean",
+      "default": false,
+    },
+    "wants_to_learn": {
+      "type": "boolean",
+      "default": false,
+    },
+  },
+  "required": ["user_id", "skill_name"],
+}
