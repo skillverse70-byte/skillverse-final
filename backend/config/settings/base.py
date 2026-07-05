@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.common",
     "apps.organizations",
     "apps.skills",
+    "apps.swaps",
     "corsheaders",
     "rest_framework",
     "drf_spectacular",
@@ -186,6 +187,7 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "OrganizationTypeEnum": "apps.common.enums.OrganizationType",
         "OrganizationVerificationStatusEnum": "apps.common.enums.OrganizationVerificationStatus",
+        "SkillSwapStatusEnum": "apps.common.enums.SkillSwapStatus",
     },
 }
 

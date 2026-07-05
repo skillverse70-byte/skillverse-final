@@ -111,7 +111,7 @@ export default function OrganizationOnboardingPage() {
     setLoading(true);
     try {
       await authService.verifyEmail({ email: form.email, code: otpCode });
-      window.location.href = "/organization-profile";
+      window.location.href = "/org";
     } catch (requestError) {
       setError(requestError.message || "Invalid verification code.");
     } finally {

@@ -1,4 +1,5 @@
 import React from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, Send } from "lucide-react";
@@ -10,6 +11,9 @@ import MessageThread from "@/features/messages/components/MessageThread";
 import { useMessages } from "@/hooks/messages/useMessages";
 
 export default function MessagesPage() {
+  const location = useLocation();
+  const initialConversationId =
+    new URLSearchParams(location.search).get("conversation") || "";
   const {
     me,
     conversations,
@@ -21,12 +25,14 @@ export default function MessagesPage() {
     loading,
     openConversation,
     submitMessage,
-  } = useMessages();
+  } = useMessages(initialConversationId);
 
   const getOtherName = (conversation) => {
-    if (!me || !conversation.participant_names) return "User";
+    if (!me || !conversation.participant_names) {
+      return conversation.title || "User";
+    }
     const index = conversation.participant_ids?.indexOf(me.id);
-    return conversation.participant_names?.[index === 0 ? 1 : 0] || "User";
+    return conversation.participant_names?.[index === 0 ? 1 : 0] || conversation.title || "User";
   };
 
   if (loading) {

@@ -1,19 +1,47 @@
-import React from "react";
+import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, ArrowLeftRight, Briefcase, Calendar } from "lucide-react";
+import {
+  ArrowLeftRight,
+  BellRing,
+  BookOpen,
+  Briefcase,
+  Calendar,
+  MessageCircle,
+} from "lucide-react";
 import StatusBadge from "@/components/shared/StatusBadge";
 import EmptyState from "@/components/shared/EmptyState";
 import PageHeader from "@/components/shared/PageHeader";
 import PageLoader from "@/components/shared/PageLoader";
 import DashboardStats from "@/features/dashboard/components/DashboardStats";
+import SwapRequestCard from "@/features/skills/components/SwapRequestCard";
 import { useDashboardData } from "@/hooks/dashboard/useDashboardData";
+import { useDashboardSwapRequests } from "@/hooks/dashboard/useDashboardSwapRequests";
+import { ensureSwapConversation } from "@/services/messages/swap-messaging.service";
 import moment from "moment";
 
-export default function DashboardPage() {
-  const { enrollments, swaps, applications, rsvps, loading } =
-    useDashboardData();
+const validTabs = ["learning", "swaps", "applications", "events"];
 
-  if (loading) {
+export default function DashboardPage() {
+  const location = useLocation();
+  const tabParam = new URLSearchParams(location.search).get("tab");
+  const initialTab = validTabs.includes(tabParam) ? tabParam : "learning";
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  const { enrollments, applications, rsvps, loading } = useDashboardData();
+  const {
+    requests,
+    requestGroups,
+    loading: swapsLoading,
+    actingId,
+    error: swapsError,
+    refresh: refreshSwaps,
+    acceptRequest,
+    rejectRequest,
+    cancelRequest,
+  } = useDashboardSwapRequests();
+
+  if (loading || swapsLoading) {
     return <PageLoader />;
   }
 
@@ -27,7 +55,7 @@ export default function DashboardPage() {
     {
       icon: ArrowLeftRight,
       label: "Skill Swaps",
-      count: swaps.length,
+      count: requests.length,
       color: "bg-amber-50 text-amber-600",
     },
     {
@@ -44,16 +72,75 @@ export default function DashboardPage() {
     },
   ];
 
+  const priorityItems = [
+    ...requestGroups.incoming.slice(0, 2),
+    ...requestGroups.active.slice(0, 2),
+  ];
+
+  const openDetails = (request) => {
+    window.location.href = `/skill-swap?request=${request.id}`;
+  };
+
+  const openMessages = async (request) => {
+    const conversation = await ensureSwapConversation({
+      counterparty: request.counterparty,
+      exchangeSummary: request.exchange_summary,
+      swapRequestId: request.id,
+    });
+    window.location.href = `/messages?conversation=${encodeURIComponent(conversation.id)}`;
+  };
+
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <PageHeader
         title="My Dashboard"
-        description="Track your learning, swaps, applications, and events."
+        description="Track the swaps that need attention, continue active exchanges, and keep your learning moving."
       />
       <DashboardStats stats={stats} />
 
-      <Tabs defaultValue="learning">
-        <TabsList className="bg-secondary/50 p-1 rounded-xl mb-6">
+      {priorityItems.length > 0 ? (
+        <section className="mb-8 space-y-4">
+          <div className="flex flex-col gap-3 rounded-3xl border border-border/60 bg-white p-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <BellRing className="h-5 w-5 text-amber-600" />
+                <h2 className="font-heading text-xl font-semibold text-foreground">
+                  Skill swap updates
+                </h2>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Respond to new requests and jump straight into active swap conversations from here.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 text-sm font-medium text-teal-700"
+              onClick={() => setActiveTab("swaps")}
+            >
+              Open full swap workspace
+              <ArrowLeftRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {priorityItems.map((request) => (
+              <SwapRequestCard
+                key={`priority-${request.id}`}
+                request={request}
+                acting={actingId === request.id}
+                onAccept={acceptRequest}
+                onReject={rejectRequest}
+                onCancel={cancelRequest}
+                onOpenDetails={openDetails}
+                onOpenMessage={openMessages}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-6 rounded-xl bg-secondary/50 p-1">
           <TabsTrigger
             value="learning"
             className="rounded-lg data-[state=active]:bg-white"
@@ -96,13 +183,13 @@ export default function DashboardPage() {
               {enrollments.map((enrollment) => (
                 <div
                   key={enrollment.id}
-                  className="bg-white rounded-xl border border-border/50 p-4 flex items-center gap-4"
+                  className="flex items-center gap-4 rounded-xl border border-border/50 bg-white p-4"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-                    <BookOpen className="w-5 h-5 text-teal-600" />
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-teal-50">
+                    <BookOpen className="h-5 w-5 text-teal-600" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">Course</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium">Course</div>
                     <div className="text-xs text-muted-foreground">
                       Enrolled{" "}
                       {enrollment.enrolled_date
@@ -111,15 +198,15 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
+                    <div className="h-2 w-24 overflow-hidden rounded-full bg-secondary">
                       <div
-                        className="h-full bg-teal-500 rounded-full"
+                        className="h-full rounded-full bg-teal-500"
                         style={{
                           width: `${enrollment.progress_percent || 0}%`,
                         }}
                       />
                     </div>
-                    <span className="text-xs text-muted-foreground font-medium">
+                    <span className="text-xs font-medium text-muted-foreground">
                       {enrollment.progress_percent || 0}%
                     </span>
                   </div>
@@ -131,40 +218,154 @@ export default function DashboardPage() {
         </TabsContent>
 
         <TabsContent value="swaps">
-          {swaps.length === 0 ? (
-            <EmptyState
-              icon={ArrowLeftRight}
-              title="No skill swaps yet"
-              description="Find someone to swap skills with — it's always free!"
-              actionLabel="Find a Swap"
-              onAction={() => {
-                window.location.href = "/skill-swap";
-              }}
-            />
-          ) : (
-            <div className="space-y-3">
-              {swaps.map((swap) => (
-                <div
-                  key={swap.id}
-                  className="bg-white rounded-xl border border-border/50 p-4 flex items-center gap-4"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
-                    <ArrowLeftRight className="w-5 h-5 text-amber-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">
-                      {swap.requester_skill_name} ↔{" "}
-                      {swap.responder_skill_name || "Pending match"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      with {swap.responder_name || "awaiting partner"}
-                    </div>
-                  </div>
-                  <StatusBadge status={swap.status} />
+          <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-3">
+              <button
+                type="button"
+                className="rounded-2xl border border-border/60 bg-white p-5 text-left"
+                onClick={() => setActiveTab("swaps")}
+              >
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <BellRing className="h-4 w-4 text-amber-600" />
+                  Needs your response
                 </div>
-              ))}
+                <p className="mt-2 font-heading text-3xl font-bold text-foreground">
+                  {requestGroups.incoming.length}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Incoming swap requests waiting on you.
+                </p>
+              </button>
+              <button
+                type="button"
+                className="rounded-2xl border border-border/60 bg-white p-5 text-left"
+                onClick={() => setActiveTab("swaps")}
+              >
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <MessageCircle className="h-4 w-4 text-emerald-600" />
+                  Active swaps
+                </div>
+                <p className="mt-2 font-heading text-3xl font-bold text-foreground">
+                  {requestGroups.active.length}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Open a conversation with your current exchange partners.
+                </p>
+              </button>
+              <button
+                type="button"
+                className="rounded-2xl border border-border/60 bg-white p-5 text-left"
+                onClick={() => setActiveTab("swaps")}
+              >
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <StatusBadge status="pending" label="Outgoing" />
+                </div>
+                <p className="mt-2 font-heading text-3xl font-bold text-foreground">
+                  {requestGroups.outgoing.length}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Requests you have already sent.
+                </p>
+              </button>
             </div>
-          )}
+
+            {swapsError ? (
+              <EmptyState
+                icon={ArrowLeftRight}
+                title="We couldn't load your swap notifications"
+                description={swapsError}
+                actionLabel="Refresh"
+                onAction={refreshSwaps}
+              />
+            ) : requests.length === 0 ? (
+              <EmptyState
+                icon={ArrowLeftRight}
+                title="No skill swaps yet"
+                description="Find someone to swap skills with. Skill swaps always stay free."
+                actionLabel="Find a Swap"
+                onAction={() => {
+                  window.location.href = "/skill-swap";
+                }}
+              />
+            ) : (
+              <div className="space-y-6">
+                {requestGroups.incoming.length > 0 ? (
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status="pending" label="Needs response" />
+                      <h2 className="font-heading text-lg font-semibold text-foreground">
+                        Incoming requests
+                      </h2>
+                    </div>
+                    <div className="space-y-3">
+                      {requestGroups.incoming.map((request) => (
+                        <SwapRequestCard
+                          key={request.id}
+                          request={request}
+                          acting={actingId === request.id}
+                          onAccept={acceptRequest}
+                          onReject={rejectRequest}
+                          onCancel={cancelRequest}
+                          onOpenDetails={openDetails}
+                          onOpenMessage={openMessages}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                {requestGroups.active.length > 0 ? (
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status="accepted" label="Active" />
+                      <h2 className="font-heading text-lg font-semibold text-foreground">
+                        Active swaps
+                      </h2>
+                    </div>
+                    <div className="space-y-3">
+                      {requestGroups.active.map((request) => (
+                        <SwapRequestCard
+                          key={request.id}
+                          request={request}
+                          acting={actingId === request.id}
+                          onAccept={acceptRequest}
+                          onReject={rejectRequest}
+                          onCancel={cancelRequest}
+                          onOpenDetails={openDetails}
+                          onOpenMessage={openMessages}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                {requestGroups.outgoing.length > 0 || requestGroups.closed.length > 0 ? (
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status="closed" label="History" />
+                      <h2 className="font-heading text-lg font-semibold text-foreground">
+                        Outgoing and history
+                      </h2>
+                    </div>
+                    <div className="space-y-3">
+                      {[...requestGroups.outgoing, ...requestGroups.closed].map((request) => (
+                        <SwapRequestCard
+                          key={request.id}
+                          request={request}
+                          acting={actingId === request.id}
+                          onAccept={acceptRequest}
+                          onReject={rejectRequest}
+                          onCancel={cancelRequest}
+                          onOpenDetails={openDetails}
+                          onOpenMessage={openMessages}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="applications">
@@ -183,13 +384,13 @@ export default function DashboardPage() {
               {applications.map((application) => (
                 <div
                   key={application.id}
-                  className="bg-white rounded-xl border border-border/50 p-4 flex items-center gap-4"
+                  className="flex items-center gap-4 rounded-xl border border-border/50 bg-white p-4"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
-                    <Briefcase className="w-5 h-5 text-purple-600" />
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-purple-50">
+                    <Briefcase className="h-5 w-5 text-purple-600" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium">
                       {application.job_title || "Position"}
                     </div>
                     <div className="text-xs text-muted-foreground">
@@ -222,13 +423,13 @@ export default function DashboardPage() {
               {rsvps.map((rsvp) => (
                 <div
                   key={rsvp.id}
-                  className="bg-white rounded-xl border border-border/50 p-4 flex items-center gap-4"
+                  className="flex items-center gap-4 rounded-xl border border-border/50 bg-white p-4"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                    <Calendar className="w-5 h-5 text-blue-600" />
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50">
+                    <Calendar className="h-5 w-5 text-blue-600" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">Event RSVP</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium">Event RSVP</div>
                     <div className="text-xs text-muted-foreground">
                       Registered{" "}
                       {rsvp.registered_date

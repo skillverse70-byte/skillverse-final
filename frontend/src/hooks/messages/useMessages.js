@@ -5,7 +5,7 @@ import {
   sendConversationMessage,
 } from "@/services/messages/messages.service";
 
-export function useMessages() {
+export function useMessages(initialConversationId = "") {
   const [me, setMe] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -24,6 +24,19 @@ export function useMessages() {
         }
         setMe(data.user);
         setConversations(data.conversations);
+        if (initialConversationId) {
+          const preferredConversation = data.conversations.find(
+            (conversation) => String(conversation.id) === String(initialConversationId),
+          );
+          if (preferredConversation) {
+            setSelected(preferredConversation);
+            const nextMessages = await fetchMessages(preferredConversation.id);
+            if (!active) {
+              return;
+            }
+            setMessages(nextMessages);
+          }
+        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -38,7 +51,7 @@ export function useMessages() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [initialConversationId]);
 
   const openConversation = async (conversation) => {
     setSelected(conversation);

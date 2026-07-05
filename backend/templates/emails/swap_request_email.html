@@ -1,0 +1,18 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<p style="margin:0 0 16px;">Hello {{ greeting_name }},</p>
+<p style="margin:0 0 16px;"><strong>{{ requester_name }}</strong> sent you a new skill swap request on SkillVerse.</p>
+{% if message_preview %}
+<p style="margin:0 0 16px;">Their message:</p>
+<p style="margin:0 0 20px;padding:14px 16px;background-color:#f8fafc;border-radius:10px;color:#334155;">
+    {{ message_preview }}
+</p>
+{% endif %}
+<p style="margin:0 0 20px;">
+    <a href="{{ dashboard_url }}" style="display:inline-block;padding:12px 18px;background-color:#0f766e;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;">
+        Review on your dashboard
+    </a>
+</p>
+<p style="margin:0;color:#475569;">{{ free_only_text }}</p>
+{% endblock %}

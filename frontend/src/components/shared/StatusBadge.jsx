@@ -19,10 +19,20 @@ const configs = {
     icon: Clock,
     className: "bg-blue-50 text-blue-700 border-blue-200",
   },
+  accepted: {
+    label: "Accepted",
+    icon: CheckCircle,
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
   rejected: {
     label: "Rejected",
     icon: XCircle,
     className: "bg-red-50 text-red-700 border-red-200",
+  },
+  cancelled: {
+    label: "Cancelled",
+    icon: XCircle,
+    className: "bg-gray-100 text-gray-600 border-gray-200",
   },
   free: {
     label: "Free",

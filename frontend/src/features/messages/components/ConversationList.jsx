@@ -36,7 +36,7 @@ export default function ConversationList({
                   {getOtherName(conversation)}
                 </div>
                 <div className="text-xs text-muted-foreground truncate">
-                  {conversation.last_message || "No messages yet"}
+                  {conversation.last_message || conversation.last_message_preview || "No messages yet"}
                 </div>
               </div>
               {conversation.last_message_date ? (

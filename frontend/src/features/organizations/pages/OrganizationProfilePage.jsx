@@ -37,7 +37,7 @@ export default function OrganizationProfilePage() {
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
       <PageHeader
         title="Organization Profile"
-        description="Manage the public trust-sensitive information learners and applicants will use to evaluate your organization."
+        description="Review and extend the organization details already collected at signup so learners and applicants can evaluate your public trust-sensitive profile."
       />
 
       <div className="space-y-6">

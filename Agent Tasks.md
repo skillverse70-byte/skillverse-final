@@ -289,6 +289,7 @@ At the end of this phase, users can discover relevant peers, understand compatib
 
 ### TASK-401: Implement Matching and Match Suggestion Backend
 - **Phase:** Phase 4: Discovery, Matching, and Swap Request Lifecycle
+- **Status:** Complete
 - **Owner:** Backend
 - **Files touched:** `backend/apps/skills/`, `backend/apps/swaps/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-301`, `TASK-305`
@@ -301,6 +302,7 @@ At the end of this phase, users can discover relevant peers, understand compatib
 
 ### TASK-402: Build Discovery and Match UI
 - **Phase:** Phase 4: Discovery, Matching, and Swap Request Lifecycle
+- **Status:** Complete
 - **Owner:** Frontend
 - **Files touched:** `frontend/src/features/skills/pages/`, `frontend/src/features/skills/components/`, `frontend/src/hooks/skills/`, `frontend/src/services/skills/`
 - **Depends on:** `TASK-401`
@@ -313,6 +315,7 @@ At the end of this phase, users can discover relevant peers, understand compatib
 
 ### TASK-403: Implement Swap Request Lifecycle Backend
 - **Phase:** Phase 4: Discovery, Matching, and Swap Request Lifecycle
+- **Status:** Complete
 - **Owner:** Backend
 - **Files touched:** `backend/apps/swaps/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-401`
@@ -325,6 +328,7 @@ At the end of this phase, users can discover relevant peers, understand compatib
 
 ### TASK-404: Build Swap Request Management UI
 - **Phase:** Phase 4: Discovery, Matching, and Swap Request Lifecycle
+- **Status:** Complete
 - **Owner:** Frontend
 - **Files touched:** `frontend/src/features/skills/pages/`, `frontend/src/features/skills/components/`, `frontend/src/services/skills/`
 - **Depends on:** `TASK-402`, `TASK-403`
@@ -337,6 +341,7 @@ At the end of this phase, users can discover relevant peers, understand compatib
 
 ### TASK-405: Enforce Free-Only Swap Rules and Future Recommendation Compatibility
 - **Phase:** Phase 4: Discovery, Matching, and Swap Request Lifecycle
+- **Status:** Complete
 - **Owner:** Both
 - **Files touched:** `backend/apps/swaps/`, `backend/apps/skills/`, `frontend/src/features/skills/`, `frontend/src/lib/`
 - **Depends on:** `TASK-403`, `TASK-404`

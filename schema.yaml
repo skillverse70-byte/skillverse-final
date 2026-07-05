@@ -647,6 +647,197 @@ paths:
                 items:
                   $ref: '#/components/schemas/Skill'
           description: ''
+  /api/swaps/match-suggestions/:
+    get:
+      operationId: swaps_match_suggestions_list
+      tags:
+      - swaps
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchSuggestion'
+          description: ''
+  /api/swaps/requests/:
+    get:
+      operationId: swaps_requests_list
+      tags:
+      - swaps
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillSwapRequest'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillSwapRequest'
+          description: ''
+    post:
+      operationId: swaps_requests_create
+      tags:
+      - swaps
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillSwapRequestCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SkillSwapRequestCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SkillSwapRequestCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillSwapRequest'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillSwapRequest'
+          description: ''
+  /api/swaps/requests/{id}/:
+    get:
+      operationId: swaps_requests_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - swaps
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillSwapRequest'
+          description: ''
+  /api/swaps/requests/{id}/accept/:
+    post:
+      operationId: swaps_requests_accept_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - swaps
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillSwapActionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SkillSwapActionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SkillSwapActionRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillSwapRequest'
+          description: ''
+  /api/swaps/requests/{id}/cancel/:
+    post:
+      operationId: swaps_requests_cancel_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - swaps
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillSwapActionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SkillSwapActionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SkillSwapActionRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillSwapRequest'
+          description: ''
+  /api/swaps/requests/{id}/reject/:
+    post:
+      operationId: swaps_requests_reject_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - swaps
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillSwapActionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SkillSwapActionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SkillSwapActionRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillSwapRequest'
+          description: ''
 components:
   schemas:
     AuthUser:
@@ -772,6 +963,103 @@ components:
       properties:
         refresh:
           type: string
+    MatchSuggestion:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        suggestion_type:
+          allOf:
+          - $ref: '#/components/schemas/SuggestionTypeEnum'
+          readOnly: true
+        score:
+          type: integer
+          readOnly: true
+        rationale:
+          type: string
+          readOnly: true
+        target_user:
+          allOf:
+          - $ref: '#/components/schemas/MatchTargetUser'
+          readOnly: true
+        can_learn_from_match:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+          readOnly: true
+        can_teach_match:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+          readOnly: true
+        shared_fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldInterest'
+          readOnly: true
+        shared_skill_interests:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+          readOnly: true
+        target_offered_skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+          readOnly: true
+        target_requested_skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+          readOnly: true
+        target_field_interests:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldInterest'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - can_learn_from_match
+      - can_teach_match
+      - created_at
+      - id
+      - rationale
+      - score
+      - shared_fields
+      - shared_skill_interests
+      - suggestion_type
+      - target_field_interests
+      - target_offered_skills
+      - target_requested_skills
+      - target_user
+      - updated_at
+    MatchTargetUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        bio:
+          type: string
+        interests_summary:
+          type: string
+        experience_level:
+          type: string
+      required:
+      - bio
+      - experience_level
+      - full_name
+      - id
+      - interests_summary
     OrganizationProfile:
       type: object
       properties:
@@ -1282,6 +1570,204 @@ components:
       - id
       - name
       - slug
+    SkillSwapActionRequest:
+      type: object
+      properties:
+        note:
+          type: string
+          maxLength: 255
+    SkillSwapRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        requester:
+          allOf:
+          - $ref: '#/components/schemas/SwapParticipant'
+          readOnly: true
+        recipient:
+          allOf:
+          - $ref: '#/components/schemas/SwapParticipant'
+          readOnly: true
+        counterparty:
+          allOf:
+          - $ref: '#/components/schemas/SwapParticipant'
+          readOnly: true
+        my_role:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/SkillSwapStatusEnum'
+          readOnly: true
+        my_teaching_skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+          readOnly: true
+        my_learning_skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+          readOnly: true
+        exchange_summary:
+          type: string
+          readOnly: true
+        message:
+          type: string
+          readOnly: true
+        requester_note:
+          type: string
+          readOnly: true
+        recipient_note:
+          type: string
+          readOnly: true
+        cancelled_reason:
+          type: string
+          readOnly: true
+        match_suggestion:
+          type: integer
+          readOnly: true
+          nullable: true
+        responded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        can_accept:
+          type: boolean
+          readOnly: true
+        can_reject:
+          type: boolean
+          readOnly: true
+        can_cancel:
+          type: boolean
+          readOnly: true
+        status_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillSwapStatusHistory'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - can_accept
+      - can_cancel
+      - can_reject
+      - cancelled_reason
+      - counterparty
+      - created_at
+      - exchange_summary
+      - id
+      - match_suggestion
+      - message
+      - my_learning_skills
+      - my_role
+      - my_teaching_skills
+      - recipient
+      - recipient_note
+      - requester
+      - requester_note
+      - responded_at
+      - status
+      - status_history
+      - updated_at
+    SkillSwapRequestCreateRequest:
+      type: object
+      properties:
+        recipient_user_id:
+          type: integer
+        match_suggestion_id:
+          type: integer
+        message:
+          type: string
+        requester_note:
+          type: string
+          maxLength: 255
+      required:
+      - recipient_user_id
+    SkillSwapStatusEnum:
+      enum:
+      - pending
+      - accepted
+      - rejected
+      - cancelled
+      - completed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `accepted` - Accepted
+        * `rejected` - Rejected
+        * `cancelled` - Cancelled
+        * `completed` - Completed
+    SkillSwapStatusHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        from_status:
+          allOf:
+          - $ref: '#/components/schemas/SkillSwapStatusEnum'
+          readOnly: true
+        to_status:
+          allOf:
+          - $ref: '#/components/schemas/SkillSwapStatusEnum'
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        changed_by_user:
+          allOf:
+          - $ref: '#/components/schemas/SwapParticipant'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - changed_by_user
+      - created_at
+      - from_status
+      - id
+      - note
+      - to_status
+    SuggestionTypeEnum:
+      enum:
+      - direct_swap
+      - partial_overlap
+      - field_relevant
+      type: string
+      description: |-
+        * `direct_swap` - Direct Swap
+        * `partial_overlap` - Partial Overlap
+        * `field_relevant` - Field Relevant
+    SwapParticipant:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        bio:
+          type: string
+        interests_summary:
+          type: string
+        experience_level:
+          type: string
+      required:
+      - bio
+      - experience_level
+      - full_name
+      - id
+      - interests_summary
     TestEmailRequestRequest:
       type: object
       properties:

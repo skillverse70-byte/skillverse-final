@@ -1,20 +1,12 @@
-import { authService } from "@/services/auth/auth.service";
-import { appClient } from "@/services/appClient";
+import { authenticatedApiRequest } from "@/services/auth/backend-auth-client";
 
 export async function fetchDashboardData() {
-  const user = await authService.me();
-  const [enrollments, swaps, applications, rsvps] = await Promise.all([
-    appClient.entities.Enrollment.filter({ user_id: user.id }, "-created_date", 20),
-    appClient.entities.SkillSwap.list("-created_date", 20),
-    appClient.entities.JobApplication.filter({ user_id: user.id }, "-created_date", 20),
-    appClient.entities.RSVP.filter({ user_id: user.id }, "-created_date", 20),
-  ]);
+  const user = await authenticatedApiRequest("/auth/me/", { method: "GET" });
 
   return {
     user,
-    enrollments,
-    swaps,
-    applications,
-    rsvps,
+    enrollments: [],
+    applications: [],
+    rsvps: [],
   };
 }
