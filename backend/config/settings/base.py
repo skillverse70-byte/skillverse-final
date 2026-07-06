@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "apps.organizations",
     "apps.skills",
     "apps.swaps",
+    "apps.messaging",
     "corsheaders",
     "rest_framework",
     "drf_spectacular",

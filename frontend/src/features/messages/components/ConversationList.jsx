@@ -1,21 +1,21 @@
 import React from "react";
-import { MessageCircle, User } from "lucide-react";
+import { ArrowLeftRight, MessageCircle, User } from "lucide-react";
 import moment from "moment";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 export default function ConversationList({
   conversations,
   selected,
   onSelect,
-  getOtherName,
 }) {
   return (
     <div className="flex-1 overflow-y-auto">
       {conversations.length === 0 ? (
         <div className="p-6 text-center">
-          <MessageCircle className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+          <MessageCircle className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />
           <p className="text-sm text-muted-foreground">No conversations yet</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Start a skill swap to begin chatting
+          <p className="mt-1 text-xs text-muted-foreground">
+            Accept a skill swap to unlock direct coordination here.
           </p>
         </div>
       ) : (
@@ -23,25 +23,34 @@ export default function ConversationList({
           <button
             key={conversation.id}
             onClick={() => onSelect(conversation)}
-            className={`w-full p-4 text-left hover:bg-secondary/50 transition-colors border-b border-border/50 ${
+            className={`w-full border-b border-border/50 p-4 text-left transition-colors hover:bg-secondary/50 ${
               selected?.id === conversation.id ? "bg-teal-50" : ""
             }`}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center flex-shrink-0">
-                <User className="w-5 h-5 text-teal-600" />
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-teal-50">
+                <User className="h-5 w-5 text-teal-600" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-medium text-sm truncate">
-                  {getOtherName(conversation)}
+                <div className="mb-1 flex items-center gap-2">
+                  <div className="truncate text-sm font-medium">
+                    {conversation.counterparty?.full_name || "Swap partner"}
+                  </div>
+                  <StatusBadge status="accepted" label="Active" />
                 </div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {conversation.last_message || conversation.last_message_preview || "No messages yet"}
+                <div className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
+                  <ArrowLeftRight className="h-3.5 w-3.5" />
+                  {conversation.exchange_summary}
+                </div>
+                <div className="truncate text-xs text-muted-foreground">
+                  {conversation.latest_message?.content ||
+                    conversation.latest_message?.resource_label ||
+                    "No messages yet"}
                 </div>
               </div>
-              {conversation.last_message_date ? (
-                <span className="text-xs text-muted-foreground flex-shrink-0">
-                  {moment(conversation.last_message_date).fromNow()}
+              {conversation.latest_message?.created_at ? (
+                <span className="flex-shrink-0 text-xs text-muted-foreground">
+                  {moment(conversation.latest_message.created_at).fromNow()}
                 </span>
               ) : null}
             </div>

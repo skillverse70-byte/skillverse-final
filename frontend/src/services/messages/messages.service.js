@@ -1,28 +1,51 @@
-import { authService } from "@/services/auth/auth.service";
-import { appClient } from "@/services/appClient";
+import { authenticatedApiRequest } from "@/services/auth/backend-auth-client";
 
 export async function fetchConversations() {
-  const user = await authService.me();
-  const conversations = await appClient.entities.Conversation.list(
-    "-last_message_date",
-    50,
-  );
+  const [user, conversations] = await Promise.all([
+    authenticatedApiRequest("/auth/me/", { method: "GET" }),
+    authenticatedApiRequest("/messages/threads/", { method: "GET" }),
+  ]);
 
   return { user, conversations };
 }
 
-export function fetchMessages(conversationId) {
-  return appClient.entities.Message.filter(
-    { conversation_id: conversationId },
-    "created_date",
-    100,
-  );
+export function fetchConversation(conversationId) {
+  return authenticatedApiRequest(`/messages/threads/${conversationId}/`, {
+    method: "GET",
+  });
 }
 
-export function sendConversationMessage({ userId, conversationId, content }) {
-  return appClient.entities.Message.create({
-    sender_id: userId,
-    conversation_id: conversationId,
-    content,
+export function fetchMessages(conversationId) {
+  return authenticatedApiRequest(`/messages/threads/${conversationId}/messages/`, {
+    method: "GET",
+  });
+}
+
+export function createConversation({ swapRequestId }) {
+  return authenticatedApiRequest("/messages/threads/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ swap_request_id: swapRequestId }),
+  });
+}
+
+export function sendConversationMessage({
+  conversationId,
+  content,
+  resourceUrl = "",
+  resourceLabel = "",
+}) {
+  return authenticatedApiRequest(`/messages/threads/${conversationId}/messages/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      content,
+      resource_url: resourceUrl,
+      resource_label: resourceLabel,
+    }),
   });
 }

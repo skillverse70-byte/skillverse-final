@@ -45,8 +45,6 @@ export default function SkillSwap() {
 
   const openMessages = async (request) => {
     const conversation = await ensureSwapConversation({
-      counterparty: request.counterparty,
-      exchangeSummary: request.exchange_summary,
       swapRequestId: request.id,
     });
     window.location.href = `/messages?conversation=${encodeURIComponent(conversation.id)}`;

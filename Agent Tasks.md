@@ -369,6 +369,7 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 
 ### TASK-501: Implement Messaging Backend Contracts
 - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
+- **Status:** Complete
 - **Owner:** Backend
 - **Files touched:** `backend/apps/messaging/`, `backend/config/urls.py`, `backend/config/routing.py`, `schema.yaml`
 - **Depends on:** `TASK-403`
@@ -381,6 +382,7 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 
 ### TASK-502: Build Messaging UI and Service Integration
 - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
+- **Status:** Complete
 - **Owner:** Frontend
 - **Files touched:** `frontend/src/features/messages/`, `frontend/src/hooks/messages/`, `frontend/src/services/messages/`, `frontend/src/lib/realtime/`
 - **Depends on:** `TASK-501`

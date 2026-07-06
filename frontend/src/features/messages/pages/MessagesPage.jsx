@@ -2,7 +2,7 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Send } from "lucide-react";
+import { Link2, MessageCircle, Send } from "lucide-react";
 import EmptyState from "@/components/shared/EmptyState";
 import PageLoader from "@/components/shared/PageLoader";
 import PageHeader from "@/components/shared/PageHeader";
@@ -22,39 +22,42 @@ export default function MessagesPage() {
     messages,
     newMessage,
     setNewMessage,
+    resourceUrl,
+    setResourceUrl,
+    resourceLabel,
+    setResourceLabel,
+    showResourceFields,
+    setShowResourceFields,
     loading,
+    sending,
+    error,
     openConversation,
     submitMessage,
   } = useMessages(initialConversationId);
-
-  const getOtherName = (conversation) => {
-    if (!me || !conversation.participant_names) {
-      return conversation.title || "User";
-    }
-    const index = conversation.participant_ids?.indexOf(me.id);
-    return conversation.participant_names?.[index === 0 ? 1 : 0] || conversation.title || "User";
-  };
 
   if (loading) {
     return <PageLoader />;
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      <PageHeader title="Messages" />
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <PageHeader
+        title="Messages"
+        description="Coordinate accepted swaps, share useful links, and keep each exchange moving."
+      />
 
       <div
-        className="bg-white rounded-2xl border border-border/50 overflow-hidden"
+        className="overflow-hidden rounded-2xl border border-border/50 bg-white"
         style={{ height: "calc(100vh - 220px)" }}
       >
         <div className="flex h-full">
           <div
-            className={`w-full sm:w-80 border-r border-border/50 flex-shrink-0 flex flex-col ${
+            className={`flex w-full flex-shrink-0 flex-col border-r border-border/50 sm:w-80 ${
               selected ? "hidden sm:flex" : "flex"
             }`}
           >
-            <div className="p-4 border-b border-border/50">
-              <h2 className="font-heading font-semibold text-sm text-muted-foreground">
+            <div className="border-b border-border/50 p-4">
+              <h2 className="font-heading text-sm font-semibold text-muted-foreground">
                 Conversations
               </h2>
             </div>
@@ -62,21 +65,20 @@ export default function MessagesPage() {
               conversations={conversations}
               selected={selected}
               onSelect={openConversation}
-              getOtherName={getOtherName}
             />
           </div>
 
           <div
-            className={`flex-1 flex flex-col ${
+            className={`flex flex-1 flex-col ${
               !selected ? "hidden sm:flex" : "flex"
             }`}
           >
             {!selected ? (
-              <div className="flex-1 flex items-center justify-center">
+              <div className="flex flex-1 items-center justify-center">
                 <EmptyState
                   icon={MessageCircle}
                   title="Select a conversation"
-                  description="Choose a conversation from the sidebar to start chatting."
+                  description="Choose a swap thread from the sidebar to start coordinating."
                 />
               </div>
             ) : (
@@ -86,17 +88,46 @@ export default function MessagesPage() {
                   selected={selected}
                   messages={messages}
                   onBack={() => setSelected(null)}
-                  getOtherName={getOtherName}
                 />
 
-                <div className="p-4 border-t border-border/50">
+                <div className="border-t border-border/50 p-4">
+                  {error ? (
+                    <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      {error}
+                    </div>
+                  ) : null}
+
+                  {showResourceFields ? (
+                    <div className="mb-3 grid gap-2 sm:grid-cols-2">
+                      <Input
+                        placeholder="Resource URL"
+                        value={resourceUrl}
+                        onChange={(event) => setResourceUrl(event.target.value)}
+                      />
+                      <Input
+                        placeholder="Optional label"
+                        value={resourceLabel}
+                        onChange={(event) => setResourceLabel(event.target.value)}
+                      />
+                    </div>
+                  ) : null}
+
                   <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowResourceFields((current) => !current)}
+                      title="Share a resource link"
+                    >
+                      <Link2 className="h-4 w-4" />
+                    </Button>
                     <Input
                       placeholder="Type a message..."
                       value={newMessage}
                       onChange={(event) => setNewMessage(event.target.value)}
                       onKeyDown={(event) =>
-                        event.key === "Enter" && submitMessage()
+                        event.key === "Enter" && !event.shiftKey && submitMessage()
                       }
                       className="flex-1"
                     />
@@ -104,8 +135,9 @@ export default function MessagesPage() {
                       onClick={submitMessage}
                       className="bg-teal-600 hover:bg-teal-700"
                       size="icon"
+                      disabled={sending}
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
