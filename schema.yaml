@@ -797,6 +797,115 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserSkill'
           description: ''
+  /api/sessions/:
+    get:
+      operationId: sessions_list
+      tags:
+      - sessions
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LearningSession'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningSession'
+          description: ''
+    post:
+      operationId: sessions_create
+      tags:
+      - sessions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LearningSessionCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LearningSessionCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LearningSessionCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LearningSession'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningSession'
+          description: ''
+  /api/sessions/{id}/:
+    get:
+      operationId: sessions_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - sessions
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningSession'
+          description: ''
+    patch:
+      operationId: sessions_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - sessions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLearningSessionUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLearningSessionUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLearningSessionUpdateRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningSession'
+          description: ''
   /api/skills/catalog/:
     get:
       operationId: skills_catalog_list
@@ -1125,6 +1234,147 @@ components:
       required:
       - service
       - status
+    LearningSession:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        swap_request:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/LearningSessionStatusEnum'
+          readOnly: true
+        scheduled_start_at:
+          type: string
+          format: date-time
+          readOnly: true
+        scheduled_end_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        timezone:
+          type: string
+          readOnly: true
+        meeting_url:
+          type: string
+          format: uri
+          readOnly: true
+        meeting_notes:
+          type: string
+          readOnly: true
+        location_note:
+          type: string
+          readOnly: true
+        completion_notes:
+          type: string
+          readOnly: true
+        metadata:
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionParticipant'
+          readOnly: true
+        counterparty:
+          allOf:
+          - $ref: '#/components/schemas/SessionParticipant'
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - cancelled_at
+      - completed_at
+      - completion_notes
+      - counterparty
+      - created_at
+      - description
+      - id
+      - location_note
+      - meeting_notes
+      - meeting_url
+      - metadata
+      - participants
+      - scheduled_end_at
+      - scheduled_start_at
+      - status
+      - swap_request
+      - timezone
+      - title
+      - updated_at
+    LearningSessionCreateRequest:
+      type: object
+      properties:
+        swap_request_id:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+        scheduled_start_at:
+          type: string
+          format: date-time
+        scheduled_end_at:
+          type: string
+          format: date-time
+          nullable: true
+        timezone:
+          type: string
+          maxLength: 64
+        meeting_url:
+          type: string
+          format: uri
+        meeting_notes:
+          type: string
+          maxLength: 255
+        location_note:
+          type: string
+          maxLength: 255
+        metadata: {}
+      required:
+      - scheduled_start_at
+      - swap_request_id
+      - title
+    LearningSessionStatusEnum:
+      enum:
+      - planned
+      - confirmed
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `planned` - Planned
+        * `confirmed` - Confirmed
+        * `completed` - Completed
+        * `cancelled` - Cancelled
     LogoutRequest:
       type: object
       properties:
@@ -1664,6 +1914,39 @@ components:
           minLength: 1
       required:
       - email
+    PatchedLearningSessionUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+        scheduled_start_at:
+          type: string
+          format: date-time
+        scheduled_end_at:
+          type: string
+          format: date-time
+          nullable: true
+        timezone:
+          type: string
+          maxLength: 64
+        meeting_url:
+          type: string
+          format: uri
+        meeting_notes:
+          type: string
+          maxLength: 255
+        location_note:
+          type: string
+          maxLength: 255
+        completion_notes:
+          type: string
+        status:
+          $ref: '#/components/schemas/LearningSessionStatusEnum'
+        metadata: {}
     PatchedOrganizationProfileUpdateRequest:
       type: object
       properties:
@@ -1840,6 +2123,16 @@ components:
         * `regular_user` - Regular User
         * `organization` - Organization
         * `admin` - Admin
+    SessionParticipant:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+      required:
+      - full_name
+      - id
     Skill:
       type: object
       properties:

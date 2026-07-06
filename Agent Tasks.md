@@ -420,8 +420,9 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 - **Description:** Connect the frontend messaging experience to the realtime-ready socket and shared-state foundation without inventing unsupported contracts.
 
 ### TASK-505: Implement Session Planning and Session Record Backend
-- **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
-- **Owner:** Backend
+  - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
+  - **Status:** Complete
+  - **Owner:** Backend
 - **Files touched:** `backend/apps/sessions/`, `backend/apps/swaps/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-403`
 - **Spec:** `PRD.md` Sections `5.2`, `6.4`, `8`
@@ -432,8 +433,9 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 - **Description:** Build the backend record model for session planning, completion tracking, and dashboard visibility.
 
 ### TASK-506: Build Session Planning and Meeting-Link UI
-- **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
-- **Owner:** Frontend
+  - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
+  - **Status:** Complete
+  - **Owner:** Frontend
 - **Files touched:** `frontend/src/features/messages/`, `frontend/src/features/dashboard/`, `frontend/src/services/messages/`, `frontend/src/services/dashboard/`
 - **Depends on:** `TASK-505`, `TASK-502`
 - **Spec:** `PRD.md` Sections `5.2`, `6.4`; `schema.yaml` session endpoints when added

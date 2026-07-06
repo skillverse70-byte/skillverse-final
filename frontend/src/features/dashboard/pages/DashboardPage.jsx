@@ -7,6 +7,9 @@ import {
   BookOpen,
   Briefcase,
   Calendar,
+  CheckCircle2,
+  ExternalLink,
+  Link2,
   MessageCircle,
 } from "lucide-react";
 import StatusBadge from "@/components/shared/StatusBadge";
@@ -28,7 +31,7 @@ export default function DashboardPage() {
   const initialTab = validTabs.includes(tabParam) ? tabParam : "learning";
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  const { enrollments, applications, rsvps, loading } = useDashboardData();
+  const { enrollments, applications, rsvps, sessions = [], loading } = useDashboardData();
   const {
     requests,
     requestGroups,
@@ -76,6 +79,19 @@ export default function DashboardPage() {
     ...requestGroups.incoming.slice(0, 2),
     ...requestGroups.active.slice(0, 2),
   ];
+  const upcomingSessions = sessions
+    .filter((session) => session.status === "planned" || session.status === "confirmed")
+    .sort(
+      (left, right) =>
+        new Date(left.scheduled_start_at).getTime() - new Date(right.scheduled_start_at).getTime(),
+    );
+  const completedSessions = sessions
+    .filter((session) => session.status === "completed")
+    .sort(
+      (left, right) =>
+        new Date(right.completed_at || right.updated_at).getTime() -
+        new Date(left.completed_at || left.updated_at).getTime(),
+    );
 
   const openDetails = (request) => {
     window.location.href = `/skill-swap?request=${request.id}`;
@@ -84,6 +100,13 @@ export default function DashboardPage() {
   const openMessages = async (request) => {
     const conversation = await ensureSwapConversation({
       swapRequestId: request.id,
+    });
+    window.location.href = `/messages?conversation=${encodeURIComponent(conversation.id)}`;
+  };
+
+  const openSessionConversation = async (session) => {
+    const conversation = await ensureSwapConversation({
+      swapRequestId: session.swap_request,
     });
     window.location.href = `/messages?conversation=${encodeURIComponent(conversation.id)}`;
   };
@@ -166,18 +189,143 @@ export default function DashboardPage() {
         </TabsList>
 
         <TabsContent value="learning">
-          {enrollments.length === 0 ? (
-            <EmptyState
-              icon={BookOpen}
-              title="No courses yet"
-              description="Browse courses and start learning something new."
-              actionLabel="Browse Courses"
-              onAction={() => {
-                window.location.href = "/courses";
-              }}
-            />
-          ) : (
-            <div className="space-y-3">
+          <div className="space-y-6">
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-teal-600" />
+                <h2 className="font-heading text-lg font-semibold text-foreground">
+                  Learning sessions
+                </h2>
+              </div>
+
+              {upcomingSessions.length === 0 && completedSessions.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border/60 bg-white p-5 text-sm text-muted-foreground">
+                  No learning sessions planned yet. Once a swap is accepted, use Messages to lock in time and store the meeting link.
+                </div>
+              ) : (
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <div className="space-y-3 rounded-2xl border border-border/60 bg-white p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-heading text-base font-semibold text-foreground">
+                          Upcoming sessions
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Your next confirmed or planned exchange sessions.
+                        </p>
+                      </div>
+                      <StatusBadge status="planned" label={`${upcomingSessions.length}`} />
+                    </div>
+
+                    {upcomingSessions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Nothing is scheduled right now.
+                      </p>
+                    ) : (
+                      upcomingSessions.slice(0, 4).map((session) => (
+                        <div
+                          key={session.id}
+                          className="rounded-2xl border border-border/50 bg-secondary/20 p-4"
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-medium text-foreground">{session.title}</h4>
+                            <StatusBadge
+                              status={session.status}
+                              label={session.status === "confirmed" ? "Confirmed" : "Planned"}
+                            />
+                          </div>
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            With {session.counterparty?.full_name || "your swap partner"} on{" "}
+                            {moment(session.scheduled_start_at).format("ddd, MMM D · h:mm A")}
+                            {session.timezone ? ` (${session.timezone})` : ""}
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {session.meeting_url ? (
+                              <a
+                                href={session.meeting_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium text-teal-700"
+                              >
+                                <Link2 className="h-4 w-4" />
+                                Open link
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            ) : null}
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium text-foreground"
+                              onClick={() => openSessionConversation(session)}
+                            >
+                              <MessageCircle className="h-4 w-4 text-teal-600" />
+                              Open conversation
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="space-y-3 rounded-2xl border border-border/60 bg-white p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-heading text-base font-semibold text-foreground">
+                          Completed records
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          A lightweight record of what was finished.
+                        </p>
+                      </div>
+                      <StatusBadge status="completed" label={`${completedSessions.length}`} />
+                    </div>
+
+                    {completedSessions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Completed sessions will show up here after you wrap them up.
+                      </p>
+                    ) : (
+                      completedSessions.slice(0, 4).map((session) => (
+                        <div
+                          key={session.id}
+                          className="rounded-2xl border border-border/50 bg-secondary/20 p-4"
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-medium text-foreground">{session.title}</h4>
+                            <StatusBadge status="completed" />
+                          </div>
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            Completed with {session.counterparty?.full_name || "your swap partner"}{" "}
+                            {moment(session.completed_at || session.updated_at).fromNow()}.
+                          </p>
+                          {session.completion_notes ? (
+                            <div className="mt-3 rounded-xl bg-white px-3 py-2 text-sm text-foreground">
+                              <div className="mb-1 inline-flex items-center gap-2 font-medium text-teal-700">
+                                <CheckCircle2 className="h-4 w-4" />
+                                Completion notes
+                              </div>
+                              <p>{session.completion_notes}</p>
+                            </div>
+                          ) : null}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {enrollments.length === 0 ? (
+              <EmptyState
+                icon={BookOpen}
+                title="No courses yet"
+                description="Browse courses and start learning something new."
+                actionLabel="Browse Courses"
+                onAction={() => {
+                  window.location.href = "/courses";
+                }}
+              />
+            ) : (
+              <div className="space-y-3">
               {enrollments.map((enrollment) => (
                 <div
                   key={enrollment.id}
@@ -211,8 +359,9 @@ export default function DashboardPage() {
                   <StatusBadge status={enrollment.status} />
                 </div>
               ))}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="swaps">

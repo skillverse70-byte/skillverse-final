@@ -1,6 +1,6 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertCircle, Calendar } from "lucide-react";
 import { getOrganizationTrustBadgeState } from "@/lib/trust-state";
 
 const configs = {
@@ -18,6 +18,16 @@ const configs = {
     label: "Pending",
     icon: Clock,
     className: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+  planned: {
+    label: "Planned",
+    icon: Calendar,
+    className: "bg-sky-50 text-sky-700 border-sky-200",
+  },
+  confirmed: {
+    label: "Confirmed",
+    icon: CheckCircle,
+    className: "bg-teal-50 text-teal-700 border-teal-200",
   },
   accepted: {
     label: "Accepted",

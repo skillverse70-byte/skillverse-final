@@ -7,6 +7,7 @@ export default function MessageThread({
   selected,
   messages,
   connectionState = "idle",
+  headerActions = null,
   onBack,
 }) {
   const connectionCopy =
@@ -40,6 +41,11 @@ export default function MessageThread({
             </span>
           </div>
         </div>
+        {headerActions ? (
+          <div className="ml-auto flex flex-shrink-0 items-center gap-2">
+            {headerActions}
+          </div>
+        ) : null}
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">

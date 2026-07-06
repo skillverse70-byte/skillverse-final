@@ -9,6 +9,8 @@ import PageHeader from "@/components/shared/PageHeader";
 import ConversationList from "@/features/messages/components/ConversationList";
 import MessageThread from "@/features/messages/components/MessageThread";
 import { useMessages } from "@/hooks/messages/useMessages";
+import { useSwapSessions } from "@/hooks/messages/useSwapSessions";
+import SessionPlannerPanel from "@/features/messages/components/SessionPlannerPanel";
 
 export default function MessagesPage() {
   const location = useLocation();
@@ -35,6 +37,43 @@ export default function MessagesPage() {
     openConversation,
     submitMessage,
   } = useMessages(initialConversationId);
+  const {
+    sessions,
+    loading: sessionsLoading,
+    saving: sessionsSaving,
+    error: sessionsError,
+    createPlannedSession,
+    patchSession,
+  } = useSwapSessions(selected?.swap_request || null);
+
+  const handleCreateSession = async (payload) => {
+    const normalizedPayload = {
+      ...payload,
+      scheduled_start_at: new Date(payload.scheduled_start_at).toISOString(),
+      scheduled_end_at: payload.scheduled_end_at
+        ? new Date(payload.scheduled_end_at).toISOString()
+        : null,
+      metadata: {
+        delivery_mode: payload.meeting_url ? "external_link" : "coordination_only",
+      },
+    };
+    await createPlannedSession(normalizedPayload);
+  };
+
+  const handleConfirmSession = async (session) => {
+    await patchSession(session.id, { status: "confirmed" });
+  };
+
+  const handleCompleteSession = async (session, completionNotes) => {
+    await patchSession(session.id, {
+      status: "completed",
+      completion_notes: completionNotes,
+    });
+  };
+
+  const handleCancelSession = async (session) => {
+    await patchSession(session.id, { status: "cancelled" });
+  };
 
   if (loading) {
     return <PageLoader />;
@@ -89,6 +128,18 @@ export default function MessagesPage() {
                   selected={selected}
                   messages={messages}
                   connectionState={connectionState}
+                  headerActions={
+                    <SessionPlannerPanel
+                      sessions={sessions}
+                      loading={sessionsLoading}
+                      saving={sessionsSaving}
+                      error={sessionsError}
+                      onCreateSession={handleCreateSession}
+                      onConfirmSession={handleConfirmSession}
+                      onCompleteSession={handleCompleteSession}
+                      onCancelSession={handleCancelSession}
+                    />
+                  }
                   onBack={() => setSelected(null)}
                 />
 

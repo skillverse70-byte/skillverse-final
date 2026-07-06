@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "apps.skills",
     "apps.swaps",
     "apps.messaging",
+    "apps.sessions",
     "corsheaders",
     "rest_framework",
     "drf_spectacular",
@@ -190,6 +191,7 @@ SPECTACULAR_SETTINGS = {
         "OrganizationTypeEnum": "apps.common.enums.OrganizationType",
         "OrganizationVerificationStatusEnum": "apps.common.enums.OrganizationVerificationStatus",
         "SkillSwapStatusEnum": "apps.common.enums.SkillSwapStatus",
+        "LearningSessionStatusEnum": "apps.common.enums.LearningSessionStatus",
     },
 }
 
