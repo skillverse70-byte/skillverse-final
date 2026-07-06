@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeftRight,
   Calendar,
@@ -21,6 +22,7 @@ export default function SkillSwap() {
   const location = useLocation();
   const initialSearch = new URLSearchParams(location.search).get("skill") || "";
   const highlightedRequestId = new URLSearchParams(location.search).get("request") || "";
+  const [activeTab, setActiveTab] = useState("incoming");
   const {
     filteredMatches,
     hasMatches,
@@ -38,6 +40,35 @@ export default function SkillSwap() {
     rejectRequest,
     cancelRequest,
   } = useSkillSwapHub(initialSearch);
+
+  const defaultTab = useMemo(() => {
+    if (!highlightedRequestId) {
+      return "incoming";
+    }
+    const allRequests = [
+      ...requestGroups.incoming,
+      ...requestGroups.active,
+      ...requestGroups.outgoing,
+      ...requestGroups.closed,
+    ];
+    const highlightedRequest = allRequests.find(
+      (request) => String(request.id) === highlightedRequestId,
+    );
+    if (!highlightedRequest) {
+      return "incoming";
+    }
+    if (highlightedRequest.status === "accepted") {
+      return "active";
+    }
+    if (highlightedRequest.my_role === "recipient" && highlightedRequest.status === "pending") {
+      return "incoming";
+    }
+    return "history";
+  }, [highlightedRequestId, requestGroups]);
+
+  React.useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
 
   const openDetails = (request) => {
     window.location.href = `/skill-swap?request=${request.id}`;
@@ -170,15 +201,36 @@ export default function SkillSwap() {
           onAction={refresh}
         />
       ) : (
-        <div className="space-y-8">
-          {requestGroups.incoming.length > 0 ? (
-            <section className="space-y-4">
-              <div className="flex items-center gap-2">
-                <StatusBadge status="pending" label="Needs response" />
-                <h2 className="font-heading text-xl font-semibold text-foreground">
-                  Incoming requests
-                </h2>
-              </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="h-auto flex-wrap justify-start gap-2 rounded-2xl bg-white p-2">
+            <TabsTrigger value="incoming" className="rounded-xl px-4 py-2">
+              Incoming
+              {requestGroups.incoming.length ? ` (${requestGroups.incoming.length})` : ""}
+            </TabsTrigger>
+            <TabsTrigger value="active" className="rounded-xl px-4 py-2">
+              Active swaps
+              {requestGroups.active.length ? ` (${requestGroups.active.length})` : ""}
+            </TabsTrigger>
+            <TabsTrigger value="suggested" className="rounded-xl px-4 py-2">
+              Suggested partners
+              {filteredMatches.length ? ` (${filteredMatches.length})` : ""}
+            </TabsTrigger>
+            <TabsTrigger value="history" className="rounded-xl px-4 py-2">
+              Request history
+              {requestGroups.outgoing.length + requestGroups.closed.length
+                ? ` (${requestGroups.outgoing.length + requestGroups.closed.length})`
+                : ""}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="incoming" className="space-y-4">
+            <div className="flex items-center gap-2">
+              <StatusBadge status="pending" label="Needs response" />
+              <h2 className="font-heading text-xl font-semibold text-foreground">
+                Incoming requests
+              </h2>
+            </div>
+            {requestGroups.incoming.length > 0 ? (
               <div className="space-y-4">
                 {requestGroups.incoming.map((request) => (
                   <SwapRequestCard
@@ -194,17 +246,23 @@ export default function SkillSwap() {
                   />
                 ))}
               </div>
-            </section>
-          ) : null}
+            ) : (
+              <EmptyState
+                icon={ArrowLeftRight}
+                title="No incoming requests"
+                description="New swap requests that need your response will appear here."
+              />
+            )}
+          </TabsContent>
 
-          {requestGroups.active.length > 0 ? (
-            <section className="space-y-4">
-              <div className="flex items-center gap-2">
-                <StatusBadge status="accepted" label="Active" />
-                <h2 className="font-heading text-xl font-semibold text-foreground">
-                  Active swaps
-                </h2>
-              </div>
+          <TabsContent value="active" className="space-y-4">
+            <div className="flex items-center gap-2">
+              <StatusBadge status="accepted" label="Active" />
+              <h2 className="font-heading text-xl font-semibold text-foreground">
+                Active swaps
+              </h2>
+            </div>
+            {requestGroups.active.length > 0 ? (
               <div className="space-y-4">
                 {requestGroups.active.map((request) => (
                   <SwapRequestCard
@@ -217,13 +275,20 @@ export default function SkillSwap() {
                     onCancel={cancelRequest}
                     onOpenDetails={openDetails}
                     onOpenMessage={openMessages}
+                    compact
                   />
                 ))}
               </div>
-            </section>
-          ) : null}
+            ) : (
+              <EmptyState
+                icon={ArrowLeftRight}
+                title="No active swaps"
+                description="Accepted swaps will show up here once both sides agree to learn together."
+              />
+            )}
+          </TabsContent>
 
-          <section className="space-y-4">
+          <TabsContent value="suggested" className="space-y-4">
             <div className="flex items-center gap-2">
               <StatusBadge status="free" label="Discovery" />
               <h2 className="font-heading text-xl font-semibold text-foreground">
@@ -262,16 +327,16 @@ export default function SkillSwap() {
                 }}
               />
             )}
-          </section>
+          </TabsContent>
 
-          {(requestGroups.outgoing.length > 0 || requestGroups.closed.length > 0) ? (
-            <section className="space-y-4">
-              <div className="flex items-center gap-2">
-                <StatusBadge status="closed" label="History" />
-                <h2 className="font-heading text-xl font-semibold text-foreground">
-                  Request history
-                </h2>
-              </div>
+          <TabsContent value="history" className="space-y-4">
+            <div className="flex items-center gap-2">
+              <StatusBadge status="closed" label="History" />
+              <h2 className="font-heading text-xl font-semibold text-foreground">
+                Request history
+              </h2>
+            </div>
+            {requestGroups.outgoing.length > 0 || requestGroups.closed.length > 0 ? (
               <div className="space-y-4">
                 {[...requestGroups.outgoing, ...requestGroups.closed].map((request) => (
                   <SwapRequestCard
@@ -284,12 +349,19 @@ export default function SkillSwap() {
                     onCancel={cancelRequest}
                     onOpenDetails={openDetails}
                     onOpenMessage={openMessages}
+                    compact
                   />
                 ))}
               </div>
-            </section>
-          ) : null}
-        </div>
+            ) : (
+              <EmptyState
+                icon={ArrowLeftRight}
+                title="No request history yet"
+                description="Outgoing requests and closed swaps will show up here once you start using the swap flow."
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
