@@ -50,6 +50,10 @@ class MessageThreadSerializer(serializers.ModelSerializer):
     my_role = serializers.SerializerMethodField()
     exchange_summary = serializers.SerializerMethodField()
     can_message = serializers.SerializerMethodField()
+    unread_count = serializers.SerializerMethodField()
+    has_unread = serializers.SerializerMethodField()
+    last_read_message_id = serializers.SerializerMethodField()
+    last_read_at = serializers.SerializerMethodField()
 
     class Meta:
         model = MessageThread
@@ -61,6 +65,10 @@ class MessageThreadSerializer(serializers.ModelSerializer):
             "exchange_summary",
             "can_message",
             "latest_message",
+            "unread_count",
+            "has_unread",
+            "last_read_message_id",
+            "last_read_at",
             "created_at",
             "updated_at",
         )
@@ -79,6 +87,19 @@ class MessageThreadSerializer(serializers.ModelSerializer):
     def _is_requester_view(self, obj):
         request = self.context.get("request")
         return bool(request and request.user == obj.swap_request.requester)
+
+    def _get_read_state(self, obj):
+        request = self.context.get("request")
+        if request is None or not getattr(request, "user", None):
+            return None
+
+        if hasattr(obj, "_prefetched_objects_cache") and "read_states" in obj._prefetched_objects_cache:
+            return next(
+                (state for state in obj.read_states.all() if state.user_id == request.user.id),
+                None,
+            )
+
+        return obj.read_states.select_related("last_read_message").filter(user=request.user).first()
 
     @extend_schema_field(MessagingParticipantSerializer)
     def get_counterparty(self, obj):
@@ -123,6 +144,30 @@ class MessageThreadSerializer(serializers.ModelSerializer):
     @extend_schema_field(bool)
     def get_can_message(self, obj):
         return obj.swap_request.status == SkillSwapStatus.ACCEPTED
+
+    @extend_schema_field(int)
+    def get_unread_count(self, obj):
+        request = self.context.get("request")
+        if request is None:
+            return 0
+
+        read_state = self._get_read_state(obj)
+        last_read_message_id = getattr(read_state, "last_read_message_id", None) or 0
+        return obj.messages.exclude(sender=request.user).filter(id__gt=last_read_message_id).count()
+
+    @extend_schema_field(bool)
+    def get_has_unread(self, obj):
+        return self.get_unread_count(obj) > 0
+
+    @extend_schema_field(serializers.IntegerField(allow_null=True))
+    def get_last_read_message_id(self, obj):
+        read_state = self._get_read_state(obj)
+        return getattr(read_state, "last_read_message_id", None)
+
+    @extend_schema_field(serializers.DateTimeField(allow_null=True))
+    def get_last_read_at(self, obj):
+        read_state = self._get_read_state(obj)
+        return getattr(read_state, "last_read_at", None)
 
 
 class MessageThreadCreateSerializer(serializers.Serializer):
@@ -184,3 +229,11 @@ class ThreadMessageCreateSerializer(serializers.Serializer):
             resource_url=validated_data.get("resource_url", ""),
             resource_label=validated_data.get("resource_label", ""),
         )
+
+
+class MessageThreadReadReceiptSerializer(serializers.Serializer):
+    thread_id = serializers.IntegerField(read_only=True)
+    unread_count = serializers.IntegerField(read_only=True)
+    has_unread = serializers.BooleanField(read_only=True)
+    last_read_message_id = serializers.IntegerField(read_only=True, allow_null=True)
+    last_read_at = serializers.DateTimeField(read_only=True, allow_null=True)

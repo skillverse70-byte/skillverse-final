@@ -469,6 +469,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/ThreadMessage'
           description: ''
+  /api/messages/threads/{thread_id}/read/:
+    post:
+      operationId: messages_threads_read_create
+      parameters:
+      - in: path
+        name: thread_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - messaging
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageThreadReadReceipt'
+          description: ''
   /api/organizations/{id}/public/:
     get:
       operationId: organizations_public_retrieve
@@ -1232,6 +1253,21 @@ components:
           allOf:
           - $ref: '#/components/schemas/ThreadMessage'
           readOnly: true
+        unread_count:
+          type: integer
+          readOnly: true
+        has_unread:
+          type: boolean
+          readOnly: true
+        last_read_message_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        last_read_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -1245,10 +1281,14 @@ components:
       - counterparty
       - created_at
       - exchange_summary
+      - has_unread
       - id
+      - last_read_at
+      - last_read_message_id
       - latest_message
       - my_role
       - swap_request
+      - unread_count
       - updated_at
     MessageThreadCreateRequest:
       type: object
@@ -1257,6 +1297,33 @@ components:
           type: integer
       required:
       - swap_request_id
+    MessageThreadReadReceipt:
+      type: object
+      properties:
+        thread_id:
+          type: integer
+          readOnly: true
+        unread_count:
+          type: integer
+          readOnly: true
+        has_unread:
+          type: boolean
+          readOnly: true
+        last_read_message_id:
+          type: integer
+          readOnly: true
+          nullable: true
+        last_read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - has_unread
+      - last_read_at
+      - last_read_message_id
+      - thread_id
+      - unread_count
     MessageTypeEnum:
       enum:
       - text

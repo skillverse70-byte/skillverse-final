@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from apps.common.permissions import IsRegularUser
 from apps.messaging.serializers import (
     MessageThreadCreateSerializer,
+    MessageThreadReadReceiptSerializer,
     MessageThreadSerializer,
     ThreadMessageCreateSerializer,
     ThreadMessageSerializer,
@@ -17,6 +18,7 @@ from apps.messaging.services import (
     get_message_thread_for_user,
     get_message_thread_messages_for_user,
     get_message_threads_for_user,
+    mark_thread_as_read,
 )
 
 
@@ -102,3 +104,33 @@ class ThreadMessageListCreateView(GenericAPIView):
         message = serializer.save()
         response_serializer = ThreadMessageSerializer(message)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(
+    tags=["messaging"],
+    request=None,
+    responses={200: MessageThreadReadReceiptSerializer},
+)
+class MessageThreadReadReceiptView(GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsRegularUser]
+
+    def post(self, request, thread_id):
+        thread = get_message_thread_for_user(user=request.user, thread_id=thread_id)
+        if thread is None:
+            raise ValidationError({"detail": "Message thread was not found."})
+
+        read_state = mark_thread_as_read(thread=thread, user=request.user)
+        latest_message_id = getattr(read_state, "last_read_message_id", None)
+        unread_count = thread.messages.exclude(sender=request.user).filter(
+            id__gt=latest_message_id or 0,
+        ).count()
+        serializer = MessageThreadReadReceiptSerializer(
+            {
+                "thread_id": thread.id,
+                "unread_count": unread_count,
+                "has_unread": unread_count > 0,
+                "last_read_message_id": latest_message_id,
+                "last_read_at": read_state.last_read_at,
+            }
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)

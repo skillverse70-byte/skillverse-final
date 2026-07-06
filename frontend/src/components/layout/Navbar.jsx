@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUnreadMessagesCount } from "@/hooks/messages/useUnreadMessagesCount";
 import { getActorProfilePath } from "@/lib/access-control";
+import { useAppShellStore } from "@/stores/app-shell-store";
 import {
   Menu,
   X,
@@ -32,7 +34,11 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { hasAnyRole, isAuthenticated, logout, actorRole } = useAuth();
+  const unreadNotificationCount = useAppShellStore(
+    (state) => state.unreadNotificationCount,
+  );
   const profilePath = getActorProfilePath(actorRole);
+  useUnreadMessagesCount();
   const quickLinks = [
     { path: "/messages", label: "Messages", icon: MessageCircle },
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -86,10 +92,16 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-2">
               {visibleQuickLinks.map((link) => {
                 const Icon = link.icon;
+                const isMessagesLink = link.path === "/messages";
                 return (
                   <Link key={link.path} to={link.path}>
-                    <Button variant="ghost" size="icon" className={link.path === "/messages" ? "relative" : ""}>
+                    <Button variant="ghost" size="icon" className={isMessagesLink ? "relative" : ""}>
                       <Icon className="w-5 h-5" />
+                      {isMessagesLink && unreadNotificationCount > 0 ? (
+                        <span className="absolute -bottom-1 -right-1 min-w-5 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                          {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                        </span>
+                      ) : null}
                     </Button>
                   </Link>
                 );
@@ -163,6 +175,7 @@ export default function Navbar() {
                 <>
                   {visibleQuickLinks.map((link) => {
                     const Icon = link.icon;
+                    const isMessagesLink = link.path === "/messages";
                     return (
                       <Link
                         key={link.path}
@@ -170,8 +183,13 @@ export default function Navbar() {
                         onClick={() => setMobileOpen(false)}
                         className="flex-1"
                       >
-                        <Button variant="outline" size="sm" className="w-full gap-2">
+                        <Button variant="outline" size="sm" className="relative w-full gap-2">
                           <Icon className="w-4 h-4" /> {link.label}
+                          {isMessagesLink && unreadNotificationCount > 0 ? (
+                            <span className="absolute -right-2 -top-2 min-w-5 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                              {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                            </span>
+                          ) : null}
                         </Button>
                       </Link>
                     );

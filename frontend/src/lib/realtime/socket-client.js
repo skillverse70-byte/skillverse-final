@@ -1,4 +1,4 @@
-import useWebSocket from "react-use-websocket";
+import useWebSocket, { ReadyState } from "react-use-websocket";
 
 const DEFAULT_WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || "ws://localhost:8000";
 const DEFAULT_HEARTBEAT_MESSAGE = import.meta.env.VITE_WS_HEARTBEAT_MESSAGE || "ping";
@@ -11,8 +11,9 @@ export const realtimeChannels = {
   dashboards: "dashboards",
 };
 
-export function buildWebSocketUrl(channel, params = {}) {
-  const url = new URL(`/ws/${channel}/`, DEFAULT_WS_BASE_URL);
+export function buildWebSocketPathUrl(path, params = {}) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const url = new URL(normalizedPath, DEFAULT_WS_BASE_URL);
 
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
@@ -21,6 +22,10 @@ export function buildWebSocketUrl(channel, params = {}) {
   });
 
   return url.toString();
+}
+
+export function buildWebSocketUrl(channel, params = {}) {
+  return buildWebSocketPathUrl(`/ws/${channel}/`, params);
 }
 
 export function createRealtimeOptions(overrides = {}) {
@@ -39,9 +44,26 @@ export function createRealtimeOptions(overrides = {}) {
   };
 }
 
+export function mapReadyStateToConnectionState(readyState) {
+  switch (readyState) {
+    case ReadyState.OPEN:
+      return "connected";
+    case ReadyState.CONNECTING:
+      return "connecting";
+    case ReadyState.CLOSING:
+      return "disconnecting";
+    case ReadyState.CLOSED:
+      return "disconnected";
+    default:
+      return "idle";
+  }
+}
+
 export function useRealtimeChannel(channel, params = {}, overrides = {}) {
-  return useWebSocket(
-    buildWebSocketUrl(channel, params),
-    createRealtimeOptions(overrides),
-  );
+  return useRealtimePath(`/ws/${channel}/`, params, overrides, true);
+}
+
+export function useRealtimePath(path, params = {}, overrides = {}, enabled = true) {
+  const socketUrl = enabled && path ? buildWebSocketPathUrl(path, params) : null;
+  return useWebSocket(socketUrl, createRealtimeOptions(overrides));
 }

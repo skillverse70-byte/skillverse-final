@@ -21,6 +21,12 @@ export function fetchMessages(conversationId) {
   });
 }
 
+export function markConversationRead(conversationId) {
+  return authenticatedApiRequest(`/messages/threads/${conversationId}/read/`, {
+    method: "POST",
+  });
+}
+
 export function createConversation({ swapRequestId }) {
   return authenticatedApiRequest("/messages/threads/", {
     method: "POST",

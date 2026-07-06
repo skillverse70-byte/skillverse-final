@@ -28,6 +28,7 @@ export default function MessagesPage() {
     setResourceLabel,
     showResourceFields,
     setShowResourceFields,
+    connectionState,
     loading,
     sending,
     error,
@@ -87,6 +88,7 @@ export default function MessagesPage() {
                   me={me}
                   selected={selected}
                   messages={messages}
+                  connectionState={connectionState}
                   onBack={() => setSelected(null)}
                 />
 

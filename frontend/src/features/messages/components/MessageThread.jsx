@@ -6,8 +6,20 @@ export default function MessageThread({
   me,
   selected,
   messages,
+  connectionState = "idle",
   onBack,
 }) {
+  const connectionCopy =
+    connectionState === "connected"
+      ? "Live"
+      : connectionState === "connecting"
+        ? "Connecting..."
+        : connectionState === "disconnecting"
+          ? "Disconnecting..."
+          : connectionState === "disconnected"
+            ? "Reconnecting..."
+            : "Offline";
+
   return (
     <>
       <div className="flex items-center gap-3 border-b border-border/50 p-4">
@@ -21,8 +33,11 @@ export default function MessageThread({
           <div className="font-heading text-sm font-semibold">
             {selected.counterparty?.full_name || "Skill Swap Partner"}
           </div>
-          <div className="truncate text-xs text-muted-foreground">
-            {selected.exchange_summary}
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="truncate">{selected.exchange_summary}</span>
+            <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium">
+              {connectionCopy}
+            </span>
           </div>
         </div>
       </div>

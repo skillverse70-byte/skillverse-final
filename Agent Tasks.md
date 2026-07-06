@@ -395,6 +395,7 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 
 ### TASK-503: Implement Realtime Message and Coordination Support
 - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
+- **Status:** Complete
 - **Owner:** Backend
 - **Files touched:** `backend/apps/messaging/`, `backend/config/routing.py`, `backend/config/asgi.py`, `backend/apps/notifications/`
 - **Depends on:** `TASK-501`
@@ -406,8 +407,9 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 - **Description:** Add the backend realtime coordination path for chat and session-sensitive updates while preserving graceful degradation.
 
 ### TASK-504: Wire Frontend Realtime Coordination Behavior
-- **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
-- **Owner:** Frontend
+  - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
+  - **Status:** Complete
+  - **Owner:** Frontend
 - **Files touched:** `frontend/src/lib/realtime/`, `frontend/src/features/messages/`, `frontend/src/stores/`, `frontend/src/hooks/messages/`
 - **Depends on:** `TASK-502`, `TASK-503`
 - **Spec:** `PRD.md` Sections `6.4`, `7.1`

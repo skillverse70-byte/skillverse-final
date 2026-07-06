@@ -15,6 +15,7 @@ This document records the backend foundation scaffolded from `PRD.md` and `Agent
 - Resend email delivery through Anymail
 - Celery and Redis configuration for background jobs
 - Channels and Redis channel-layer support for future realtime chat/session flows
+- Daphne ASGI server dependency for websocket runtime and realtime test coverage
 - `.env.example` with local defaults
 - `requirements.txt` pinned to the package versions verified during setup
 
@@ -67,6 +68,10 @@ Chosen because V1 explicitly includes in-platform chat, realtime coordination, a
 ### `channels-redis==4.3.0`
 
 Chosen to back Django Channels with Redis when realtime messaging is enabled beyond local development.
+
+### `daphne==4.2.2`
+
+Chosen as the ASGI server/runtime dependency that pairs with Channels for websocket delivery and enables the project's websocket communicator test coverage for realtime messaging.
 
 ## Authentication decision
 
@@ -134,7 +139,7 @@ Future domain apps should import these shared definitions instead of hardcoding 
 ## Assumptions made
 
 - Your request overrides the PostgreSQL recommendation in `Agent Tasks.md`, so the scaffold is MySQL-first.
-- Realtime foundations are justified now because chat/session coordination is part of V1, but no websocket consumer or chat app has been created yet.
+- Realtime foundations are justified now because chat/session coordination is part of V1, and the project now includes websocket auth/routing plus a messaging consumer for accepted swap threads.
 - Background-task foundations are justified now because email and notification flows are explicit in V1, while payment follow-up is explicit in the build notes.
 - Resend is the configured outbound email provider, using Anymail's Resend backend rather than a custom ESP wrapper.
 - Local development defaults to an in-memory channel layer unless you switch `CHANNEL_LAYER_BACKEND` to Redis in `.env`.

@@ -124,6 +124,10 @@ export function authenticatedApiRequest(path, options = {}, retryOnUnauthorized 
   return authenticatedRequest(path, options, retryOnUnauthorized);
 }
 
+export function getStoredAccessToken() {
+  return getAccessToken();
+}
+
 export const backendAuthClient = {
   async me() {
     return authenticatedRequest("/auth/me/", { method: "GET" });

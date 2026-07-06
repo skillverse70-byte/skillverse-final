@@ -28,6 +28,39 @@ class MessageThread(models.Model):
         return f"Thread for swap {self.swap_request_id}"
 
 
+class MessageThreadReadState(models.Model):
+    thread = models.ForeignKey(
+        MessageThread,
+        on_delete=models.CASCADE,
+        related_name="read_states",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="message_thread_read_states",
+    )
+    last_read_message = models.ForeignKey(
+        "ThreadMessage",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    last_read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("thread", "user")
+        indexes = [
+            models.Index(fields=["thread", "user"]),
+            models.Index(fields=["user", "updated_at"]),
+        ]
+
+    def __str__(self):
+        return f"Read state for thread {self.thread_id} and user {self.user_id}"
+
+
 class ThreadMessage(models.Model):
     class MessageType(models.TextChoices):
         TEXT = "text", "Text"

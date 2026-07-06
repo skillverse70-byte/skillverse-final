@@ -3,6 +3,7 @@ from django.urls import path
 from apps.messaging.views import (
     MessageThreadDetailView,
     MessageThreadListCreateView,
+    MessageThreadReadReceiptView,
     ThreadMessageListCreateView,
 )
 
@@ -13,5 +14,10 @@ urlpatterns = [
         "threads/<int:thread_id>/messages/",
         ThreadMessageListCreateView.as_view(),
         name="thread-messages",
+    ),
+    path(
+        "threads/<int:thread_id>/read/",
+        MessageThreadReadReceiptView.as_view(),
+        name="thread-read-receipt",
     ),
 ]
