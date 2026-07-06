@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import StatusBadge from "@/components/shared/StatusBadge";
+import ParticipationReviewDialog from "@/features/reviews/components/ParticipationReviewDialog";
 
 function createInitialFormValues() {
   return {
@@ -42,7 +43,7 @@ function formatSessionTime(session) {
   }`;
 }
 
-function SessionCard({ session, saving, onConfirm, onComplete, onCancel }) {
+function SessionCard({ session, saving, onConfirm, onComplete, onCancel, children }) {
   const statusLabel =
     session.status === "planned"
       ? "Planned"
@@ -131,7 +132,7 @@ function SessionCard({ session, saving, onConfirm, onComplete, onCancel }) {
               Cancel
             </Button>
           </div>
-        ) : null}
+        ) : children ? <div className="flex flex-wrap gap-2">{children}</div> : null}
       </div>
     </div>
   );
@@ -404,7 +405,16 @@ export default function SessionPlannerPanel({
                       onConfirm={onConfirmSession}
                       onComplete={onCompleteSession}
                       onCancel={onCancelSession}
-                    />
+                    >
+                      <ParticipationReviewDialog
+                        context="skill_swap"
+                        sourceId={session.swap_request}
+                        title="Review this completed swap"
+                        description="This feedback is tied to the completed swap participation behind this session."
+                        triggerLabel="Leave review"
+                        triggerClassName="bg-teal-600 text-white hover:bg-teal-700"
+                      />
+                    </SessionCard>
                   ))}
                 </div>
               ) : null}

@@ -16,6 +16,7 @@ urlpatterns = [
     path("api/swaps/", include("apps.swaps.urls")),
     path("api/messages/", include("apps.messaging.urls")),
     path("api/sessions/", include("apps.sessions.urls")),
+    path("api/reviews/", include("apps.reviews.urls")),
     path("api-auth/", include("rest_framework.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),

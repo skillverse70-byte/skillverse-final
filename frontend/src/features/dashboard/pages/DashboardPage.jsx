@@ -17,6 +17,7 @@ import EmptyState from "@/components/shared/EmptyState";
 import PageHeader from "@/components/shared/PageHeader";
 import PageLoader from "@/components/shared/PageLoader";
 import DashboardStats from "@/features/dashboard/components/DashboardStats";
+import ParticipationReviewDialog from "@/features/reviews/components/ParticipationReviewDialog";
 import SwapRequestCard from "@/features/skills/components/SwapRequestCard";
 import { useDashboardData } from "@/hooks/dashboard/useDashboardData";
 import { useDashboardSwapRequests } from "@/hooks/dashboard/useDashboardSwapRequests";
@@ -240,6 +241,14 @@ export default function DashboardPage() {
                             {session.timezone ? ` (${session.timezone})` : ""}
                           </p>
                           <div className="mt-3 flex flex-wrap gap-2">
+                            <ParticipationReviewDialog
+                              context="skill_swap"
+                              sourceId={session.swap_request}
+                              title="Review this completed swap"
+                              description="Rate the exchange after meaningful participation. Future course and event review flows will use this same review contract."
+                              triggerLabel="Leave review"
+                              triggerVariant="outline"
+                            />
                             {session.meeting_url ? (
                               <a
                                 href={session.meeting_url}

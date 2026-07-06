@@ -447,6 +447,7 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 
 ### TASK-507: Implement Participation-Based Review Rules
 - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
+- **Status:** Complete
 - **Owner:** Backend
 - **Files touched:** `backend/apps/reviews/`, `backend/apps/swaps/`, `backend/apps/courses/`, `backend/apps/events/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-505`
@@ -459,6 +460,7 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 
 ### TASK-508: Build Ratings and Reviews UI
 - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
+- **Status:** Complete
 - **Owner:** Frontend
 - **Files touched:** `frontend/src/features/messages/`, `frontend/src/features/courses/`, `frontend/src/features/events/`, `frontend/src/services/`
 - **Depends on:** `TASK-507`, `TASK-506`

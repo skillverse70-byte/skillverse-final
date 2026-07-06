@@ -797,6 +797,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserSkill'
           description: ''
+  /api/reviews/:
+    post:
+      operationId: reviews_create
+      tags:
+      - reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatingReviewCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RatingReviewCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RatingReviewCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatingReview'
+          description: ''
+  /api/reviews/eligibility/:
+    get:
+      operationId: reviews_eligibility_retrieve
+      tags:
+      - reviews
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewEligibility'
+          description: ''
   /api/sessions/:
     get:
       operationId: sessions_list
@@ -1164,6 +1206,16 @@ components:
     BlankEnum:
       enum:
       - ''
+    ContextEnum:
+      enum:
+      - skill_swap
+      - course
+      - event
+      type: string
+      description: |-
+        * `skill_swap` - Skill Swap
+        * `course` - Course
+        * `event` - Event
     DirectionEnum:
       enum:
       - offering
@@ -2022,6 +2074,84 @@ components:
       - full_name
       - id
       - role
+    RatingReview:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        context:
+          allOf:
+          - $ref: '#/components/schemas/ContextEnum'
+          readOnly: true
+        rating:
+          type: integer
+          readOnly: true
+        comment:
+          type: string
+          readOnly: true
+        target:
+          allOf:
+          - $ref: '#/components/schemas/ReviewTarget'
+          readOnly: true
+        swap_request:
+          type: integer
+          readOnly: true
+          nullable: true
+        enrollment:
+          type: integer
+          readOnly: true
+          nullable: true
+        course_program:
+          type: integer
+          readOnly: true
+          nullable: true
+        event_rsvp:
+          type: integer
+          readOnly: true
+          nullable: true
+        event:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - comment
+      - context
+      - course_program
+      - created_at
+      - enrollment
+      - event
+      - event_rsvp
+      - id
+      - rating
+      - swap_request
+      - target
+      - updated_at
+    RatingReviewCreateRequest:
+      type: object
+      properties:
+        context:
+          $ref: '#/components/schemas/ContextEnum'
+        source_id:
+          type: integer
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+        comment:
+          type: string
+      required:
+      - context
+      - rating
+      - source_id
     RegisterRequest:
       type: object
       properties:
@@ -2111,6 +2241,42 @@ components:
           minLength: 1
       required:
       - email
+    ReviewEligibility:
+      type: object
+      properties:
+        context:
+          $ref: '#/components/schemas/ContextEnum'
+        source_id:
+          type: integer
+        eligible:
+          type: boolean
+        reason:
+          type: string
+        existing_review_id:
+          type: integer
+          nullable: true
+        target:
+          allOf:
+          - $ref: '#/components/schemas/ReviewTarget'
+          nullable: true
+      required:
+      - context
+      - eligible
+      - existing_review_id
+      - reason
+      - source_id
+      - target
+    ReviewTarget:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        title:
+          type: string
+      required:
+      - id
     RoleEnum:
       enum:
       - guest
