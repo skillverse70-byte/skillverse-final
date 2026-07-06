@@ -21,6 +21,7 @@ Also treat these as source-of-truth where they already cover a decision:
 - [frontend/FRONTEND_PRD_READY.md](./frontend/FRONTEND_PRD_READY.md)
 - [SCHEMA.md](./SCHEMA.md)
 - [ROLE_ACCESS_MATRIX.md](./ROLE_ACCESS_MATRIX.md)
+- [Agents/PAYMENT_SERVICE.md](./Agents/PAYMENT_SERVICE.md) for any payment, financial-account, checkout, webhook, verification, cancellation, receipt, or Chapa-specific work
 
 Rules:
 
@@ -30,6 +31,8 @@ Rules:
 - Treat [ROLE_ACCESS_MATRIX.md](./ROLE_ACCESS_MATRIX.md) as the source of truth for actor-to-route access. If a task changes route access, update the matrix in the same task.
 - Use the PRD coverage checklist at the bottom to ensure nothing is dropped.
 - For backend email work, use the shared helper in `backend/apps/common/email.py` so all outbound email stays on the project's Resend-backed Django email path.
+- For any payment-related task, read [Agents/PAYMENT_SERVICE.md](./Agents/PAYMENT_SERVICE.md) before implementation and treat it as the Chapa integration source of truth.
+- Payment-specific hard rules from `Agents/PAYMENT_SERVICE.md` apply automatically to `TASK-701` through `TASK-705`, and to any future task that touches `backend/apps/payments/` or Chapa-linked course enrollment.
 
 Task metadata contract:
 
@@ -662,6 +665,13 @@ At the end of this phase, organizations can move through trust workflows and aut
 Goal:
 At the end of this phase, verified organizations can reach finance readiness, paid-course gating works correctly, and learners can enroll and track progress.
 
+Phase 7 source-of-truth note:
+- [Agents/PAYMENT_SERVICE.md](./Agents/PAYMENT_SERVICE.md) is the authoritative Chapa integration guide for this phase.
+- Any payment provider call must go through `backend/apps/payments/services/payment.py`.
+- Never trust initiation alone; payment success must be confirmed by verification.
+- Webhook signature verification is mandatory before processing.
+- Sandbox/live differences must come from settings only.
+
 ### TASK-701: Implement Financial Account Readiness Backend
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
 - **Owner:** Backend
@@ -670,11 +680,11 @@ At the end of this phase, verified organizations can reach finance readiness, pa
 - **Files touched:** `backend/apps/payments/`, `backend/apps/organizations/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-601`, `TASK-606`
 - **Spec:** `PRD.md` Sections `3.1`, `4.1`, `6.5`, `8`
-- **Setup reference:** Payment readiness rationale in `backend/BACKEND_SETUP.md`
+- **Setup reference:** Payment readiness rationale in `backend/BACKEND_SETUP.md`; Chapa/finance source of truth in `Agents/PAYMENT_SERVICE.md`
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Financial-account setup state exists and can gate monetization
 - **Blockers:** None
-- **Description:** Build the backend readiness model that decides whether a verified organization may accept paid enrollments.
+- **Description:** Build the backend readiness model that decides whether a verified organization may accept paid enrollments. This task must shape internal finance/account state so later Chapa checkout work in `TASK-703` can rely on it without redefining provider rules.
 
 ### TASK-702: Build Financial Setup and Monetization Readiness UI
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
@@ -684,11 +694,11 @@ At the end of this phase, verified organizations can reach finance readiness, pa
 - **Files touched:** `frontend/src/features/organizations/`, `frontend/src/features/courses/`, `frontend/src/services/organizations/`
 - **Depends on:** `TASK-701`
 - **Spec:** `PRD.md` Sections `5.3`, `6.5`; `schema.yaml` financial setup endpoints when added
-- **Setup reference:** No extra payment UI package was added by design per `frontend/FRONTEND_PRD_READY.md`
+- **Setup reference:** No extra payment UI package was added by design per `frontend/FRONTEND_PRD_READY.md`; payment-state semantics must match `Agents/PAYMENT_SERVICE.md`
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Organization operators can see monetization readiness and learners can see blocked-vs-available enrollment state
 - **Blockers:** None
-- **Description:** Deliver the frontend visibility for finance setup readiness and enrollment gating.
+- **Description:** Deliver the frontend visibility for finance setup readiness and enrollment gating. This task must mirror the backend/payment-service meanings of `ready`, `pending`, blocked paid enrollment, and `Enrollment Unavailable` without inventing frontend-only payment states.
 
 ### TASK-703: Implement Chapa-Oriented Payment Flow Backend
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
@@ -698,11 +708,11 @@ At the end of this phase, verified organizations can reach finance readiness, pa
 - **Files touched:** `backend/apps/payments/`, `backend/apps/courses/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-701`
 - **Spec:** `PRD.md` Sections `4.1`, `6.5`
-- **Setup reference:** Payment provider assumptions in `PRD.md` and `backend/BACKEND_SETUP.md`
+- **Setup reference:** Payment provider assumptions in `PRD.md` and `backend/BACKEND_SETUP.md`; Chapa integration contract in `Agents/PAYMENT_SERVICE.md`
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Checkout initiation, price/currency handling, and post-payment enrollment readiness are contract-defined
 - **Blockers:** None
-- **Description:** Implement the backend payment contract for Chapa-oriented paid-course enrollment.
+- **Description:** Implement the backend payment contract for Chapa-oriented paid-course enrollment. Use `Agents/PAYMENT_SERVICE.md` as the execution contract: all Chapa API calls must go through `backend/apps/payments/services/payment.py`, hosted checkout should be the default V1 path unless a task explicitly says otherwise, initiation must persist a pending local transaction, webhook signatures must be verified before processing, and final enrollment/value delivery must happen only after server-side verification succeeds.
 
 ### TASK-704: Build Paid Enrollment UI and Blocked Enrollment States
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
@@ -712,11 +722,11 @@ At the end of this phase, verified organizations can reach finance readiness, pa
 - **Files touched:** `frontend/src/features/courses/`, `frontend/src/services/courses/`, `frontend/src/components/shared/`
 - **Depends on:** `TASK-702`, `TASK-703`
 - **Spec:** `PRD.md` Sections `5.3`, `6.5`; `schema.yaml` payment/enrollment endpoints when added
-- **Setup reference:** Payment UI deferment rationale in `frontend/FRONTEND_PRD_READY.md`
+- **Setup reference:** Payment UI deferment rationale in `frontend/FRONTEND_PRD_READY.md`; checkout/status semantics must match `Agents/PAYMENT_SERVICE.md`
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Paid and blocked enrollment states are visible, including explicit `Enrollment Unavailable`
 - **Blockers:** None
-- **Description:** Deliver the learner-facing UI for course pricing, checkout entry, and blocked enrollment rules.
+- **Description:** Deliver the learner-facing UI for course pricing, checkout entry, and blocked enrollment rules. Frontend must consume backend-generated checkout/initiation results and payment states from schema-backed endpoints rather than constructing Chapa requests directly in the browser.
 
 ### TASK-705: Implement Enrollment and Progress Backend
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
@@ -726,11 +736,11 @@ At the end of this phase, verified organizations can reach finance readiness, pa
 - **Files touched:** `backend/apps/courses/`, `backend/apps/payments/`, `backend/apps/dashboards/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-603`, `TASK-703`
 - **Spec:** `PRD.md` Sections `4.1`, `5.3`, `6.5`, `6.11`
-- **Setup reference:** N/A
+- **Setup reference:** Enrollment reconciliation rules must remain consistent with `Agents/PAYMENT_SERVICE.md`
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Enrollment records, enrollment states, and progress states are persisted and available for dashboards
 - **Blockers:** None
-- **Description:** Build the backend enrollment and progress layer used by learners, organizations, and dashboards.
+- **Description:** Build the backend enrollment and progress layer used by learners, organizations, and dashboards. When a course is paid, enrollment activation must be driven by verified payment outcomes from the Chapa flow defined in `Agents/PAYMENT_SERVICE.md`, not by checkout initiation alone.
 
 ### TASK-706: Build Learner Enrollment and Progress UI
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
