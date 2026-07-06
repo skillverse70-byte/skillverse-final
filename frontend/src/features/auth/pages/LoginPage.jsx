@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { LogIn, Lock, Loader2, Mail } from "lucide-react";
 import { authService } from "@/services/auth/auth.service";
+import { getActorHomePath } from "@/lib/access-control";
+import { appRuntime } from "@/lib/runtime-config";
 import { isBackendApiMode } from "@/lib/runtime-config";
 import AuthLayout from "@/features/auth/components/AuthLayout";
 import GoogleIcon from "@/features/auth/components/GoogleIcon";
@@ -13,24 +15,43 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [loading, setLoading] = useState(false);
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const redirectTarget =
+  const requestedPath =
     location.state?.from?.pathname ||
     searchParams.get("from") ||
-    "/dashboard";
+    null;
+  const verificationReturnTarget = requestedPath || "/login";
   const showGoogleOption = !isBackendApiMode();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    setNeedsVerification(false);
     setLoading(true);
     try {
       await authService.login(email, password);
-      window.location.href = redirectTarget;
+      if (requestedPath) {
+        window.location.href = requestedPath;
+        return;
+      }
+      const currentUser = await authService.me();
+      window.location.href = getActorHomePath(currentUser);
     } catch (requestError) {
       setError(requestError.message || "Invalid email or password");
+      const message = requestError.message || "";
+      const isVerificationError =
+        message.toLowerCase().includes("verification") ||
+        requestError?.data?.code === "email_not_verified";
+      setNeedsVerification(isVerificationError);
+      if (isVerificationError && typeof window !== "undefined") {
+        window.localStorage.setItem(
+          `${appRuntime.storagePrefix}:${appRuntime.storageKeys.pendingVerificationEmail}`,
+          email,
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -92,6 +113,20 @@ export default function LoginPage() {
           {error}
         </div>
       )}
+      {needsVerification ? (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-900">
+          <p className="font-medium">This account still needs email verification.</p>
+          <p className="mt-1">
+            You can finish that now without starting over.
+          </p>
+          <Link
+            to={`/verify-email?email=${encodeURIComponent(email)}&from=${encodeURIComponent(verificationReturnTarget)}`}
+            className="mt-3 inline-flex font-medium text-teal-800 hover:underline"
+          >
+            Open verification page
+          </Link>
+        </div>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">

@@ -4,22 +4,24 @@ import { useRealtimePath } from "@/lib/realtime/socket-client";
 import { getStoredAccessToken } from "@/services/auth/backend-auth-client";
 import { useAppShellStore } from "@/stores/app-shell-store";
 import { useAuth } from "@/contexts/AuthContext";
+import { roles } from "@/lib/domain-enums";
 
 export function useUnreadMessagesCount() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, actorRole } = useAuth();
   const setUnreadNotificationCount = useAppShellStore(
     (state) => state.setUnreadNotificationCount,
   );
+  const isRegularUser = actorRole === roles.regularUser;
   const accessToken = getStoredAccessToken();
   const { lastJsonMessage } = useRealtimePath(
     "/ws/messages/inbox/",
     accessToken ? { token: accessToken } : {},
     {},
-    Boolean(isAuthenticated && user?.id && accessToken),
+    Boolean(isRegularUser && isAuthenticated && user?.id && accessToken),
   );
 
   useEffect(() => {
-    if (!isAuthenticated || !user?.id) {
+    if (!isRegularUser || !isAuthenticated || !user?.id) {
       setUnreadNotificationCount(0);
       return undefined;
     }
@@ -51,7 +53,7 @@ export function useUnreadMessagesCount() {
     return () => {
       active = false;
     };
-  }, [isAuthenticated, setUnreadNotificationCount, user?.id]);
+  }, [actorRole, isAuthenticated, isRegularUser, setUnreadNotificationCount, user?.id]);
 
   useEffect(() => {
     if (!lastJsonMessage) {

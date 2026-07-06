@@ -11,6 +11,7 @@ const LoginPage = lazy(() => import("@/features/auth/pages/LoginPage"));
 const RegisterPage = lazy(() => import("@/features/auth/pages/RegisterPage"));
 const ForgetPasswordPage = lazy(() => import("@/features/auth/pages/ForgetPasswordPage"));
 const ResetPasswordPage = lazy(() => import("@/features/auth/pages/ResetPasswordPage"));
+const VerifyEmailPage = lazy(() => import("@/features/auth/pages/VerifyEmailPage"));
 const OrganizationOnboardingPage = lazy(() =>
   import("@/features/onboarding/pages/OrganizationOnboardingPage"));
 const SkillSwapPage = lazy(() => import("@/features/skills/pages/SkillSwapPage"));
@@ -19,7 +20,7 @@ const EventDetailPage = lazy(() => import("@/features/events/pages/EventDetailPa
 const JobsPage = lazy(() => import("@/features/jobs/pages/JobsPage"));
 const JobDetailPage = lazy(() => import("@/features/jobs/pages/JobDetailPage"));
 const MessagesPage = lazy(() => import("@/features/messages/pages/MessagesPage"));
-const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage"));
+const ActorDashboardPage = lazy(() => import("@/features/dashboard/pages/ActorDashboardPage"));
 const ProfilePage = lazy(() => import("@/features/profile/pages/ProfilePage"));
 const OrgManagementPage = lazy(() => import("@/features/organizations/pages/OrgManagementPage"));
 const AdminReviewPage = lazy(() => import("@/features/organizations/pages/AdminReviewPage"));
@@ -37,6 +38,7 @@ export const guestRoutes = [
   { path: "/organizations/register", element: <OrganizationOnboardingPage />, access: "public" },
   { path: "/forgot-password", element: <ForgetPasswordPage />, access: "public" },
   { path: "/reset-password", element: <ResetPasswordPage />, access: "public" },
+  { path: "/verify-email", element: <VerifyEmailPage />, access: "public" },
 ];
 
 export const publicBrowseRoutes = [
@@ -55,27 +57,32 @@ export const appRoutes = [
     path: "/welcome",
     element: <OnboardingPage />,
     access: "authenticated",
-    allowedRoles: [roles.regularUser, roles.admin],
+    allowedRoles: [roles.regularUser],
   },
   {
     path: "/skill-swap",
     element: <SkillSwapPage />,
     access: "authenticated",
-    allowedRoles: [roles.regularUser, roles.admin],
+    allowedRoles: [roles.regularUser],
   },
-  { path: "/messages", element: <MessagesPage />, access: "authenticated" },
-  { path: "/dashboard", element: <DashboardPage />, access: "authenticated" },
+  {
+    path: "/messages",
+    element: <MessagesPage />,
+    access: "authenticated",
+    allowedRoles: [roles.regularUser],
+  },
+  { path: "/dashboard", element: <ActorDashboardPage />, access: "authenticated" },
   {
     path: "/profile",
     element: <ProfilePage />,
     access: "authenticated",
-    allowedRoles: [roles.regularUser, roles.admin],
+    allowedRoles: [roles.regularUser],
   },
   {
     path: "/org",
     element: <OrgManagementPage />,
     access: "authenticated",
-    allowedRoles: [roles.organization, roles.admin],
+    allowedRoles: [roles.organization],
   },
   {
     path: "/admin",
@@ -87,24 +94,24 @@ export const appRoutes = [
     path: "/course-builder",
     element: <CourseBuilderPage />,
     access: "authenticated",
-    allowedRoles: [roles.organization, roles.admin],
+    allowedRoles: [roles.organization],
   },
   {
     path: "/organization-profile",
     element: <OrganizationProfilePage />,
     access: "authenticated",
-    allowedRoles: [roles.organization, roles.admin],
+    allowedRoles: [roles.organization],
   },
   {
     path: "/skill-portfolio",
     element: <SkillPortfolioPage />,
     access: "authenticated",
-    allowedRoles: [roles.regularUser, roles.admin],
+    allowedRoles: [roles.regularUser],
   },
   {
     path: "/saved-opportunities",
     element: <SavedOpportunitiesPage />,
     access: "authenticated",
-    allowedRoles: [roles.regularUser, roles.admin],
+    allowedRoles: [roles.regularUser],
   },
 ];

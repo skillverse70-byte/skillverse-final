@@ -1,12 +1,13 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
 import { Plus, BookOpen, Edit2, Building } from "lucide-react";
-import StatusBadge from "@/components/shared/StatusBadge";
+import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/shared/EmptyState";
-import PageLoader from "@/components/shared/PageLoader";
 import PageHeader from "@/components/shared/PageHeader";
+import PageLoader from "@/components/shared/PageLoader";
+import StatusBadge from "@/components/shared/StatusBadge";
 import CourseEditor from "@/features/courses/course-builder/components/CourseEditor";
 import { useCourseBuilder } from "@/hooks/courses/useCourseBuilder";
+import { isVerifiedOrganization } from "@/lib/trust-state";
 
 export default function CourseBuilderPage() {
   const { organization, courses, editing, setEditing, loading, handleSaved } =
@@ -43,6 +44,8 @@ export default function CourseBuilderPage() {
     );
   }
 
+  const organizationVerified = isVerifiedOrganization(organization);
+
   const newCourseTemplate = {
     title: "",
     description: "",
@@ -50,6 +53,7 @@ export default function CourseBuilderPage() {
     difficulty: "beginner",
     is_free: true,
     price: 0,
+    price_currency: "ETB",
     status: "draft",
     enrollment_open: true,
     tags: [],
@@ -72,6 +76,13 @@ export default function CourseBuilderPage() {
         }
       />
 
+      {!organizationVerified ? (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Your organization is currently unverified, so course publishing is limited to free offerings.
+          Paid course creation becomes available after verification is approved.
+        </div>
+      ) : null}
+
       {courses.length === 0 ? (
         <EmptyState
           icon={BookOpen}
@@ -93,7 +104,7 @@ export default function CourseBuilderPage() {
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm truncate">{course.title}</div>
                 <div className="text-xs text-muted-foreground">
-                  {course.category} · {course.modules?.length || 0} modules ·{" "}
+                  {course.category || "Uncategorized"} · {course.modules?.length || 0} modules ·{" "}
                   {course.total_lessons || 0} lessons
                 </div>
               </div>

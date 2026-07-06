@@ -12,6 +12,7 @@ Mandatory reading before starting any task:
 3. [schema.yaml](./schema.yaml)
 4. [DEFINITION_OF_DONE.md](./DEFINITION_OF_DONE.md)
 5. [BLOCKERS.md](./BLOCKERS.md)
+6. [ROLE_ACCESS_MATRIX.md](./ROLE_ACCESS_MATRIX.md)
 
 Also treat these as source-of-truth where they already cover a decision:
 
@@ -19,14 +20,23 @@ Also treat these as source-of-truth where they already cover a decision:
 - [backend/BACKEND_SETUP.md](./backend/BACKEND_SETUP.md)
 - [frontend/FRONTEND_PRD_READY.md](./frontend/FRONTEND_PRD_READY.md)
 - [SCHEMA.md](./SCHEMA.md)
+- [ROLE_ACCESS_MATRIX.md](./ROLE_ACCESS_MATRIX.md)
 
 Rules:
 
 - Frontend and backend land together per feature within the same phase.
 - Update [schema.yaml](./schema.yaml) whenever an endpoint changes.
 - Update [BLOCKERS.md](./BLOCKERS.md) whenever a task becomes blocked.
+- Treat [ROLE_ACCESS_MATRIX.md](./ROLE_ACCESS_MATRIX.md) as the source of truth for actor-to-route access. If a task changes route access, update the matrix in the same task.
 - Use the PRD coverage checklist at the bottom to ensure nothing is dropped.
 - For backend email work, use the shared helper in `backend/apps/common/email.py` so all outbound email stays on the project's Resend-backed Django email path.
+
+Task metadata contract:
+
+- `Owner` says which implementation side is responsible.
+- `Actor(s)` says who the feature is built for.
+- `Route(s)` says where that actor should encounter the feature in the product.
+- If `Route(s)` conflicts with [ROLE_ACCESS_MATRIX.md](./ROLE_ACCESS_MATRIX.md), update the matrix first and then update the task entry in the same change.
 
 ## Phase 1: Foundation, Contracts, and Runtime Boundaries
 
@@ -39,6 +49,8 @@ Complete
 ### TASK-101: Finalize Backend Platform Wiring
 - **Phase:** Phase 1: Foundation, Contracts, and Runtime Boundaries
 - **Owner:** Backend
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** All current public and protected routes; see `ROLE_ACCESS_MATRIX.md`
 - **Files touched:** `backend/config/`, `backend/manage.py`, `backend/requirements.txt`, `backend/.env.example`
 - **Depends on:** None
 - **Spec:** `PRD.md` Sections `3`, `6.1`, `7`; `schema.yaml` existing auth/docs endpoints
@@ -51,6 +63,8 @@ Complete
 ### TASK-102: Finalize Frontend Platform Wiring
 - **Phase:** Phase 1: Foundation, Contracts, and Runtime Boundaries
 - **Owner:** Frontend
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** All current frontend routes and navigation surfaces in `ROLE_ACCESS_MATRIX.md`
 - **Files touched:** `frontend/src/app/`, `frontend/src/lib/`, `frontend/src/stores/`, `frontend/src/services/`, `frontend/.env.example`, `frontend/package.json`
 - **Depends on:** None
 - **Spec:** `PRD.md` Sections `4.1`, `6.4`, `7`; `schema.yaml` for current auth endpoints
@@ -63,6 +77,8 @@ Complete
 ### TASK-103: Define Core Domain Contracts and Status Enums
 - **Phase:** Phase 1: Foundation, Contracts, and Runtime Boundaries
 - **Owner:** Both
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** All actor-scoped routes; shared contract task anchored by `ROLE_ACCESS_MATRIX.md`
 - **Files touched:** `backend/apps/common/`, `backend/apps/*/`, `frontend/src/lib/`, `frontend/src/services/`, `schema.yaml`
 - **Depends on:** `TASK-101`, `TASK-102`
 - **Spec:** `PRD.md` Sections `3`, `6`, `8`; `schema.yaml` current endpoint conventions
@@ -75,6 +91,8 @@ Complete
 ### TASK-104: Define Actor Access and Route Boundaries
 - **Phase:** Phase 1: Foundation, Contracts, and Runtime Boundaries
 - **Owner:** Both
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** All actor-scoped routes in `ROLE_ACCESS_MATRIX.md`
 - **Files touched:** `backend/apps/accounts/`, `backend/apps/common/permissions.py`, `frontend/src/app/`, `frontend/src/contexts/`, `frontend/src/components/`
 - **Depends on:** `TASK-103`
 - **Spec:** `PRD.md` Sections `3`, `5.4`, `6.1`, `7.2`; `schema.yaml` auth endpoints
@@ -87,6 +105,8 @@ Complete
 ### TASK-105: Define Shared Trust-State and Gating Rules
 - **Phase:** Phase 1: Foundation, Contracts, and Runtime Boundaries
 - **Owner:** Both
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** `/organizations/:id`, `/courses`, `/courses/:id`, `/events`, `/events/:id`, `/jobs`, `/jobs/:id`, `/org`, `/organization-profile`, `/course-builder`
 - **Files touched:** `backend/apps/organizations/`, `backend/apps/payments/`, `frontend/src/components/shared/`, `frontend/src/features/organizations/`, `frontend/src/features/courses/`
 - **Depends on:** `TASK-103`, `TASK-104`
 - **Spec:** `PRD.md` Sections `3.1`, `5.3`, `6.2`, `6.5`
@@ -118,6 +138,8 @@ Complete
 - **Phase:** Phase 2: Guest Access, Authentication, and Onboarding
 - **Status:** Complete
 - **Owner:** Frontend
+- **Actor(s):** Guest
+- **Route(s):** `/`, `/get-started`, `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`, `/organizations/register`
 - **Files touched:** `frontend/src/features/landing/`, `frontend/src/features/auth/`, `frontend/src/app/routes.jsx`, `frontend/src/components/layout/`
 - **Depends on:** `TASK-102`, `TASK-104`
 - **Spec:** `PRD.md` Sections `4.1`, `5.1`, `6.1`, `7.5`; `schema.yaml` current auth endpoints
@@ -131,6 +153,8 @@ Complete
 - **Phase:** Phase 2: Guest Access, Authentication, and Onboarding
 - **Status:** Complete
 - **Owner:** Backend
+- **Actor(s):** Guest, Regular User
+- **Route(s):** `/register`, `/login`, `/forgot-password`, `/reset-password`, `/verify-email`, `/dashboard`
 - **Files touched:** `backend/apps/accounts/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-101`, `TASK-104`
 - **Spec:** `PRD.md` Sections `5.1`, `6.1`; `schema.yaml` `/api/auth/jwt/token/`, `/api/auth/jwt/refresh/`
@@ -144,6 +168,8 @@ Complete
 - **Phase:** Phase 2: Guest Access, Authentication, and Onboarding
 - **Status:** Complete
 - **Owner:** Frontend
+- **Actor(s):** Guest, Regular User
+- **Route(s):** `/register`, `/login`, `/forgot-password`, `/reset-password`, `/verify-email`, `/dashboard`
 - **Files touched:** `frontend/src/features/auth/`, `frontend/src/contexts/`, `frontend/src/services/auth/`, `frontend/src/app/`
 - **Depends on:** `TASK-201`, `TASK-202`
 - **Spec:** `PRD.md` Sections `5.1`, `6.1`; `schema.yaml` auth endpoints
@@ -157,6 +183,8 @@ Complete
 - **Phase:** Phase 2: Guest Access, Authentication, and Onboarding
 - **Status:** Complete
 - **Owner:** Backend
+- **Actor(s):** Guest, Organization
+- **Route(s):** `/organizations/register`, `/verify-email`, `/org`
 - **Files touched:** `backend/apps/accounts/`, `backend/apps/organizations/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-202`
 - **Spec:** `PRD.md` Sections `3`, `5.3`, `6.1`, `6.2`; `schema.yaml` N/A — see description
@@ -170,6 +198,8 @@ Complete
 - **Phase:** Phase 2: Guest Access, Authentication, and Onboarding
 - **Status:** Complete
 - **Owner:** Frontend
+- **Actor(s):** Guest, Organization
+- **Route(s):** `/organizations/register`, `/verify-email`, `/org`
 - **Files touched:** `frontend/src/features/onboarding/`, `frontend/src/features/auth/`, `frontend/src/services/organizations/`, `frontend/src/app/routes.jsx`
 - **Depends on:** `TASK-201`, `TASK-204`
 - **Spec:** `PRD.md` Sections `3`, `5.3`, `6.1`, `6.2`; `schema.yaml` org onboarding endpoints when added
@@ -183,6 +213,8 @@ Complete
 - **Phase:** Phase 2: Guest Access, Authentication, and Onboarding
 - **Status:** Complete
 - **Owner:** Both
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** All actor-scoped routes in `ROLE_ACCESS_MATRIX.md`
 - **Files touched:** `backend/apps/accounts/`, `backend/apps/common/`, `frontend/src/contexts/`, `frontend/src/components/ProtectedRoute.jsx`, `frontend/src/app/`
 - **Depends on:** `TASK-203`, `TASK-204`, `TASK-205`
 - **Spec:** `PRD.md` Sections `6.1`, `7.2`
@@ -211,6 +243,8 @@ At the end of this phase, regular users can maintain private profiles and skill 
 - **Phase:** Phase 3: Profiles, Skills, and Organization Public Presence
 - **Status:** Complete
 - **Owner:** Backend
+- **Actor(s):** Regular User
+- **Route(s):** `/welcome`, `/profile`, `/skill-portfolio`, `/dashboard`
 - **Files touched:** `backend/apps/accounts/`, `backend/apps/skills/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-206`
 - **Spec:** `PRD.md` Sections `5.1`, `6.2`, `8`; `schema.yaml` N/A — see description
@@ -224,6 +258,8 @@ At the end of this phase, regular users can maintain private profiles and skill 
 - **Phase:** Phase 3: Profiles, Skills, and Organization Public Presence
 - **Status:** Complete
 - **Owner:** Frontend
+- **Actor(s):** Regular User
+- **Route(s):** `/welcome`, `/profile`, `/skill-portfolio`, `/dashboard`
 - **Files touched:** `frontend/src/features/profile/`, `frontend/src/features/skills/`, `frontend/src/hooks/profile/`, `frontend/src/hooks/skills/`, `frontend/src/services/profile/`, `frontend/src/services/skills/`
 - **Depends on:** `TASK-301`
 - **Spec:** `PRD.md` Sections `5.1`, `6.2`; `schema.yaml` user profile and skill endpoints when added
@@ -237,6 +273,8 @@ At the end of this phase, regular users can maintain private profiles and skill 
 - **Phase:** Phase 3: Profiles, Skills, and Organization Public Presence
 - **Status:** Complete
 - **Owner:** Backend
+- **Actor(s):** Organization, Guest, Regular User
+- **Route(s):** `/organization-profile`, `/org`, `/organizations/:id`, `/courses/:id`, `/events/:id`, `/jobs/:id`
 - **Files touched:** `backend/apps/organizations/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-204`, `TASK-301`
 - **Spec:** `PRD.md` Sections `3`, `3.1`, `5.3`, `6.2`
@@ -250,6 +288,8 @@ At the end of this phase, regular users can maintain private profiles and skill 
 - **Phase:** Phase 3: Profiles, Skills, and Organization Public Presence
 - **Status:** Complete
 - **Owner:** Frontend
+- **Actor(s):** Organization, Guest, Regular User
+- **Route(s):** `/organization-profile`, `/org`, `/organizations/:id`, `/courses/:id`, `/events/:id`, `/jobs/:id`
 - **Files touched:** `frontend/src/features/organizations/`, `frontend/src/services/organizations/`, `frontend/src/components/shared/`
 - **Depends on:** `TASK-303`
 - **Spec:** `PRD.md` Sections `3`, `5.3`, `6.2`; `schema.yaml` organization endpoints when added
@@ -263,6 +303,8 @@ At the end of this phase, regular users can maintain private profiles and skill 
 - **Phase:** Phase 3: Profiles, Skills, and Organization Public Presence
 - **Status:** Complete
 - **Owner:** Both
+- **Actor(s):** Guest, Regular User, Organization
+- **Route(s):** `/profile`, `/organizations/:id`, `/courses`, `/courses/:id`, `/events`, `/events/:id`, `/jobs`, `/jobs/:id`
 - **Files touched:** `backend/apps/accounts/`, `backend/apps/organizations/`, `frontend/src/features/profile/`, `frontend/src/features/organizations/`, `frontend/src/app/`
 - **Depends on:** `TASK-302`, `TASK-304`
 - **Spec:** `PRD.md` Sections `6.2`, `7.2`, `7.3`
@@ -291,6 +333,8 @@ At the end of this phase, users can discover relevant peers, understand compatib
 - **Phase:** Phase 4: Discovery, Matching, and Swap Request Lifecycle
 - **Status:** Complete
 - **Owner:** Backend
+- **Actor(s):** Regular User
+- **Route(s):** `/discover`, `/skill-swap`, `/dashboard`
 - **Files touched:** `backend/apps/skills/`, `backend/apps/swaps/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-301`, `TASK-305`
 - **Spec:** `PRD.md` Sections `5.2`, `6.3`, `6.6`
@@ -304,6 +348,8 @@ At the end of this phase, users can discover relevant peers, understand compatib
 - **Phase:** Phase 4: Discovery, Matching, and Swap Request Lifecycle
 - **Status:** Complete
 - **Owner:** Frontend
+- **Actor(s):** Regular User
+- **Route(s):** `/discover`, `/skill-swap`, `/dashboard`
 - **Files touched:** `frontend/src/features/skills/pages/`, `frontend/src/features/skills/components/`, `frontend/src/hooks/skills/`, `frontend/src/services/skills/`
 - **Depends on:** `TASK-401`
 - **Spec:** `PRD.md` Sections `5.2`, `6.3`, `6.6`; `schema.yaml` matching endpoints when added
@@ -317,6 +363,8 @@ At the end of this phase, users can discover relevant peers, understand compatib
 - **Phase:** Phase 4: Discovery, Matching, and Swap Request Lifecycle
 - **Status:** Complete
 - **Owner:** Backend
+- **Actor(s):** Regular User
+- **Route(s):** `/skill-swap`, `/dashboard`
 - **Files touched:** `backend/apps/swaps/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-401`
 - **Spec:** `PRD.md` Sections `5.2`, `6.3`
@@ -330,6 +378,8 @@ At the end of this phase, users can discover relevant peers, understand compatib
 - **Phase:** Phase 4: Discovery, Matching, and Swap Request Lifecycle
 - **Status:** Complete
 - **Owner:** Frontend
+- **Actor(s):** Regular User
+- **Route(s):** `/skill-swap`, `/dashboard`
 - **Files touched:** `frontend/src/features/skills/pages/`, `frontend/src/features/skills/components/`, `frontend/src/services/skills/`
 - **Depends on:** `TASK-402`, `TASK-403`
 - **Spec:** `PRD.md` Sections `5.2`, `6.3`; `schema.yaml` swap request endpoints when added
@@ -343,6 +393,8 @@ At the end of this phase, users can discover relevant peers, understand compatib
 - **Phase:** Phase 4: Discovery, Matching, and Swap Request Lifecycle
 - **Status:** Complete
 - **Owner:** Both
+- **Actor(s):** Regular User
+- **Route(s):** `/skill-swap`, `/dashboard`
 - **Files touched:** `backend/apps/swaps/`, `backend/apps/skills/`, `frontend/src/features/skills/`, `frontend/src/lib/`
 - **Depends on:** `TASK-403`, `TASK-404`
 - **Spec:** `PRD.md` Sections `2.1`, `6.3`, `6.6`
@@ -367,10 +419,15 @@ At the end of this phase, users can discover relevant peers, understand compatib
 Goal:
 At the end of this phase, matched users can communicate, coordinate sessions, share resources, record sessions, and leave ratings/reviews after participation.
 
+Status:
+Complete
+
 ### TASK-501: Implement Messaging Backend Contracts
 - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
 - **Status:** Complete
 - **Owner:** Backend
+- **Actor(s):** Regular User
+- **Route(s):** `/messages`, `/skill-swap`, `/dashboard`
 - **Files touched:** `backend/apps/messaging/`, `backend/config/urls.py`, `backend/config/routing.py`, `schema.yaml`
 - **Depends on:** `TASK-403`
 - **Spec:** `PRD.md` Sections `5.2`, `6.4`, `8`
@@ -384,6 +441,8 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
 - **Status:** Complete
 - **Owner:** Frontend
+- **Actor(s):** Regular User
+- **Route(s):** `/messages`, `/skill-swap`, `/dashboard`
 - **Files touched:** `frontend/src/features/messages/`, `frontend/src/hooks/messages/`, `frontend/src/services/messages/`, `frontend/src/lib/realtime/`
 - **Depends on:** `TASK-501`
 - **Spec:** `PRD.md` Sections `5.2`, `6.4`; `schema.yaml` messaging endpoints when added
@@ -397,6 +456,8 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
 - **Status:** Complete
 - **Owner:** Backend
+- **Actor(s):** Regular User
+- **Route(s):** `/messages`, `/skill-swap`, `/dashboard`
 - **Files touched:** `backend/apps/messaging/`, `backend/config/routing.py`, `backend/config/asgi.py`, `backend/apps/notifications/`
 - **Depends on:** `TASK-501`
 - **Spec:** `PRD.md` Sections `6.4`, `7.4`
@@ -407,9 +468,11 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 - **Description:** Add the backend realtime coordination path for chat and session-sensitive updates while preserving graceful degradation.
 
 ### TASK-504: Wire Frontend Realtime Coordination Behavior
-  - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
-  - **Status:** Complete
-  - **Owner:** Frontend
+- **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
+- **Status:** Complete
+- **Owner:** Frontend
+- **Actor(s):** Regular User
+- **Route(s):** `/messages`, `/skill-swap`, `/dashboard`
 - **Files touched:** `frontend/src/lib/realtime/`, `frontend/src/features/messages/`, `frontend/src/stores/`, `frontend/src/hooks/messages/`
 - **Depends on:** `TASK-502`, `TASK-503`
 - **Spec:** `PRD.md` Sections `6.4`, `7.1`
@@ -420,9 +483,11 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 - **Description:** Connect the frontend messaging experience to the realtime-ready socket and shared-state foundation without inventing unsupported contracts.
 
 ### TASK-505: Implement Session Planning and Session Record Backend
-  - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
-  - **Status:** Complete
-  - **Owner:** Backend
+- **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
+- **Status:** Complete
+- **Owner:** Backend
+- **Actor(s):** Regular User
+- **Route(s):** `/messages`, `/dashboard`
 - **Files touched:** `backend/apps/sessions/`, `backend/apps/swaps/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-403`
 - **Spec:** `PRD.md` Sections `5.2`, `6.4`, `8`
@@ -433,9 +498,11 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 - **Description:** Build the backend record model for session planning, completion tracking, and dashboard visibility.
 
 ### TASK-506: Build Session Planning and Meeting-Link UI
-  - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
-  - **Status:** Complete
-  - **Owner:** Frontend
+- **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
+- **Status:** Complete
+- **Owner:** Frontend
+- **Actor(s):** Regular User
+- **Route(s):** `/messages`, `/dashboard`
 - **Files touched:** `frontend/src/features/messages/`, `frontend/src/features/dashboard/`, `frontend/src/services/messages/`, `frontend/src/services/dashboard/`
 - **Depends on:** `TASK-505`, `TASK-502`
 - **Spec:** `PRD.md` Sections `5.2`, `6.4`; `schema.yaml` session endpoints when added
@@ -449,6 +516,8 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
 - **Status:** Complete
 - **Owner:** Backend
+- **Actor(s):** Regular User
+- **Route(s):** `/messages`, `/skill-swap`, `/dashboard`, `/courses/:id`, `/events/:id`
 - **Files touched:** `backend/apps/reviews/`, `backend/apps/swaps/`, `backend/apps/courses/`, `backend/apps/events/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-505`
 - **Spec:** `PRD.md` Sections `6.3.1`, `9.1`
@@ -462,6 +531,8 @@ At the end of this phase, matched users can communicate, coordinate sessions, sh
 - **Phase:** Phase 5: Messaging, Realtime Coordination, Sessions, and Reviews
 - **Status:** Complete
 - **Owner:** Frontend
+- **Actor(s):** Regular User
+- **Route(s):** `/messages`, `/dashboard`, `/courses/:id`, `/events/:id`
 - **Files touched:** `frontend/src/features/messages/`, `frontend/src/features/courses/`, `frontend/src/features/events/`, `frontend/src/services/`
 - **Depends on:** `TASK-507`, `TASK-506`
 - **Spec:** `PRD.md` Sections `6.3.1`, `9.1`; `schema.yaml` review endpoints when added
@@ -488,7 +559,10 @@ At the end of this phase, organizations can move through trust workflows and aut
 
 ### TASK-601: Implement Organization Verification Workflow Backend
 - **Phase:** Phase 6: Organization Verification and Program Authoring
+- **Status:** Complete
 - **Owner:** Backend
+- **Actor(s):** Organization, Admin
+- **Route(s):** `/organization-profile`, `/org`, `/admin`, `/organizations/:id`, `/courses/:id`, `/jobs/:id`
 - **Files touched:** `backend/apps/organizations/`, `backend/apps/audit/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-303`, `TASK-305`
 - **Spec:** `PRD.md` Sections `3.1`, `5.3`, `6.1`, `6.10`
@@ -500,7 +574,10 @@ At the end of this phase, organizations can move through trust workflows and aut
 
 ### TASK-602: Build Verification Status and Organization Trust UI
 - **Phase:** Phase 6: Organization Verification and Program Authoring
+- **Status:** Complete
 - **Owner:** Frontend
+- **Actor(s):** Organization, Admin, Guest, Regular User
+- **Route(s):** `/organization-profile`, `/org`, `/admin`, `/organizations/:id`, `/courses/:id`, `/jobs/:id`
 - **Files touched:** `frontend/src/features/organizations/`, `frontend/src/lib/uploads/`, `frontend/src/services/organizations/`, `frontend/src/components/shared/`
 - **Depends on:** `TASK-601`
 - **Spec:** `PRD.md` Sections `3.1`, `5.3`, `6.2`; `schema.yaml` verification endpoints when added
@@ -512,7 +589,10 @@ At the end of this phase, organizations can move through trust workflows and aut
 
 ### TASK-603: Implement Course, Module, and Lesson Backend
 - **Phase:** Phase 6: Organization Verification and Program Authoring
+- **Status:** Complete
 - **Owner:** Backend
+- **Actor(s):** Organization, Regular User, Guest
+- **Route(s):** `/course-builder`, `/org`, `/courses`, `/courses/:id`
 - **Files touched:** `backend/apps/courses/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-601`
 - **Spec:** `PRD.md` Sections `4.1`, `5.3`, `6.5`, `8`
@@ -524,7 +604,10 @@ At the end of this phase, organizations can move through trust workflows and aut
 
 ### TASK-604: Build Course Authoring UI
 - **Phase:** Phase 6: Organization Verification and Program Authoring
+- **Status:** Complete
 - **Owner:** Frontend
+- **Actor(s):** Organization
+- **Route(s):** `/course-builder`, `/org`
 - **Files touched:** `frontend/src/features/courses/`, `frontend/src/features/courses/course-builder/`, `frontend/src/hooks/courses/`, `frontend/src/services/courses/`
 - **Depends on:** `TASK-603`
 - **Spec:** `PRD.md` Sections `5.3`, `6.5`; `schema.yaml` course authoring endpoints when added
@@ -536,7 +619,10 @@ At the end of this phase, organizations can move through trust workflows and aut
 
 ### TASK-605: Implement Progression Gating and Content Visibility Rules
 - **Phase:** Phase 6: Organization Verification and Program Authoring
+- **Status:** Complete
 - **Owner:** Both
+- **Actor(s):** Organization, Regular User
+- **Route(s):** `/course-builder`, `/courses/:id`, `/dashboard`
 - **Files touched:** `backend/apps/courses/`, `frontend/src/features/courses/`, `schema.yaml`
 - **Depends on:** `TASK-603`, `TASK-604`
 - **Spec:** `PRD.md` Sections `5.3`, `6.5`
@@ -548,7 +634,10 @@ At the end of this phase, organizations can move through trust workflows and aut
 
 ### TASK-606: Enforce Paid-Course Trust Restrictions
 - **Phase:** Phase 6: Organization Verification and Program Authoring
+- **Status:** Complete
 - **Owner:** Both
+- **Actor(s):** Organization, Regular User, Guest
+- **Route(s):** `/course-builder`, `/organization-profile`, `/org`, `/courses`, `/courses/:id`
 - **Files touched:** `backend/apps/courses/`, `backend/apps/organizations/`, `frontend/src/features/courses/`, `frontend/src/features/organizations/`, `schema.yaml`
 - **Depends on:** `TASK-601`, `TASK-603`, `TASK-605`
 - **Spec:** `PRD.md` Sections `3.1`, `6.5`
@@ -576,6 +665,8 @@ At the end of this phase, verified organizations can reach finance readiness, pa
 ### TASK-701: Implement Financial Account Readiness Backend
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
 - **Owner:** Backend
+- **Actor(s):** Organization
+- **Route(s):** `/org`, `/organization-profile`, `/course-builder`
 - **Files touched:** `backend/apps/payments/`, `backend/apps/organizations/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-601`, `TASK-606`
 - **Spec:** `PRD.md` Sections `3.1`, `4.1`, `6.5`, `8`
@@ -588,6 +679,8 @@ At the end of this phase, verified organizations can reach finance readiness, pa
 ### TASK-702: Build Financial Setup and Monetization Readiness UI
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
 - **Owner:** Frontend
+- **Actor(s):** Organization, Regular User
+- **Route(s):** `/org`, `/organization-profile`, `/course-builder`, `/courses/:id`
 - **Files touched:** `frontend/src/features/organizations/`, `frontend/src/features/courses/`, `frontend/src/services/organizations/`
 - **Depends on:** `TASK-701`
 - **Spec:** `PRD.md` Sections `5.3`, `6.5`; `schema.yaml` financial setup endpoints when added
@@ -600,6 +693,8 @@ At the end of this phase, verified organizations can reach finance readiness, pa
 ### TASK-703: Implement Chapa-Oriented Payment Flow Backend
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
 - **Owner:** Backend
+- **Actor(s):** Organization, Regular User
+- **Route(s):** `/courses/:id`, `/dashboard`, `/org`
 - **Files touched:** `backend/apps/payments/`, `backend/apps/courses/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-701`
 - **Spec:** `PRD.md` Sections `4.1`, `6.5`
@@ -612,6 +707,8 @@ At the end of this phase, verified organizations can reach finance readiness, pa
 ### TASK-704: Build Paid Enrollment UI and Blocked Enrollment States
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
 - **Owner:** Frontend
+- **Actor(s):** Regular User, Organization
+- **Route(s):** `/courses/:id`, `/dashboard`, `/org`
 - **Files touched:** `frontend/src/features/courses/`, `frontend/src/services/courses/`, `frontend/src/components/shared/`
 - **Depends on:** `TASK-702`, `TASK-703`
 - **Spec:** `PRD.md` Sections `5.3`, `6.5`; `schema.yaml` payment/enrollment endpoints when added
@@ -624,6 +721,8 @@ At the end of this phase, verified organizations can reach finance readiness, pa
 ### TASK-705: Implement Enrollment and Progress Backend
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
 - **Owner:** Backend
+- **Actor(s):** Regular User, Organization
+- **Route(s):** `/courses/:id`, `/dashboard`, `/org`
 - **Files touched:** `backend/apps/courses/`, `backend/apps/payments/`, `backend/apps/dashboards/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-603`, `TASK-703`
 - **Spec:** `PRD.md` Sections `4.1`, `5.3`, `6.5`, `6.11`
@@ -636,6 +735,8 @@ At the end of this phase, verified organizations can reach finance readiness, pa
 ### TASK-706: Build Learner Enrollment and Progress UI
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
 - **Owner:** Frontend
+- **Actor(s):** Regular User
+- **Route(s):** `/courses/:id`, `/dashboard`
 - **Files touched:** `frontend/src/features/courses/`, `frontend/src/features/dashboard/`, `frontend/src/hooks/courses/`, `frontend/src/services/courses/`
 - **Depends on:** `TASK-704`, `TASK-705`
 - **Spec:** `PRD.md` Sections `4.1`, `6.5`, `6.11`; `schema.yaml` enrollment/progress endpoints when added
@@ -663,6 +764,8 @@ At the end of this phase, organizations can publish events and opportunities, an
 ### TASK-801: Implement Event and RSVP Backend
 - **Phase:** Phase 8: Events, Opportunities, and Applications
 - **Owner:** Backend
+- **Actor(s):** Organization, Regular User, Guest
+- **Route(s):** `/events`, `/events/:id`, `/org`
 - **Files touched:** `backend/apps/events/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-206`, `TASK-303`
 - **Spec:** `PRD.md` Sections `4.1`, `6.8`, `8`
@@ -675,6 +778,8 @@ At the end of this phase, organizations can publish events and opportunities, an
 ### TASK-802: Build Event Discovery and RSVP UI
 - **Phase:** Phase 8: Events, Opportunities, and Applications
 - **Owner:** Frontend
+- **Actor(s):** Guest, Regular User
+- **Route(s):** `/events`, `/events/:id`
 - **Files touched:** `frontend/src/features/events/`, `frontend/src/services/events/`, `frontend/src/components/shared/`
 - **Depends on:** `TASK-801`
 - **Spec:** `PRD.md` Sections `4.1`, `6.8`; `schema.yaml` event endpoints when added
@@ -687,6 +792,8 @@ At the end of this phase, organizations can publish events and opportunities, an
 ### TASK-803: Implement Opportunity and Application Backend
 - **Phase:** Phase 8: Events, Opportunities, and Applications
 - **Owner:** Backend
+- **Actor(s):** Organization, Regular User, Guest
+- **Route(s):** `/jobs`, `/jobs/:id`, `/org`
 - **Files touched:** `backend/apps/opportunities/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-206`, `TASK-303`
 - **Spec:** `PRD.md` Sections `4.1`, `6.9`, `8`
@@ -699,6 +806,8 @@ At the end of this phase, organizations can publish events and opportunities, an
 ### TASK-804: Build Opportunity Discovery and Application UI
 - **Phase:** Phase 8: Events, Opportunities, and Applications
 - **Owner:** Frontend
+- **Actor(s):** Guest, Regular User
+- **Route(s):** `/jobs`, `/jobs/:id`, `/dashboard`
 - **Files touched:** `frontend/src/features/jobs/`, `frontend/src/services/jobs/`, `frontend/src/components/shared/`
 - **Depends on:** `TASK-803`
 - **Spec:** `PRD.md` Sections `4.1`, `6.9`; `schema.yaml` opportunity/application endpoints when added
@@ -711,6 +820,8 @@ At the end of this phase, organizations can publish events and opportunities, an
 ### TASK-805: Build Organization Applicant Pipeline Management
 - **Phase:** Phase 8: Events, Opportunities, and Applications
 - **Owner:** Both
+- **Actor(s):** Organization
+- **Route(s):** `/org`
 - **Files touched:** `backend/apps/opportunities/`, `backend/apps/dashboards/`, `frontend/src/features/organizations/`, `frontend/src/features/jobs/`, `frontend/src/services/`
 - **Depends on:** `TASK-803`, `TASK-804`
 - **Spec:** `PRD.md` Sections `5.3`, `6.9`, `6.11`
@@ -723,6 +834,8 @@ At the end of this phase, organizations can publish events and opportunities, an
 ### TASK-806: Preserve Relevance Signals for Events and Opportunities
 - **Phase:** Phase 8: Events, Opportunities, and Applications
 - **Owner:** Both
+- **Actor(s):** Regular User, Organization
+- **Route(s):** `/discover`, `/events`, `/events/:id`, `/jobs`, `/jobs/:id`, `/dashboard`, `/org`
 - **Files touched:** `backend/apps/events/`, `backend/apps/opportunities/`, `backend/apps/dashboards/`, `frontend/src/services/`, `frontend/src/lib/`
 - **Depends on:** `TASK-801`, `TASK-803`
 - **Spec:** `PRD.md` Sections `5.5`, `6.6`, `6.8`, `6.9`
@@ -750,6 +863,8 @@ At the end of this phase, each actor has a relevant dashboard, notifications sup
 ### TASK-901: Implement Dashboard Aggregation Backend
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Backend
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/dashboard`, `/org`, `/admin`
 - **Files touched:** `backend/apps/dashboards/`, `backend/apps/common/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-505`, `TASK-705`, `TASK-805`
 - **Spec:** `PRD.md` Sections `4.1`, `6.11`
@@ -762,6 +877,8 @@ At the end of this phase, each actor has a relevant dashboard, notifications sup
 ### TASK-902: Build Actor Dashboard Frontend
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Frontend
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/dashboard`, `/org`, `/admin`
 - **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/dashboard/`, `frontend/src/hooks/dashboard/`
 - **Depends on:** `TASK-901`
 - **Spec:** `PRD.md` Sections `4.1`, `6.11`; `schema.yaml` dashboard endpoints when added
@@ -774,6 +891,8 @@ At the end of this phase, each actor has a relevant dashboard, notifications sup
 ### TASK-903: Implement Notification Backend
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Backend
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** `/verify-email`, `/login`, `/dashboard`, `/org`, `/admin`, `/messages`, `/skill-swap`, `/courses/:id`, `/events/:id`, `/jobs/:id`
 - **Files touched:** `backend/apps/notifications/`, `backend/apps/accounts/`, `backend/apps/messaging/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-202`, `TASK-503`, `TASK-705`
 - **Spec:** `PRD.md` Sections `4.1`, `6.4`, `6.11`
@@ -786,6 +905,8 @@ At the end of this phase, each actor has a relevant dashboard, notifications sup
 ### TASK-904: Build Notification Frontend
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Frontend
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/dashboard`, `/org`, `/admin`, `/messages`
 - **Files touched:** `frontend/src/stores/`, `frontend/src/components/shared/`, `frontend/src/features/dashboard/`, `frontend/src/services/`
 - **Depends on:** `TASK-903`, `TASK-902`
 - **Spec:** `PRD.md` Sections `4.1`, `6.11`; `schema.yaml` notification endpoints when added
@@ -798,6 +919,8 @@ At the end of this phase, each actor has a relevant dashboard, notifications sup
 ### TASK-905: Implement Admin Moderation and Taxonomy Backend
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Backend
+- **Actor(s):** Admin
+- **Route(s):** `/admin`
 - **Files touched:** `backend/apps/taxonomy/`, `backend/apps/accounts/`, `backend/apps/organizations/`, `backend/apps/audit/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-206`, `TASK-601`
 - **Spec:** `PRD.md` Sections `5.4`, `6.12`
@@ -810,6 +933,8 @@ At the end of this phase, each actor has a relevant dashboard, notifications sup
 ### TASK-906: Build Admin Moderation and Category Governance UI
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Frontend
+- **Actor(s):** Admin
+- **Route(s):** `/admin`
 - **Files touched:** `frontend/src/features/organizations/`, `frontend/src/features/dashboard/`, `frontend/src/services/organizations/`, `frontend/src/services/dashboard/`
 - **Depends on:** `TASK-905`, `TASK-902`
 - **Spec:** `PRD.md` Sections `5.4`, `6.12`; `schema.yaml` moderation/category endpoints when added
@@ -822,6 +947,8 @@ At the end of this phase, each actor has a relevant dashboard, notifications sup
 ### TASK-907: Implement Audit-Friendly Logging Backend
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Backend
+- **Actor(s):** Admin
+- **Route(s):** `/admin`
 - **Files touched:** `backend/apps/audit/`, `backend/apps/common/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-905`
 - **Spec:** `PRD.md` Sections `6.12`, `7.4`
@@ -834,6 +961,8 @@ At the end of this phase, each actor has a relevant dashboard, notifications sup
 ### TASK-908: Expose Audit and Oversight UI
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Frontend
+- **Actor(s):** Admin
+- **Route(s):** `/admin`
 - **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/services/dashboard/`, `frontend/src/components/shared/`
 - **Depends on:** `TASK-907`, `TASK-906`
 - **Spec:** `PRD.md` Sections `5.4`, `6.12`; `schema.yaml` audit endpoints when added
@@ -861,6 +990,8 @@ At the end of this phase, all deferred V2/V3 PRD features remain intentionally m
 ### TASK-1001: Preserve V2 Course and Recommendation Extension Points
 - **Phase:** Phase 10: Deferred Feature Continuity and Expansion Safety
 - **Owner:** Both
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** `/courses`, `/courses/:id`, `/discover`, `/dashboard`, `/org`, `/admin`
 - **Files touched:** `backend/apps/common/`, `backend/apps/courses/`, `backend/apps/skills/`, `frontend/src/lib/`, `frontend/src/services/`, `Agent Tasks.md`
 - **Depends on:** `TASK-606`, `TASK-706`
 - **Spec:** `PRD.md` Sections `4.2`, `6.5`, `6.6`
@@ -873,6 +1004,8 @@ At the end of this phase, all deferred V2/V3 PRD features remain intentionally m
 ### TASK-1002: Preserve Community, Service, and Certificate Extension Points
 - **Phase:** Phase 10: Deferred Feature Continuity and Expansion Safety
 - **Owner:** Both
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/org`, `/organization-profile`, `/events`, `/events/:id`, `/courses/:id`, `/admin`
 - **Files touched:** `backend/apps/common/`, `backend/apps/events/`, `backend/apps/organizations/`, `backend/apps/notifications/`, `frontend/src/lib/`, `frontend/src/features/`, `Agent Tasks.md`
 - **Depends on:** `TASK-801`, `TASK-906`
 - **Spec:** `PRD.md` Sections `4.2`, `6.8`, `6.10`
@@ -885,6 +1018,8 @@ At the end of this phase, all deferred V2/V3 PRD features remain intentionally m
 ### TASK-1003: Preserve Advanced Analytics and Adaptive Feature Hooks
 - **Phase:** Phase 10: Deferred Feature Continuity and Expansion Safety
 - **Owner:** Both
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/dashboard`, `/org`, `/admin`, `/discover`
 - **Files touched:** `backend/apps/dashboards/`, `backend/apps/common/`, `frontend/src/features/dashboard/`, `frontend/src/lib/`, `Agent Tasks.md`
 - **Depends on:** `TASK-901`, `TASK-908`
 - **Spec:** `PRD.md` Sections `4.3`, `6.6`, `6.7`, `6.11`
@@ -897,6 +1032,8 @@ At the end of this phase, all deferred V2/V3 PRD features remain intentionally m
 ### TASK-1004: Run Full PRD Coverage Audit Before Future Replanning
 - **Phase:** Phase 10: Deferred Feature Continuity and Expansion Safety
 - **Owner:** Both
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** All routes in `ROLE_ACCESS_MATRIX.md` plus future additions that must be added there first
 - **Files touched:** `Agent Tasks.md`, `BLOCKERS.md`, `schema.yaml`, `DEFINITION_OF_DONE.md`
 - **Depends on:** `TASK-1001`, `TASK-1002`, `TASK-1003`
 - **Spec:** `PRD.md` Sections `3` through `7`

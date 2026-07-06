@@ -11,22 +11,45 @@ export class ApiError extends Error {
 }
 
 function extractApiErrorMessage(data, response) {
+  function findFirstMessage(value) {
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const nested = findFirstMessage(item);
+        if (nested) {
+          return nested;
+        }
+      }
+      return null;
+    }
+
+    if (value && typeof value === "object") {
+      if (typeof value.detail === "string" && value.detail.trim()) {
+        return value.detail;
+      }
+
+      for (const nestedValue of Object.values(value)) {
+        const nested = findFirstMessage(nestedValue);
+        if (nested) {
+          return nested;
+        }
+      }
+    }
+
+    return null;
+  }
+
   if (typeof data === "string" && data.trim()) {
     return data;
   }
 
   if (data && typeof data === "object") {
-    if (typeof data.detail === "string" && data.detail.trim()) {
-      return data.detail;
-    }
-
-    for (const value of Object.values(data)) {
-      if (typeof value === "string" && value.trim()) {
-        return value;
-      }
-      if (Array.isArray(value) && typeof value[0] === "string") {
-        return value[0];
-      }
+    const nestedMessage = findFirstMessage(data);
+    if (nestedMessage) {
+      return nestedMessage;
     }
   }
 

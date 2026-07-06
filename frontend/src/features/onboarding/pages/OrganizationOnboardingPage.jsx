@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDropzone } from "react-dropzone";
 import {
@@ -24,6 +24,11 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { toast } from "@/components/ui/use-toast";
+import { appRuntime } from "@/lib/runtime-config";
+import {
+  getVerificationResendCooldown,
+  startVerificationResendCooldown,
+} from "@/lib/auth/verification-resend";
 
 const organizationTypeOptions = [
   { value: organizationTypes.company, label: "Company" },
@@ -50,6 +55,7 @@ export default function OrganizationOnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const onDrop = (acceptedFiles) => {
     setBusinessLicense(acceptedFiles[0] || null);
@@ -77,6 +83,20 @@ export default function OrganizationOnboardingPage() {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
+  useEffect(() => {
+    if (!showVerification || !form.email) {
+      return undefined;
+    }
+
+    setResendCooldown(getVerificationResendCooldown(form.email));
+
+    const timer = window.setInterval(() => {
+      setResendCooldown(getVerificationResendCooldown(form.email));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [form.email, showVerification]);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
@@ -98,6 +118,12 @@ export default function OrganizationOnboardingPage() {
         location: form.location,
         businessLicense,
       });
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          `${appRuntime.storagePrefix}:${appRuntime.storageKeys.pendingVerificationEmail}`,
+          form.email,
+        );
+      }
       setShowVerification(true);
     } catch (requestError) {
       setError(requestError.message || "Organization registration failed.");
@@ -111,6 +137,11 @@ export default function OrganizationOnboardingPage() {
     setLoading(true);
     try {
       await authService.verifyEmail({ email: form.email, code: otpCode });
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(
+          `${appRuntime.storagePrefix}:${appRuntime.storageKeys.pendingVerificationEmail}`,
+        );
+      }
       window.location.href = "/org";
     } catch (requestError) {
       setError(requestError.message || "Invalid verification code.");
@@ -123,11 +154,18 @@ export default function OrganizationOnboardingPage() {
     setError("");
     try {
       await authService.resendVerification(form.email);
+      startVerificationResendCooldown(form.email);
+      setResendCooldown(getVerificationResendCooldown(form.email));
       toast({
         title: "Verification code sent",
         description: "Check your inbox for the latest organization verification code.",
       });
     } catch (requestError) {
+      const waitSeconds = requestError?.data?.retry_after_seconds;
+      if (waitSeconds) {
+        startVerificationResendCooldown(form.email, waitSeconds);
+        setResendCooldown(getVerificationResendCooldown(form.email));
+      }
       setError(requestError.message || "Failed to resend verification code.");
     }
   };
@@ -184,10 +222,22 @@ export default function OrganizationOnboardingPage() {
           <button
             type="button"
             onClick={handleResend}
+            disabled={resendCooldown > 0}
             className="font-medium text-primary hover:underline"
           >
-            Resend verification
+            {resendCooldown > 0
+              ? `Resend verification in ${resendCooldown}s`
+              : "Resend verification"}
           </button>
+        </p>
+        <p className="mt-3 text-center text-sm text-muted-foreground">
+          Want to do this later?{" "}
+          <Link
+            to={`/verify-email?email=${encodeURIComponent(form.email)}&from=${encodeURIComponent("/org")}`}
+            className="font-medium text-primary hover:underline"
+          >
+            Finish verification later
+          </Link>
         </p>
       </AuthLayout>
     );

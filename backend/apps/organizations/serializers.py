@@ -4,8 +4,14 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.accounts.services import issue_verification_token
-from apps.common.enums import OrganizationType, OrganizationVerificationStatus, Role
-from apps.organizations.models import Organization
+from apps.common.enums import (
+    OrganizationType,
+    OrganizationVerificationReviewStatus,
+    OrganizationVerificationStatus,
+    Role,
+)
+from apps.organizations.models import Organization, OrganizationVerificationRequest
+from apps.organizations.services import submit_organization_verification_request
 
 User = get_user_model()
 
@@ -93,6 +99,12 @@ class OrganizationRegisterSerializer(serializers.Serializer):
             verification_status=OrganizationVerificationStatus.UNVERIFIED,
             business_license=business_license,
         )
+        if business_license:
+            submit_organization_verification_request(
+                organization=organization,
+                requested_by=user,
+                request_notes="Verification request created from organization registration.",
+            )
         issue_verification_token(user)
         return organization
 
@@ -209,3 +221,101 @@ class OrganizationPublicProfileSerializer(serializers.ModelSerializer):
     @extend_schema_field(bool)
     def get_has_business_license(self, obj):
         return bool(obj.business_license)
+
+
+class OrganizationVerificationRequestSerializer(serializers.ModelSerializer):
+    requested_by_email = serializers.EmailField(source="requested_by.email", read_only=True)
+    reviewed_by_email = serializers.EmailField(
+        source="reviewed_by.email",
+        read_only=True,
+        allow_null=True,
+    )
+    has_business_license = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrganizationVerificationRequest
+        fields = (
+            "id",
+            "organization",
+            "status",
+            "request_notes",
+            "reviewer_notes",
+            "used_admin_override",
+            "has_business_license",
+            "requested_by",
+            "requested_by_email",
+            "reviewed_by",
+            "reviewed_by_email",
+            "submitted_at",
+            "reviewed_at",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = fields
+
+    @extend_schema_field(bool)
+    def get_has_business_license(self, obj):
+        return bool(obj.organization.business_license)
+
+
+class OrganizationVerificationOverviewSerializer(serializers.Serializer):
+    organization = OrganizationProfileSerializer()
+    latest_request = OrganizationVerificationRequestSerializer(allow_null=True)
+    pending_request = OrganizationVerificationRequestSerializer(allow_null=True)
+    history = OrganizationVerificationRequestSerializer(many=True)
+
+
+class OrganizationVerificationSubmitSerializer(serializers.Serializer):
+    request_notes = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        organization = self.context["organization"]
+        if organization.verification_requests.filter(
+            status=OrganizationVerificationReviewStatus.PENDING
+        ).exists():
+            raise serializers.ValidationError(
+                {"detail": "A verification request is already pending review."}
+            )
+        attrs["request_notes"] = (attrs.get("request_notes") or "").strip()
+        return attrs
+
+    def create(self, validated_data):
+        return submit_organization_verification_request(
+            organization=self.context["organization"],
+            requested_by=self.context["request"].user,
+            request_notes=validated_data.get("request_notes", ""),
+        )
+
+
+class OrganizationVerificationDecisionSerializer(serializers.Serializer):
+    decision = serializers.ChoiceField(choices=OrganizationVerificationReviewStatus.choices)
+    reviewer_notes = serializers.CharField(required=False, allow_blank=True)
+    use_admin_override = serializers.BooleanField(required=False, default=False)
+
+    def validate(self, attrs):
+        verification_request = self.context["verification_request"]
+        organization = verification_request.organization
+        decision = attrs["decision"]
+        attrs["reviewer_notes"] = (attrs.get("reviewer_notes") or "").strip()
+
+        if verification_request.status != OrganizationVerificationReviewStatus.PENDING:
+            raise serializers.ValidationError(
+                {"detail": "Only pending verification requests can be reviewed."}
+            )
+        if decision == OrganizationVerificationReviewStatus.PENDING:
+            raise serializers.ValidationError(
+                {"decision": "Decision must approve or reject the verification request."}
+            )
+        if (
+            decision == OrganizationVerificationReviewStatus.APPROVED
+            and not organization.business_license
+            and not attrs["use_admin_override"]
+        ):
+            raise serializers.ValidationError(
+                {
+                    "use_admin_override": (
+                        "Approving without a business license requires an admin override."
+                    )
+                }
+            )
+        return attrs

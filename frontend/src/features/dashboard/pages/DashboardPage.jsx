@@ -344,7 +344,9 @@ export default function DashboardPage() {
                     <BookOpen className="h-5 w-5 text-teal-600" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium">Course</div>
+                    <div className="text-sm font-medium">
+                      {enrollment.course_program?.title || "Course"}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       Enrolled{" "}
                       {enrollment.enrolled_date
@@ -366,6 +368,17 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <StatusBadge status={enrollment.status} />
+                  {enrollment.course_program?.id && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.location.href = `/courses/${enrollment.course_program.id}`;
+                      }}
+                      className="text-xs font-medium text-teal-700 hover:text-teal-800"
+                    >
+                      Open
+                    </button>
+                  )}
                 </div>
               ))}
               </div>

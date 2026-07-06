@@ -1,12 +1,17 @@
 from django.utils import timezone
 from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 from django.db import transaction
 from django.db.models import Q
 
 from apps.common.enums import SkillSwapStatus
 from apps.messaging.models import MessageThread, MessageThreadReadState, ThreadMessage
 from apps.messaging.serializers import ThreadMessageSerializer
+
+try:
+    from channels.layers import get_channel_layer
+except ModuleNotFoundError:
+    def get_channel_layer():
+        return None
 
 
 def get_thread_group_name(thread_id):

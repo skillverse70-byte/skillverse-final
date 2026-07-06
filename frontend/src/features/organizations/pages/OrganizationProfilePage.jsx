@@ -6,6 +6,8 @@ import { useToast } from "@/components/ui/use-toast";
 import PageLoader from "@/components/shared/PageLoader";
 import PageHeader from "@/components/shared/PageHeader";
 import OrganizationProfileForm from "@/features/organizations/components/OrganizationProfileForm";
+import VerificationStatusCard from "@/features/organizations/components/VerificationStatusCard";
+import { useOrganizationVerification } from "@/hooks/organizations/useOrganizationVerification";
 import { useOrganizationProfile } from "@/hooks/organizations/useOrganizationProfile";
 
 export default function OrganizationProfilePage() {
@@ -17,6 +19,13 @@ export default function OrganizationProfilePage() {
     saving,
     persistOrganization,
   } = useOrganizationProfile();
+  const {
+    overview,
+    loading: verificationLoading,
+    submitting,
+    error: verificationError,
+    submitRequest,
+  } = useOrganizationVerification();
   const { toast } = useToast();
 
   const handleSave = async () => {
@@ -63,6 +72,9 @@ export default function OrganizationProfilePage() {
                 </div>
                 <p className="max-w-2xl text-sm text-muted-foreground">
                   Unverified organizations can still publish permitted free offerings. Verified status becomes especially important anywhere users evaluate trust-sensitive offerings like courses, opportunities, and paid enrollment readiness.
+                </p>
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  Paid course authoring is locked until verification is approved. Once verified, paid courses may be prepared, but learner enrollment stays unavailable until financial setup is introduced.
                 </p>
               </div>
             </div>
@@ -116,6 +128,30 @@ export default function OrganizationProfilePage() {
             </div>
           </div>
         </div>
+
+        {!verificationLoading ? (
+          <VerificationStatusCard
+            organization={organization}
+            overview={overview}
+            submitting={submitting}
+            onSubmitRequest={async (requestNotes) => {
+              try {
+                await submitRequest(requestNotes);
+                toast({
+                  title: "Verification request submitted",
+                  description: "Your organization is now in the trust review queue.",
+                });
+              } catch (error) {
+                console.error(error);
+                toast({
+                  title: "Unable to submit verification request",
+                  description: verificationError || error.message,
+                  variant: "destructive",
+                });
+              }
+            }}
+          />
+        ) : null}
 
         <div className="rounded-3xl border border-border/50 bg-white p-6 sm:p-8">
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-900">

@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessagesCount } from "@/hooks/messages/useUnreadMessagesCount";
-import { getActorProfilePath } from "@/lib/access-control";
+import { getActorHomePath, getActorProfilePath } from "@/lib/access-control";
 import { useAppShellStore } from "@/stores/app-shell-store";
 import {
   Menu,
@@ -13,6 +13,7 @@ import {
   ArrowLeftRight,
   Calendar,
   Briefcase,
+  Building,
   MessageCircle,
   User,
   LayoutDashboard,
@@ -21,36 +22,65 @@ import {
   LogIn,
   UserPlus,
 } from "lucide-react";
+import { roles } from "@/lib/domain-enums";
 
-const navLinks = [
-  { label: "Discover", path: "/discover", icon: Compass },
-  { label: "Courses", path: "/courses", icon: BookOpen },
-  { label: "Skill Swap", path: "/skill-swap", icon: ArrowLeftRight },
-  { label: "Events", path: "/events", icon: Calendar },
-  { label: "Jobs", path: "/jobs", icon: Briefcase },
-];
+const primaryNavByRole = {
+  [roles.guest]: [
+    { label: "Discover", path: "/discover", icon: Compass },
+    { label: "Courses", path: "/courses", icon: BookOpen },
+    { label: "Skill Swap", path: "/skill-swap", icon: ArrowLeftRight },
+    { label: "Events", path: "/events", icon: Calendar },
+    { label: "Jobs", path: "/jobs", icon: Briefcase },
+  ],
+  [roles.regularUser]: [
+    { label: "Discover", path: "/discover", icon: Compass },
+    { label: "Courses", path: "/courses", icon: BookOpen },
+    { label: "Skill Swap", path: "/skill-swap", icon: ArrowLeftRight },
+    { label: "Events", path: "/events", icon: Calendar },
+    { label: "Jobs", path: "/jobs", icon: Briefcase },
+  ],
+  [roles.organization]: [
+    { label: "Dashboard", path: "/org", icon: LayoutDashboard },
+    { label: "Org Profile", path: "/organization-profile", icon: Building },
+    { label: "Course Builder", path: "/course-builder", icon: BookOpen },
+  ],
+  [roles.admin]: [
+    { label: "Admin Dashboard", path: "/admin", icon: LayoutDashboard },
+  ],
+};
 
-export default function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const location = useLocation();
-  const { hasAnyRole, isAuthenticated, logout, actorRole } = useAuth();
-  const unreadNotificationCount = useAppShellStore(
-    (state) => state.unreadNotificationCount,
-  );
-  const profilePath = getActorProfilePath(actorRole);
-  useUnreadMessagesCount();
-  const quickLinks = [
+const quickLinksByRole = {
+  [roles.regularUser]: [
     { path: "/messages", label: "Messages", icon: MessageCircle },
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/skill-portfolio", label: "Portfolio", icon: GraduationCap },
     { path: "/saved-opportunities", label: "Saved", icon: Bookmark },
-  ];
-  const visibleQuickLinks = quickLinks.filter((link) => {
-    if (link.path === "/dashboard") {
-      return hasAnyRole([]);
-    }
-    return true;
-  });
+  ],
+  [roles.organization]: [
+    { path: "/org", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/organization-profile", label: "Org Profile", icon: Building },
+    { path: "/course-builder", label: "Course Builder", icon: BookOpen },
+  ],
+  [roles.admin]: [
+    { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  ],
+};
+
+export default function Navbar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  const { isAuthenticated, logout, actorRole } = useAuth();
+  const unreadNotificationCount = useAppShellStore(
+    (state) => state.unreadNotificationCount,
+  );
+  const homePath = getActorHomePath(actorRole);
+  const profilePath = getActorProfilePath(actorRole);
+  useUnreadMessagesCount();
+  const primaryNavLinks = primaryNavByRole[actorRole] || primaryNavByRole[roles.guest];
+  const quickLinks = isAuthenticated
+    ? quickLinksByRole[actorRole] || [{ path: homePath, label: "Dashboard", icon: LayoutDashboard }]
+    : [];
+  const showProfileShortcut = isAuthenticated && actorRole !== roles.admin;
   const guestCtas = [
     { path: "/login", label: "Log in", icon: LogIn, variant: "ghost" },
     { path: "/get-started", label: "Get Started", icon: UserPlus, variant: "default" },
@@ -70,7 +100,7 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => {
+            {primaryNavLinks.map((link) => {
               const isActive = location.pathname.startsWith(link.path);
               return (
                 <Link
@@ -90,7 +120,7 @@ export default function Navbar() {
 
           {isAuthenticated ? (
             <div className="hidden md:flex items-center gap-2">
-              {visibleQuickLinks.map((link) => {
+              {quickLinks.map((link) => {
                 const Icon = link.icon;
                 const isMessagesLink = link.path === "/messages";
                 return (
@@ -106,11 +136,13 @@ export default function Navbar() {
                   </Link>
                 );
               })}
-              <Link to={profilePath}>
-                <Button variant="ghost" size="icon">
-                  <User className="w-5 h-5" />
-                </Button>
-              </Link>
+              {showProfileShortcut ? (
+                <Link to={profilePath}>
+                  <Button variant="ghost" size="icon">
+                    <User className="w-5 h-5" />
+                  </Button>
+                </Link>
+              ) : null}
               <Button variant="outline" size="sm" onClick={() => logout()}>
                 Log out
               </Button>
@@ -151,7 +183,7 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t border-border/50 bg-white pb-4">
           <div className="px-4 pt-2 space-y-1">
-            {navLinks.map((link) => {
+            {primaryNavLinks.map((link) => {
               const Icon = link.icon;
               const isActive = location.pathname.startsWith(link.path);
               return (
@@ -173,7 +205,7 @@ export default function Navbar() {
             <div className="border-t border-border/50 pt-2 mt-2 grid grid-cols-2 gap-2">
               {isAuthenticated ? (
                 <>
-                  {visibleQuickLinks.map((link) => {
+                  {quickLinks.map((link) => {
                     const Icon = link.icon;
                     const isMessagesLink = link.path === "/messages";
                     return (
@@ -194,15 +226,17 @@ export default function Navbar() {
                       </Link>
                     );
                   })}
-                  <Link
-                    to={profilePath}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex-1"
-                  >
-                    <Button variant="outline" size="sm" className="w-full gap-2">
-                      <User className="w-4 h-4" /> Profile
-                    </Button>
-                  </Link>
+                  {showProfileShortcut ? (
+                    <Link
+                      to={profilePath}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex-1"
+                    >
+                      <Button variant="outline" size="sm" className="w-full gap-2">
+                        <User className="w-4 h-4" /> Profile
+                      </Button>
+                    </Link>
+                  ) : null}
                   <Button
                     variant="outline"
                     size="sm"

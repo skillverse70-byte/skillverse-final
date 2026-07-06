@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { saveCourse } from "@/services/courses/courses.service";
 
-export function useCourseEditor({ course, organization, onSaved }) {
+export function useCourseEditor({ course, onSaved }) {
   const isNew = !course?.id;
   const [form, setForm] = useState({
     title: course?.title || "",
@@ -10,6 +10,7 @@ export function useCourseEditor({ course, organization, onSaved }) {
     difficulty: course?.difficulty || "beginner",
     is_free: course?.is_free ?? true,
     price: course?.price || 0,
+    price_currency: course?.price_currency || "ETB",
     status: course?.status || "draft",
     enrollment_open: course?.enrollment_open ?? true,
     instructor_name: course?.instructor_name || "",
@@ -28,7 +29,12 @@ export function useCourseEditor({ course, organization, onSaved }) {
       ...current,
       modules: [
         ...current.modules,
-        { title: "", order: current.modules.length + 1, lessons: [] },
+        {
+          title: "",
+          description: "",
+          sort_order: current.modules.length,
+          lessons: [],
+        },
       ],
     }));
   };
@@ -73,8 +79,6 @@ export function useCourseEditor({ course, organization, onSaved }) {
         tags,
         total_lessons: totalLessons,
         total_duration_hours: Math.round(totalDuration * 10) / 10,
-        organization_id: organization.id,
-        organization_name: organization.name,
       };
 
       const result = await saveCourse({

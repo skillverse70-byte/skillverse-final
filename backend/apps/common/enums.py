@@ -22,6 +22,12 @@ class OrganizationVerificationStatus(models.TextChoices):
     VERIFIED = "verified", "Verified"
 
 
+class OrganizationVerificationReviewStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    APPROVED = "approved", "Approved"
+    REJECTED = "rejected", "Rejected"
+
+
 class ExperienceLevel(models.TextChoices):
     STUDENT = "student", "Student"
     EARLY_CAREER = "early_career", "Early Career"

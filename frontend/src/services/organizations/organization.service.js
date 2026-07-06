@@ -42,17 +42,74 @@ export async function saveOrganizationProfile({ form }) {
 }
 
 export async function fetchOrganizationManagementData() {
-  const organization = await authenticatedApiRequest("/organizations/me/", {
-    method: "GET",
-  });
+  const [organization, verification] = await Promise.all([
+    authenticatedApiRequest("/organizations/me/", {
+      method: "GET",
+    }),
+    authenticatedApiRequest("/organizations/verification/me/", {
+      method: "GET",
+    }),
+  ]);
 
-  return { organization };
+  return { organization, verification };
 }
 
 export async function fetchPublicOrganizationProfile(organizationId) {
   return apiRequest(`/organizations/${organizationId}/public/`, {
     method: "GET",
   });
+}
+
+export async function fetchOrganizationVerificationOverview() {
+  return authenticatedApiRequest("/organizations/verification/me/", {
+    method: "GET",
+  });
+}
+
+export async function submitOrganizationVerificationRequest({ requestNotes = "" }) {
+  return authenticatedApiRequest("/organizations/verification/submit/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      request_notes: requestNotes,
+    }),
+  });
+}
+
+export async function fetchAdminOrganizationVerificationRequests({ status } = {}) {
+  const searchParams = new URLSearchParams();
+  if (status) {
+    searchParams.set("status", status);
+  }
+
+  return authenticatedApiRequest(
+    `/admin/organizations/verification-requests/${
+      searchParams.toString() ? `?${searchParams.toString()}` : ""
+    }`,
+    { method: "GET" },
+  );
+}
+
+export async function decideAdminOrganizationVerificationRequest(
+  requestId,
+  { decision, reviewerNotes = "", useAdminOverride = false },
+) {
+  return authenticatedApiRequest(
+    `/admin/organizations/verification-requests/${requestId}/decision/`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        decision,
+        reviewer_notes: reviewerNotes,
+        use_admin_override: useAdminOverride,
+      }),
+    },
+  );
 }
 
 export async function registerOrganization({

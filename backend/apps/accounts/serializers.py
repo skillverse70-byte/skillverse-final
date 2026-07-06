@@ -1,8 +1,11 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.models import update_last_login
+from django.core.cache import cache
 from django.utils import timezone
 from rest_framework import serializers
-from rest_framework.exceptions import AuthenticationFailed, ValidationError
+from rest_framework.exceptions import APIException, AuthenticationFailed, ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -11,6 +14,30 @@ from apps.accounts.services import issue_password_reset_token, issue_verificatio
 from apps.common.enums import Role
 
 User = get_user_model()
+VERIFICATION_RESEND_COOLDOWN_SECONDS = 120
+
+
+class VerificationResendCooldown(APIException):
+    status_code = 429
+    default_code = "verification_resend_cooldown"
+
+    def __init__(self, wait_seconds):
+        super().__init__(
+            {
+                "detail": (
+                    f"Please wait {wait_seconds} seconds before requesting another verification code."
+                ),
+                "retry_after_seconds": wait_seconds,
+            }
+        )
+
+
+class VerificationEmailDeliveryFailed(APIException):
+    status_code = 503
+    default_code = "verification_email_delivery_failed"
+    default_detail = (
+        "We could not send the verification email right now. Please try again shortly."
+    )
 
 
 class AuthUserSerializer(serializers.ModelSerializer):
@@ -125,7 +152,23 @@ class ResendVerificationSerializer(serializers.Serializer):
         email = self.validated_data["email"].lower()
         user = User.objects.filter(email__iexact=email).first()
         if user and not user.is_email_verified:
-            issue_verification_token(user)
+            cache_key = f"auth:verification-resend:{user.id}"
+            cooldown_until = cache.get(cache_key)
+            if cooldown_until:
+                remaining_seconds = max(
+                    1,
+                    int((cooldown_until - timezone.now()).total_seconds()),
+                )
+                raise VerificationResendCooldown(remaining_seconds)
+            try:
+                issue_verification_token(user)
+            except Exception as exc:
+                raise VerificationEmailDeliveryFailed() from exc
+            cache.set(
+                cache_key,
+                timezone.now() + timedelta(seconds=VERIFICATION_RESEND_COOLDOWN_SECONDS),
+                timeout=VERIFICATION_RESEND_COOLDOWN_SECONDS,
+            )
         return {"detail": "If the account exists and is not verified, a new code has been sent."}
 
 

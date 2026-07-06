@@ -63,8 +63,12 @@ export function getActorProfilePath(userOrRole) {
     return "/organization-profile";
   }
 
-  if (role === roles.admin || role === roles.regularUser) {
+  if (role === roles.regularUser) {
     return "/profile";
+  }
+
+  if (role === roles.admin) {
+    return "/admin";
   }
 
   return "/login";

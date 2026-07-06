@@ -4,6 +4,56 @@ info:
   version: 0.1.0
   description: Backend API for the SkillVerse platform.
 paths:
+  /api/admin/organizations/verification-requests/:
+    get:
+      operationId: admin_organizations_verification_requests_list
+      tags:
+      - organizations
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrganizationVerificationRequest'
+          description: ''
+  /api/admin/organizations/verification-requests/{id}/decision/:
+    post:
+      operationId: admin_organizations_verification_requests_decision_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - organizations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationVerificationDecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrganizationVerificationDecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrganizationVerificationDecisionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationVerificationRequest'
+          description: ''
   /api/auth/jwt/refresh/:
     post:
       operationId: auth_jwt_refresh_create
@@ -290,6 +340,296 @@ paths:
               schema:
                 $ref: '#/components/schemas/VerifyEmailResponse'
           description: ''
+  /api/courses/:
+    get:
+      operationId: courses_public_list
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CourseProgramSummary'
+          description: ''
+  /api/courses/{id}/:
+    get:
+      operationId: courses_public_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseProgramDetail'
+          description: ''
+  /api/courses/{id}/enroll/:
+    post:
+      operationId: courses_enroll
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EnrollmentDetailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EnrollmentDetailRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentDetail'
+          description: ''
+  /api/courses/{id}/lessons/{lesson_id}/complete/:
+    post:
+      operationId: courses_lesson_complete
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: lesson_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EnrollmentDetailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EnrollmentDetailRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentDetail'
+          description: ''
+  /api/courses/{id}/progress/:
+    get:
+      operationId: courses_enrollment_detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentDetail'
+          description: ''
+  /api/courses/enrollments/:
+    get:
+      operationId: courses_enrollment_list
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EnrollmentSummary'
+          description: ''
+  /api/courses/manage/:
+    get:
+      operationId: courses_manage_list
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CourseProgramDetail'
+          description: ''
+    post:
+      operationId: courses_manage_create
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseProgramWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseProgramWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseProgramWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseProgramDetail'
+          description: ''
+  /api/courses/manage/{id}/:
+    get:
+      operationId: courses_manage_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseProgramDetail'
+          description: ''
+    put:
+      operationId: courses_manage_replace
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseProgramWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseProgramWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseProgramWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseProgramDetail'
+          description: ''
+    patch:
+      operationId: courses_manage_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseProgramWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseProgramWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseProgramWriteRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseProgramDetail'
+          description: ''
+    delete:
+      operationId: courses_manage_delete
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/fields/catalog/:
     get:
       operationId: fields_catalog_list
@@ -577,6 +917,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrganizationProfile'
+          description: ''
+  /api/organizations/verification/me/:
+    get:
+      operationId: organizations_verification_me_retrieve
+      tags:
+      - organizations
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationVerificationOverview'
+          description: ''
+  /api/organizations/verification/submit/:
+    post:
+      operationId: organizations_verification_submit_create
+      tags:
+      - organizations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationVerificationSubmitRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrganizationVerificationSubmitRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrganizationVerificationSubmitRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationVerificationRequest'
           description: ''
   /api/profile/fields/:
     get:
@@ -1216,6 +1597,240 @@ components:
         * `skill_swap` - Skill Swap
         * `course` - Course
         * `event` - Event
+    CourseModule:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        sort_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        lessons:
+          type: array
+          items:
+            $ref: '#/components/schemas/LessonItem'
+      required:
+      - id
+      - lessons
+      - title
+    CourseModuleRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        sort_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        lessons:
+          type: array
+          items:
+            $ref: '#/components/schemas/LessonItemRequest'
+      required:
+      - lessons
+      - title
+    CourseProgramDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization_id:
+          type: integer
+          readOnly: true
+        organization_name:
+          type: string
+          readOnly: true
+        organization_verification_status:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 120
+        difficulty:
+          type: string
+          maxLength: 32
+        instructor_name:
+          type: string
+          maxLength: 255
+        tags: {}
+        is_free:
+          type: boolean
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        price_currency:
+          type: string
+          maxLength: 8
+        enrollment_open:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/CourseProgramStatusEnum'
+        total_lessons:
+          type: integer
+          readOnly: true
+        enrolled_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseModule'
+      required:
+      - created_at
+      - enrolled_count
+      - id
+      - modules
+      - organization_id
+      - organization_name
+      - organization_verification_status
+      - title
+      - total_lessons
+      - updated_at
+    CourseProgramStatusEnum:
+      enum:
+      - draft
+      - published
+      - archived
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `published` - Published
+        * `archived` - Archived
+    CourseProgramSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization_id:
+          type: integer
+          readOnly: true
+        organization_name:
+          type: string
+          readOnly: true
+        organization_verification_status:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 120
+        difficulty:
+          type: string
+          maxLength: 32
+        instructor_name:
+          type: string
+          maxLength: 255
+        tags: {}
+        is_free:
+          type: boolean
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        price_currency:
+          type: string
+          maxLength: 8
+        enrollment_open:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/CourseProgramStatusEnum'
+        total_lessons:
+          type: integer
+          readOnly: true
+        enrolled_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - enrolled_count
+      - id
+      - organization_id
+      - organization_name
+      - organization_verification_status
+      - title
+      - total_lessons
+      - updated_at
+    CourseProgramWriteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 120
+        difficulty:
+          type: string
+          minLength: 1
+          maxLength: 32
+        instructor_name:
+          type: string
+          maxLength: 255
+        tags: {}
+        is_free:
+          type: boolean
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        price_currency:
+          type: string
+          minLength: 1
+          maxLength: 8
+        enrollment_open:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/CourseProgramStatusEnum'
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseModuleRequest'
+      required:
+      - title
     DirectionEnum:
       enum:
       - offering
@@ -1240,6 +1855,234 @@ components:
       required:
       - email
       - password
+    EnrollmentCourseProgram:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization_id:
+          type: integer
+          readOnly: true
+        organization_name:
+          type: string
+          readOnly: true
+        organization_verification_status:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 120
+        difficulty:
+          type: string
+          maxLength: 32
+        instructor_name:
+          type: string
+          maxLength: 255
+        tags: {}
+        is_free:
+          type: boolean
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        price_currency:
+          type: string
+          maxLength: 8
+        enrollment_open:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/CourseProgramStatusEnum'
+        total_lessons:
+          type: integer
+          readOnly: true
+        enrolled_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - enrolled_count
+      - id
+      - organization_id
+      - organization_name
+      - organization_verification_status
+      - title
+      - total_lessons
+      - updated_at
+    EnrollmentCourseProgramRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 120
+        difficulty:
+          type: string
+          minLength: 1
+          maxLength: 32
+        instructor_name:
+          type: string
+          maxLength: 255
+        tags: {}
+        is_free:
+          type: boolean
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        price_currency:
+          type: string
+          minLength: 1
+          maxLength: 8
+        enrollment_open:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/CourseProgramStatusEnum'
+      required:
+      - title
+    EnrollmentDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/EnrollmentStatusEnum'
+        progress_percent:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        enrolled_at:
+          type: string
+          format: date-time
+          readOnly: true
+        enrolled_date:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        course_program:
+          allOf:
+          - $ref: '#/components/schemas/EnrollmentCourseProgram'
+          readOnly: true
+        total_lessons:
+          type: integer
+          readOnly: true
+        completed_lessons:
+          type: integer
+          readOnly: true
+        next_lesson_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        modules:
+          type: array
+          items: {}
+          readOnly: true
+      required:
+      - completed_lessons
+      - course_program
+      - enrolled_at
+      - enrolled_date
+      - id
+      - modules
+      - next_lesson_id
+      - total_lessons
+    EnrollmentDetailRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/EnrollmentStatusEnum'
+        progress_percent:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    EnrollmentStatusEnum:
+      enum:
+      - pending
+      - active
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `active` - Active
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+    EnrollmentSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/EnrollmentStatusEnum'
+        progress_percent:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        enrolled_at:
+          type: string
+          format: date-time
+          readOnly: true
+        enrolled_date:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        course_program:
+          allOf:
+          - $ref: '#/components/schemas/EnrollmentCourseProgram'
+          readOnly: true
+        total_lessons:
+          type: integer
+          readOnly: true
+        completed_lessons:
+          type: integer
+          readOnly: true
+        next_lesson_id:
+          type: integer
+          nullable: true
+          readOnly: true
+      required:
+      - completed_lessons
+      - course_program
+      - enrolled_at
+      - enrolled_date
+      - id
+      - next_lesson_id
+      - total_lessons
     ExperienceLevelEnum:
       enum:
       - student
@@ -1427,6 +2270,93 @@ components:
         * `confirmed` - Confirmed
         * `completed` - Completed
         * `cancelled` - Cancelled
+    LessonItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/LessonItemTypeEnum'
+        description:
+          type: string
+        content_url:
+          type: string
+          format: uri
+          maxLength: 200
+        duration_minutes:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        sort_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        is_required:
+          type: boolean
+        progression_gate:
+          type: boolean
+      required:
+      - id
+      - title
+      - type
+    LessonItemRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/LessonItemTypeEnum'
+        description:
+          type: string
+        content_url:
+          type: string
+          format: uri
+          maxLength: 200
+        duration_minutes:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        sort_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        is_required:
+          type: boolean
+        progression_gate:
+          type: boolean
+      required:
+      - title
+      - type
+    LessonItemTypeEnum:
+      enum:
+      - video
+      - resource
+      - checklist
+      - assessment
+      - quiz
+      - assignment
+      - reading
+      type: string
+      description: |-
+        * `video` - Video
+        * `resource` - Resource
+        * `checklist` - Checklist
+        * `assessment` - Assessment
+        * `quiz` - Quiz
+        * `assignment` - Assignment
+        * `reading` - Reading
     LogoutRequest:
       type: object
       properties:
@@ -1936,6 +2866,124 @@ components:
         * `training_center` - Training Center
         * `community` - Community
         * `other` - Other
+    OrganizationVerificationDecisionRequest:
+      type: object
+      properties:
+        decision:
+          $ref: '#/components/schemas/OrganizationVerificationReviewStatusEnum'
+        reviewer_notes:
+          type: string
+        use_admin_override:
+          type: boolean
+          default: false
+      required:
+      - decision
+    OrganizationVerificationOverview:
+      type: object
+      properties:
+        organization:
+          $ref: '#/components/schemas/OrganizationProfile'
+        latest_request:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationVerificationRequest'
+          nullable: true
+        pending_request:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationVerificationRequest'
+          nullable: true
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationVerificationRequest'
+      required:
+      - history
+      - latest_request
+      - organization
+      - pending_request
+    OrganizationVerificationRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationVerificationReviewStatusEnum'
+          readOnly: true
+        request_notes:
+          type: string
+          readOnly: true
+        reviewer_notes:
+          type: string
+          readOnly: true
+        used_admin_override:
+          type: boolean
+          readOnly: true
+        has_business_license:
+          type: boolean
+          readOnly: true
+        requested_by:
+          type: integer
+          readOnly: true
+        requested_by_email:
+          type: string
+          format: email
+          readOnly: true
+        reviewed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        reviewed_by_email:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - has_business_license
+      - id
+      - organization
+      - request_notes
+      - requested_by
+      - requested_by_email
+      - reviewed_at
+      - reviewed_by
+      - reviewed_by_email
+      - reviewer_notes
+      - status
+      - submitted_at
+      - updated_at
+      - used_admin_override
+    OrganizationVerificationReviewStatusEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `approved` - Approved
+        * `rejected` - Rejected
     OrganizationVerificationStatusEnum:
       enum:
       - unverified
@@ -1944,6 +2992,11 @@ components:
       description: |-
         * `unverified` - Unverified
         * `verified` - Verified
+    OrganizationVerificationSubmitRequest:
+      type: object
+      properties:
+        request_notes:
+          type: string
     PasswordResetConfirmRequest:
       type: object
       properties:
@@ -1966,6 +3019,44 @@ components:
           minLength: 1
       required:
       - email
+    PatchedCourseProgramWriteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 120
+        difficulty:
+          type: string
+          minLength: 1
+          maxLength: 32
+        instructor_name:
+          type: string
+          maxLength: 255
+        tags: {}
+        is_free:
+          type: boolean
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        price_currency:
+          type: string
+          minLength: 1
+          maxLength: 8
+        enrollment_open:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/CourseProgramStatusEnum'
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseModuleRequest'
     PatchedLearningSessionUpdateRequest:
       type: object
       properties:

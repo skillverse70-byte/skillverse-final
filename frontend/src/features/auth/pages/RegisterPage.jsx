@@ -1,7 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, Lock, Mail, UserPlus } from "lucide-react";
 import { authService } from "@/services/auth/auth.service";
+import { appRuntime } from "@/lib/runtime-config";
+import {
+  getVerificationResendCooldown,
+  startVerificationResendCooldown,
+} from "@/lib/auth/verification-resend";
 import { isBackendApiMode } from "@/lib/runtime-config";
 import AuthLayout from "@/features/auth/components/AuthLayout";
 import GoogleIcon from "@/features/auth/components/GoogleIcon";
@@ -23,7 +28,22 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
   const showGoogleOption = !isBackendApiMode();
+
+  useEffect(() => {
+    if (!showOtp || !email) {
+      return undefined;
+    }
+
+    setResendCooldown(getVerificationResendCooldown(email));
+
+    const timer = window.setInterval(() => {
+      setResendCooldown(getVerificationResendCooldown(email));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [email, showOtp]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -36,6 +56,12 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await authService.register({ email, password });
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          `${appRuntime.storagePrefix}:${appRuntime.storageKeys.pendingVerificationEmail}`,
+          email,
+        );
+      }
       setShowOtp(true);
     } catch (requestError) {
       setError(requestError.message || "Registration failed");
@@ -49,6 +75,11 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await authService.verifyEmail({ email, code: otpCode });
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(
+          `${appRuntime.storagePrefix}:${appRuntime.storageKeys.pendingVerificationEmail}`,
+        );
+      }
       window.location.href = "/welcome";
     } catch (requestError) {
       setError(requestError.message || "Invalid verification code");
@@ -61,11 +92,18 @@ export default function RegisterPage() {
     setError("");
     try {
       await authService.resendVerification(email);
+      startVerificationResendCooldown(email);
+      setResendCooldown(getVerificationResendCooldown(email));
       toast({
         title: "Code sent",
         description: "Check your email for the new code.",
       });
     } catch (requestError) {
+      const waitSeconds = requestError?.data?.retry_after_seconds;
+      if (waitSeconds) {
+        startVerificationResendCooldown(email, waitSeconds);
+        setResendCooldown(getVerificationResendCooldown(email));
+      }
       setError(requestError.message || "Failed to resend code");
     }
   };
@@ -123,10 +161,20 @@ export default function RegisterPage() {
           <button
             type="button"
             onClick={handleResend}
+            disabled={resendCooldown > 0}
             className="font-medium text-primary hover:underline"
           >
-            Resend
+            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend"}
           </button>
+        </p>
+        <p className="mt-3 text-center text-sm text-muted-foreground">
+          Need to come back later?{" "}
+          <Link
+            to={`/verify-email?email=${encodeURIComponent(email)}&from=${encodeURIComponent("/welcome")}`}
+            className="font-medium text-primary hover:underline"
+          >
+            Finish verification later
+          </Link>
         </p>
       </AuthLayout>
     );

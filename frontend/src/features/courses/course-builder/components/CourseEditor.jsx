@@ -5,6 +5,7 @@ import CourseDetailsForm from "@/features/courses/course-builder/components/Cour
 import ModuleEditor from "@/features/courses/course-builder/components/ModuleEditor";
 import { useToast } from "@/components/ui/use-toast";
 import { useCourseEditor } from "@/hooks/courses/useCourseEditor";
+import { isVerifiedOrganization } from "@/lib/trust-state";
 
 export default function CourseEditor({ course, org, onSaved, onCancel }) {
   const {
@@ -25,9 +26,44 @@ export default function CourseEditor({ course, org, onSaved, onCancel }) {
   });
   const { toast } = useToast();
 
-  const handleSave = async () => {
+  const validateCourseForm = () => {
     if (!form.title.trim()) {
-      toast({ title: "Title is required", variant: "destructive" });
+      return "Title is required";
+    }
+
+    if (!form.is_free && Number(form.price || 0) <= 0) {
+      return "Paid courses must have a positive price.";
+    }
+
+    if (!form.is_free && !isVerifiedOrganization(org)) {
+      return "Only verified organizations can create or edit paid courses.";
+    }
+
+    for (let moduleIndex = 0; moduleIndex < form.modules.length; moduleIndex += 1) {
+      const module = form.modules[moduleIndex];
+      if (!module.title?.trim()) {
+        return `Module ${moduleIndex + 1} needs a title.`;
+      }
+
+      const lessons = module.lessons || [];
+      for (let lessonIndex = 0; lessonIndex < lessons.length; lessonIndex += 1) {
+        const lesson = lessons[lessonIndex];
+        if (!lesson.title?.trim()) {
+          return `Lesson ${lessonIndex + 1} in module ${moduleIndex + 1} needs a title.`;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const handleSave = async () => {
+    const validationMessage = validateCourseForm();
+    if (validationMessage) {
+      toast({
+        title: validationMessage,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -36,7 +72,11 @@ export default function CourseEditor({ course, org, onSaved, onCancel }) {
       toast({ title: "Course saved!" });
     } catch (error) {
       console.error(error);
-      toast({ title: "Something went wrong", variant: "destructive" });
+      toast({
+        title: "Unable to save course",
+        description: error?.message || "Something went wrong.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -56,6 +96,7 @@ export default function CourseEditor({ course, org, onSaved, onCancel }) {
         set={setField}
         tagInput={tagInput}
         setTagInput={setTagInput}
+        organization={org}
       />
       <div className="bg-white rounded-2xl border border-border/50 p-6 mb-6">
         <div className="flex items-center justify-between mb-4">

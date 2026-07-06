@@ -1,11 +1,72 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { getActorProfilePath } from "@/lib/access-control";
+import { getActorHomePath, getActorProfilePath } from "@/lib/access-control";
+import { roles } from "@/lib/domain-enums";
 
 export default function Footer() {
   const { isAuthenticated, actorRole } = useAuth();
+  const homePath = getActorHomePath(actorRole);
   const profilePath = getActorProfilePath(actorRole);
+  const isRegularUser = actorRole === roles.regularUser;
+  const isOrganization = actorRole === roles.organization;
+  const isAdmin = actorRole === roles.admin;
+
+  const firstColumnLinks = isAuthenticated
+    ? isRegularUser
+      ? [
+          { to: "/discover", label: "Discover Skills" },
+          { to: "/courses", label: "Courses" },
+          { to: "/skill-swap", label: "Skill Swap" },
+        ]
+      : isOrganization
+        ? [
+            { to: "/org", label: "Organization Dashboard" },
+            { to: "/organization-profile", label: "Organization Profile" },
+            { to: "/course-builder", label: "Course Builder" },
+          ]
+        : [
+            { to: "/admin", label: "Admin Dashboard" },
+          ]
+    : [
+        { to: "/discover", label: "Discover Skills" },
+        { to: "/courses", label: "Courses" },
+        { to: "/skill-swap", label: "Skill Swap" },
+      ];
+
+  const secondColumnLinks = isAuthenticated
+    ? isRegularUser
+      ? [
+          { to: "/jobs", label: "Jobs" },
+          { to: "/events", label: "Events" },
+        ]
+      : isOrganization
+        ? [
+            { to: "/courses", label: "Public Courses" },
+            { to: "/events", label: "Public Events" },
+            { to: "/jobs", label: "Public Jobs" },
+          ]
+        : [
+            { to: "/organizations/register", label: "Organization Onboarding" },
+            { to: "/get-started", label: "Public Entry Flow" },
+          ]
+    : [
+        { to: "/jobs", label: "Jobs" },
+        { to: "/events", label: "Events" },
+      ];
+
+  const accountHeading = isAdmin ? "Admin" : isOrganization ? "Organization" : "Account";
+  const accountLinks = isAuthenticated
+    ? isAdmin
+      ? [{ to: homePath, label: "Admin Dashboard" }]
+      : [
+          { to: homePath, label: "Dashboard" },
+          { to: profilePath, label: isOrganization ? "Organization Profile" : "Profile" },
+        ]
+    : [
+        { to: "/get-started", label: "Create Account" },
+        { to: "/login", label: "Sign In" },
+      ];
 
   return (
     <footer className="bg-white border-t border-border/50 mt-auto">
@@ -24,62 +85,49 @@ export default function Footer() {
             </p>
           </div>
           <div>
-            <h4 className="font-heading font-semibold text-sm mb-3">Learn</h4>
+            <h4 className="font-heading font-semibold text-sm mb-3">
+              {isOrganization ? "Workspace" : isAdmin ? "Oversight" : "Learn"}
+            </h4>
             <div className="space-y-2">
-              <Link
-                to="/discover"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Discover Skills
-              </Link>
-              <Link
-                to="/courses"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Courses
-              </Link>
-              <Link
-                to="/skill-swap"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Skill Swap
-              </Link>
+              {firstColumnLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
           <div>
             <h4 className="font-heading font-semibold text-sm mb-3">
-              Opportunities
+              {isOrganization ? "Public Browse" : isAdmin ? "Platform" : "Opportunities"}
             </h4>
             <div className="space-y-2">
-              <Link
-                to="/jobs"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Jobs
-              </Link>
-              <Link
-                to="/events"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Events
-              </Link>
+              {secondColumnLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
           <div>
-            <h4 className="font-heading font-semibold text-sm mb-3">Account</h4>
+            <h4 className="font-heading font-semibold text-sm mb-3">{accountHeading}</h4>
             <div className="space-y-2">
-              <Link
-                to={isAuthenticated ? "/dashboard" : "/get-started"}
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {isAuthenticated ? "Dashboard" : "Create Account"}
-              </Link>
-              <Link
-                to={isAuthenticated ? profilePath : "/login"}
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {isAuthenticated ? "Profile" : "Sign In"}
-              </Link>
+              {accountLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
         </div>

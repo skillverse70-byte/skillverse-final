@@ -57,6 +57,67 @@ class AuthApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertIn("verification", str(response.data).lower())
 
+    def test_unverified_user_can_resend_code_and_verify_later(self):
+        user = User.objects.create_user(
+            email="later-verify@example.com",
+            password="StrongPass123!",
+            full_name="Later Verify",
+        )
+        original_token = AccountActionToken.issue_email_verification(user)
+
+        resend_response = self.client.post(
+            reverse("auth-resend-verification"),
+            {"email": user.email},
+            format="json",
+        )
+        self.assertEqual(resend_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+
+        latest_token = (
+            AccountActionToken.objects.filter(
+                user=user,
+                purpose=AccountActionToken.Purpose.EMAIL_VERIFICATION,
+            )
+            .order_by("-created_at")
+            .first()
+        )
+        self.assertNotEqual(latest_token.token, original_token.token)
+
+        verify_response = self.client.post(
+            reverse("auth-verify-email"),
+            {"email": user.email, "code": latest_token.token},
+            format="json",
+        )
+        self.assertEqual(verify_response.status_code, status.HTTP_200_OK)
+        user.refresh_from_db()
+        self.assertTrue(user.is_email_verified)
+
+    def test_resend_verification_is_locked_for_two_minutes(self):
+        user = User.objects.create_user(
+            email="cooldown@example.com",
+            password="StrongPass123!",
+            full_name="Cooldown User",
+        )
+        AccountActionToken.issue_email_verification(user)
+
+        first_response = self.client.post(
+            reverse("auth-resend-verification"),
+            {"email": user.email},
+            format="json",
+        )
+        self.assertEqual(first_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+
+        second_response = self.client.post(
+            reverse("auth-resend-verification"),
+            {"email": user.email},
+            format="json",
+        )
+        self.assertEqual(second_response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertIn("wait", str(second_response.data).lower())
+        self.assertIn("retry_after_seconds", second_response.data)
+        self.assertEqual(len(mail.outbox), 1)
+
     def test_verify_email_returns_tokens_and_authenticated_user_can_fetch_me(self):
         user = User.objects.create_user(
             email="verifyme@example.com",

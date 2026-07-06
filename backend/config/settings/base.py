@@ -1,7 +1,59 @@
+import importlib.util
+import os
 from pathlib import Path
 from datetime import timedelta
 
-import environ
+try:
+    import environ
+except ModuleNotFoundError:
+    class _FallbackEnv:
+        def __init__(self, **schema):
+            self.schema = schema
+
+        @staticmethod
+        def read_env(path):
+            return None
+
+        def __call__(self, key, default=None):
+            schema_default = self.schema.get(key, (None, None))[1]
+            resolved_default = default if default is not None else schema_default
+            value = os.environ.get(key, resolved_default)
+            return self._cast(key, value)
+
+        def bool(self, key, default=False):
+            return bool(self._cast(key, os.environ.get(key, default)))
+
+        def int(self, key, default=0):
+            return int(self._cast(key, os.environ.get(key, default)))
+
+        def list(self, key, default=None):
+            value = os.environ.get(key)
+            if value is None:
+                return list(default or [])
+            if isinstance(value, list):
+                return value
+            return [item.strip() for item in str(value).split(",") if item.strip()]
+
+        def _cast(self, key, value):
+            cast = self.schema.get(key, (None, None))[0]
+            if value is None or cast is None:
+                return value
+            if cast is bool:
+                if isinstance(value, bool):
+                    return value
+                return str(value).lower() in {"1", "true", "yes", "on"}
+            if cast is int:
+                return int(value)
+            if cast is list:
+                if isinstance(value, list):
+                    return value
+                return [item.strip() for item in str(value).split(",") if item.strip()]
+            return cast(value)
+
+    class _FallbackEnvironModule:
+        Env = _FallbackEnv
+
+    environ = _FallbackEnvironModule()
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -34,7 +86,6 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 INSTALLED_APPS = [
-    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -44,6 +95,7 @@ INSTALLED_APPS = [
     "anymail",
     "rest_framework_simplejwt.token_blacklist",
     "apps.accounts",
+    "apps.audit",
     "apps.common",
     "apps.organizations",
     "apps.skills",
@@ -56,8 +108,13 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "drf_spectacular",
-    "channels",
 ]
+
+if importlib.util.find_spec("daphne"):
+    INSTALLED_APPS.insert(0, "daphne")
+
+if importlib.util.find_spec("channels"):
+    INSTALLED_APPS.append("channels")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -193,8 +250,12 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "OrganizationTypeEnum": "apps.common.enums.OrganizationType",
         "OrganizationVerificationStatusEnum": "apps.common.enums.OrganizationVerificationStatus",
+        "OrganizationVerificationReviewStatusEnum": "apps.common.enums.OrganizationVerificationReviewStatus",
         "SkillSwapStatusEnum": "apps.common.enums.SkillSwapStatus",
         "LearningSessionStatusEnum": "apps.common.enums.LearningSessionStatus",
+        "CourseProgramStatusEnum": "apps.common.enums.CourseProgramStatus",
+        "LessonItemTypeEnum": "apps.common.enums.LessonItemType",
+        "EnrollmentStatusEnum": "apps.common.enums.EnrollmentStatus",
     },
 }
 

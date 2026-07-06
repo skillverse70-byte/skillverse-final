@@ -2,13 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building, BookOpen, Calendar, Briefcase, ExternalLink } from "lucide-react";
+import { Building, BookOpen, Calendar, Briefcase, Clock3, ExternalLink, ShieldCheck } from "lucide-react";
 import StatusBadge from "@/components/shared/StatusBadge";
 import EmptyState from "@/components/shared/EmptyState";
 import { fetchOrganizationManagementData } from "@/services/organizations/organization.service";
 
 export default function OrgManagement() {
   const [selectedOrg, setSelectedOrg] = useState(null);
+  const [verificationOverview, setVerificationOverview] = useState(null);
   const [courses, setCourses] = useState([]);
   const [events, setEvents] = useState([]);
   const [jobs, setJobs] = useState([]);
@@ -20,6 +21,7 @@ export default function OrgManagement() {
         const data = await fetchOrganizationManagementData();
         if (data.organization) {
           setSelectedOrg(data.organization);
+          setVerificationOverview(data.verification);
           await loadOrgData(data.organization.id);
         }
       } catch(e) { console.error(e); }
@@ -43,8 +45,8 @@ export default function OrgManagement() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-heading font-bold text-3xl text-foreground mb-1">Organization</h1>
-          <p className="text-muted-foreground text-sm">Manage your organization, courses, events, and job postings.</p>
+          <h1 className="font-heading font-bold text-3xl text-foreground mb-1">Organization Dashboard</h1>
+          <p className="text-muted-foreground text-sm">Manage your organization profile, trust status, and future publishing workflows from one place.</p>
         </div>
         <Link to="/organization-profile"><Button className="bg-teal-600 hover:bg-teal-700 gap-2"><Building className="w-4 h-4" /> Edit Profile</Button></Link>
       </div>
@@ -64,6 +66,32 @@ export default function OrgManagement() {
                 <StatusBadge status={selectedOrg?.verification_status || "unverified"} />
               </div>
               <p className="text-sm text-muted-foreground">{selectedOrg?.description}</p>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <div className="rounded-2xl bg-slate-50 p-4 text-sm">
+                  <div className="mb-2 flex items-center gap-2 font-medium text-foreground">
+                    <ShieldCheck className="h-4 w-4 text-teal-700" />
+                    Verification workflow
+                  </div>
+                  <p className="text-muted-foreground">
+                    {selectedOrg?.verification_status === "verified"
+                      ? "Verified organizations can prepare paid courses, while enrollment remains unavailable until financial setup is added."
+                      : verificationOverview?.pending_request
+                        ? "A verification request is pending admin review. Until approval, your courses must stay free."
+                        : "No verification request is currently pending. Until approval, your courses must stay free."}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4 text-sm">
+                  <div className="mb-2 flex items-center gap-2 font-medium text-foreground">
+                    <Clock3 className="h-4 w-4 text-teal-700" />
+                    Latest trust update
+                  </div>
+                  <p className="text-muted-foreground">
+                    {verificationOverview?.latest_request
+                      ? `${verificationOverview.latest_request.status} on ${new Date(verificationOverview.latest_request.submitted_at).toLocaleDateString()}`
+                      : "No verification activity recorded yet."}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
