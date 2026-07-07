@@ -41,11 +41,16 @@ const primaryNavByRole = {
   ],
   [roles.organization]: [
     { label: "Dashboard", path: "/org", icon: LayoutDashboard },
-    { label: "Org Profile", path: "/organization-profile", icon: Building },
-    { label: "Course Builder", path: "/course-builder", icon: BookOpen },
+    { label: "Courses", path: "/org?tab=courses", icon: BookOpen },
+    { label: "Events", path: "/org?tab=events", icon: Calendar },
+    { label: "Jobs", path: "/org?tab=jobs", icon: Briefcase },
+    { label: "Learners", path: "/org?tab=learners", icon: GraduationCap },
   ],
   [roles.admin]: [
     { label: "Admin Dashboard", path: "/admin", icon: LayoutDashboard },
+    { label: "Verification", path: "/admin?tab=orgs", icon: Building },
+    { label: "Finance", path: "/admin?tab=financial", icon: BookOpen },
+    { label: "Events", path: "/admin?tab=events", icon: Calendar },
   ],
 };
 
@@ -65,6 +70,22 @@ const quickLinksByRole = {
     { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
   ],
 };
+
+function isNavLinkActive(location, linkPath) {
+  const [pathname, rawQuery = ""] = linkPath.split("?");
+  if (!location.pathname.startsWith(pathname)) {
+    return false;
+  }
+  if (!rawQuery) {
+    return true;
+  }
+
+  const expectedParams = new URLSearchParams(rawQuery);
+  const currentParams = new URLSearchParams(location.search);
+  return Array.from(expectedParams.entries()).every(
+    ([key, value]) => currentParams.get(key) === value,
+  );
+}
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -101,7 +122,7 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-1">
             {primaryNavLinks.map((link) => {
-              const isActive = location.pathname.startsWith(link.path);
+              const isActive = isNavLinkActive(location, link.path);
               return (
                 <Link
                   key={link.path}
@@ -185,7 +206,7 @@ export default function Navbar() {
           <div className="px-4 pt-2 space-y-1">
             {primaryNavLinks.map((link) => {
               const Icon = link.icon;
-              const isActive = location.pathname.startsWith(link.path);
+              const isActive = isNavLinkActive(location, link.path);
               return (
                 <Link
                   key={link.path}

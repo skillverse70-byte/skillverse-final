@@ -71,7 +71,7 @@ function findLessonById(modules, lessonId) {
   return null;
 }
 
-function normalizeCourse(course) {
+export function normalizeCourse(course) {
   const modules = Array.isArray(course.modules) ? course.modules : [];
   const totalLessons =
     course.total_lessons ??
@@ -102,7 +102,7 @@ function normalizeCourse(course) {
   };
 }
 
-function normalizeEnrollment(enrollment) {
+export function normalizeEnrollment(enrollment) {
   const modules = Array.isArray(enrollment.modules)
     ? enrollment.modules.map((module, index) => normalizeModule(module, index))
     : [];

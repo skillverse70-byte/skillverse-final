@@ -15,7 +15,7 @@ function normalizeOrganization(organization) {
   };
 }
 
-function normalizeEvent(event) {
+export function normalizeEvent(event) {
   const organization = normalizeOrganization(event.organization);
 
   return {
@@ -61,7 +61,7 @@ function normalizeEvent(event) {
   };
 }
 
-function normalizeRsvp(rsvp) {
+export function normalizeRsvp(rsvp) {
   return {
     ...rsvp,
     status: rsvp.status || "going",
@@ -75,7 +75,7 @@ function normalizeRsvp(rsvp) {
   };
 }
 
-function normalizeAttendee(attendee) {
+export function normalizeAttendee(attendee) {
   return {
     ...attendee,
     status: attendee.status || "going",

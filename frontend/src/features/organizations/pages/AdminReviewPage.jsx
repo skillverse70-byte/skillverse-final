@@ -1,100 +1,63 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { TabsContent } from "@/components/ui/tabs";
 import {
   Building,
-  Tag,
   CheckCircle,
-  XCircle,
   CreditCard,
+  ExternalLink,
   LayoutDashboard,
   Calendar,
-  ExternalLink,
+  ShieldCheck,
+  Users,
+  BookOpen,
+  Briefcase,
+  XCircle,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import StatusBadge from "@/components/shared/StatusBadge";
 import EmptyState from "@/components/shared/EmptyState";
 import PageLoader from "@/components/shared/PageLoader";
 import WorkspaceShell from "@/components/shared/WorkspaceShell";
+import DashboardStats from "@/features/dashboard/components/DashboardStats";
 import { useToast } from "@/components/ui/use-toast";
-import { decideAdminEvent, fetchAdminEvents } from "@/services/events/events.service";
-import { useAdminOrganizationVerification } from "@/hooks/organizations/useAdminOrganizationVerification";
-import { useAdminFinancialAccounts } from "@/hooks/organizations/useAdminFinancialAccounts";
+import { decideAdminEvent } from "@/services/events/events.service";
+import {
+  decideAdminFinancialAccount,
+  decideAdminOrganizationVerificationRequest,
+} from "@/services/organizations/organization.service";
+import { useAdminDashboardData } from "@/hooks/dashboard/useAdminDashboardData";
+import { useWorkspaceTab } from "@/hooks/dashboard/useWorkspaceTab";
 import moment from "moment";
 
-export default function AdminReview() {
-  const [skills, setSkills] = useState([]);
-  const [activeTab, setActiveTab] = useState("overview");
+const validTabs = ["overview", "orgs", "financial", "events"];
+
+export default function AdminReviewPage() {
+  const { activeTab, setActiveTab } = useWorkspaceTab(validTabs, "overview");
   const [reviewerNotes, setReviewerNotes] = useState({});
   const [overrideFlags, setOverrideFlags] = useState({});
   const [financialNotes, setFinancialNotes] = useState({});
   const [restrictionReasons, setRestrictionReasons] = useState({});
-  const [events, setEvents] = useState([]);
-  const [eventsLoading, setEventsLoading] = useState(true);
-  const [eventsError, setEventsError] = useState("");
-  const [eventActingId, setEventActingId] = useState(null);
   const [eventNotes, setEventNotes] = useState({});
   const [eventFilters, setEventFilters] = useState({
     status: "all",
     verificationStatus: "all",
     search: "",
   });
+  const [actingId, setActingId] = useState(null);
   const { toast } = useToast();
   const {
-    requests,
+    summary,
+    oversight,
+    organizationVerificationRequests,
+    financialAccounts,
+    events,
     loading,
-    actingId,
     error,
-    decide,
-  } = useAdminOrganizationVerification();
-  const {
-    accounts: financialAccounts,
-    loading: financialLoading,
-    actingId: financialActingId,
-    error: financialError,
-    decide: decideFinancialAccount,
-  } = useAdminFinancialAccounts();
-
-  useEffect(() => {
-    let active = true;
-
-    const loadEvents = async () => {
-      setEventsLoading(true);
-      setEventsError("");
-      try {
-        const data = await fetchAdminEvents();
-        if (active) {
-          setEvents(data);
-        }
-      } catch (error) {
-        console.error(error);
-        if (active) {
-          setEventsError(error.message || "Failed to load event oversight queue.");
-        }
-      } finally {
-        if (active) {
-          setEventsLoading(false);
-        }
-      }
-    };
-
-    loadEvents();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const handleSkillApprove = async (skill, approved) => {
-    try {
-      void approved;
-      setSkills((prev) => prev.filter((current) => current.id !== skill.id));
-    } catch (reviewError) {
-      console.error(reviewError);
-    }
-  };
+    refresh,
+  } = useAdminDashboardData();
 
   const filteredEvents = useMemo(() => {
     const searchValue = eventFilters.search.trim().toLowerCase();
@@ -113,47 +76,39 @@ export default function AdminReview() {
     });
   }, [events, eventFilters]);
 
-  const refreshAdminEvents = async () => {
-    const data = await fetchAdminEvents();
-    setEvents(data);
-    return data;
-  };
-
-  const handleEventDecision = async (eventId, payload) => {
-    setEventActingId(eventId);
-    try {
-      const updatedEvent = await decideAdminEvent(eventId, payload);
-      setEvents((current) =>
-        current.map((event) => (event.id === updatedEvent.id ? { ...event, ...updatedEvent } : event)),
-      );
-      await refreshAdminEvents();
-      toast({ title: "Event oversight updated" });
-    } catch (error) {
-      console.error(error);
-      toast({
-        title: "Event review failed",
-        description: error.message || "Unable to update the event.",
-        variant: "destructive",
-      });
-    } finally {
-      setEventActingId(null);
-    }
-  };
-
-  if (loading || financialLoading || eventsLoading) {
+  if (loading) {
     return <PageLoader />;
   }
+
+  const runAction = async (action, successTitle) => {
+    setActingId(successTitle);
+    try {
+      await action();
+      await refresh();
+      toast({ title: successTitle });
+    } catch (actionError) {
+      console.error(actionError);
+      toast({
+        title: "Action failed",
+        description: actionError.message || "Unable to save the admin decision.",
+        variant: "destructive",
+      });
+      throw actionError;
+    } finally {
+      setActingId(null);
+    }
+  };
 
   const tabs = [
     {
       value: "overview",
       label: "Overview",
       icon: LayoutDashboard,
-      description: "Queue summary.",
+      description: "Platform snapshot.",
     },
     {
       value: "orgs",
-      label: `Organizations (${requests.length})`,
+      label: `Organizations (${organizationVerificationRequests.length})`,
       icon: Building,
       description: "Verification queue.",
     },
@@ -169,11 +124,40 @@ export default function AdminReview() {
       icon: Calendar,
       description: "Event oversight lane.",
     },
+  ];
+
+  const statCards = [
     {
-      value: "skills",
-      label: `Skills (${skills.length})`,
-      icon: Tag,
-      description: "Moderation lane.",
+      icon: Building,
+      label: "Verification queue",
+      count: oversight.pending_verification_requests ?? 0,
+      description: "Organizations awaiting review.",
+      color: "bg-amber-50 text-amber-600",
+      onClick: () => setActiveTab("orgs"),
+    },
+    {
+      icon: CreditCard,
+      label: "Finance queue",
+      count: oversight.pending_financial_accounts ?? 0,
+      description: "Financial setups awaiting review.",
+      color: "bg-blue-50 text-blue-600",
+      onClick: () => setActiveTab("financial"),
+    },
+    {
+      icon: Calendar,
+      label: "Event oversight",
+      count: events.length,
+      description: "Published events visible to admins.",
+      color: "bg-teal-50 text-teal-600",
+      onClick: () => setActiveTab("events"),
+    },
+    {
+      icon: ShieldCheck,
+      label: "Verified orgs",
+      count: summary.verified_organizations ?? 0,
+      description: "Trusted organizations on platform.",
+      color: "bg-emerald-50 text-emerald-600",
+      onClick: () => setActiveTab("orgs"),
     },
   ];
 
@@ -181,57 +165,80 @@ export default function AdminReview() {
     <WorkspaceShell
       eyebrow="Admin workspace"
       title="Admin Dashboard"
-      description="Verification, finance, moderation, and reporting."
+      description="Verification, finance, event oversight, and platform-level review from one controlled workspace."
       value={activeTab}
       onValueChange={setActiveTab}
       tabs={tabs}
       showTabDescriptions={false}
     >
       <TabsContent value="overview" className="mt-0 space-y-6">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <OverviewCard
-            icon={Building}
-            title="Organization queue"
-            value={requests.length}
-          />
-          <OverviewCard
-            icon={CreditCard}
-            title="Financial queue"
-            value={financialAccounts.length}
-          />
-          <OverviewCard
-            icon={Calendar}
-            title="Event oversight"
-            value={events.length}
-          />
-          <OverviewCard
-            icon={Tag}
-            title="Skill moderation"
-            value={skills.length}
-          />
-        </div>
+        <DashboardStats stats={statCards} />
 
         {error ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         ) : null}
-        {financialError ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {financialError}
-          </div>
-        ) : null}
-        {eventsError ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {eventsError}
-          </div>
-        ) : null}
+
+        <div className="grid gap-4 xl:grid-cols-2">
+          <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-teal-600" />
+              <h2 className="font-heading text-lg font-semibold text-foreground">
+                Platform summary
+              </h2>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <MiniMetric label="Total users" value={summary.total_users ?? 0} />
+              <MiniMetric label="Regular users" value={summary.regular_users ?? 0} />
+              <MiniMetric label="Organizations" value={summary.organizations ?? 0} />
+              <MiniMetric label="Published courses" value={summary.published_courses ?? 0} />
+              <MiniMetric label="Open jobs" value={summary.open_opportunities ?? 0} />
+              <MiniMetric label="Active events" value={summary.active_events ?? 0} />
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-amber-600" />
+              <h2 className="font-heading text-lg font-semibold text-foreground">
+                Oversight focus
+              </h2>
+            </div>
+            <div className="mt-5 space-y-3">
+              <AttentionRow
+                label="Pending verification requests"
+                value={String(oversight.pending_verification_requests ?? 0)}
+                actionLabel="Review organizations"
+                onAction={() => setActiveTab("orgs")}
+              />
+              <AttentionRow
+                label="Pending financial accounts"
+                value={String(oversight.pending_financial_accounts ?? 0)}
+                actionLabel="Review finance"
+                onAction={() => setActiveTab("financial")}
+              />
+              <AttentionRow
+                label="Restricted financial accounts"
+                value={String(oversight.restricted_financial_accounts ?? 0)}
+                actionLabel="Open finance"
+                onAction={() => setActiveTab("financial")}
+              />
+              <AttentionRow
+                label="Events from unverified orgs"
+                value={String(oversight.events_from_unverified_organizations ?? 0)}
+                actionLabel="Open events"
+                onAction={() => setActiveTab("events")}
+              />
+            </div>
+          </section>
+        </div>
 
         <div className="grid gap-4 lg:grid-cols-3">
           <QueuePreview
             title="Organization verification"
-            description="Trust-sensitive public organizations waiting for review."
-            items={requests.slice(0, 3).map((request) => ({
+            description="Trust-sensitive organizations waiting for review."
+            items={organizationVerificationRequests.slice(0, 3).map((request) => ({
               id: request.id,
               title: `Organization #${request.organization}`,
               subtitle: request.requested_by_email,
@@ -259,50 +266,44 @@ export default function AdminReview() {
               subtitle: event.organization_name,
               status: event.status,
             }))}
-            emptyTitle="No events available for review"
+            emptyTitle="No event reviews pending"
           />
         </div>
       </TabsContent>
 
       <TabsContent value="orgs" className="mt-0">
-        {requests.length === 0 ? (
+        {organizationVerificationRequests.length === 0 ? (
           <EmptyState
             icon={CheckCircle}
-            title="All caught up"
-            description="No pending organization verifications."
+            title="Verification queue is clear"
+            description="No organizations are waiting for trust review right now."
           />
         ) : (
           <div className="space-y-4">
-            {requests.map((request) => (
+            {organizationVerificationRequests.map((request) => (
               <div key={request.id} className="rounded-xl border border-border/50 bg-white p-5">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-amber-50">
-                    <Building className="h-6 w-6 text-amber-600" />
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-teal-50">
+                    <Building className="h-6 w-6 text-teal-700" />
                   </div>
-                  <div className="flex-1">
-                    <div className="mb-1 flex items-center gap-2">
-                      <h3 className="font-heading text-base font-semibold">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <h3 className="font-heading font-semibold">
                         Organization #{request.organization}
                       </h3>
-                      <StatusBadge status="pending" />
+                      <StatusBadge status={request.status} />
                       {request.used_admin_override ? (
-                        <StatusBadge status="reviewing" label="Override" />
+                        <StatusBadge status="warning" label="Override Used" />
                       ) : null}
                     </div>
-                    <p className="mb-1 text-sm text-muted-foreground">
-                      Submitted by {request.requested_by_email}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {request.has_business_license
-                        ? "Supporting document is on file."
-                        : "No supporting document is on file. Override required for approval."}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{request.requested_by_email}</p>
                     {request.request_notes ? (
-                      <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-sm text-foreground">
+                      <p className="mt-4 border-l-2 border-border pl-3 text-sm text-muted-foreground">
                         {request.request_notes}
-                      </div>
+                      </p>
                     ) : null}
-                    <div className="mt-4 space-y-3">
+
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
                       <Textarea
                         rows={3}
                         value={reviewerNotes[request.id] || ""}
@@ -312,69 +313,61 @@ export default function AdminReview() {
                             [request.id]: event.target.value,
                           }))
                         }
-                        placeholder="Add reviewer notes for the organization."
+                        placeholder="Internal review notes"
                       />
-                      <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Checkbox
+                      <label className="flex items-center gap-3 rounded-xl border border-border/60 px-4 py-3 text-sm">
+                        <input
+                          type="checkbox"
                           checked={Boolean(overrideFlags[request.id])}
-                          onCheckedChange={(checked) =>
+                          onChange={(event) =>
                             setOverrideFlags((current) => ({
                               ...current,
-                              [request.id]: Boolean(checked),
+                              [request.id]: event.target.checked,
                             }))
                           }
                         />
-                        Use admin override if approving without a business license
+                        Use admin override when evidence is incomplete
                       </label>
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 flex gap-2 sm:pl-16">
+
+                <div className="mt-5 flex flex-wrap gap-2 sm:pl-16">
                   <Button
-                    onClick={async () => {
-                      try {
-                        await decide(request.id, {
-                          decision: "approved",
-                          reviewerNotes: reviewerNotes[request.id] || "",
-                          useAdminOverride: Boolean(overrideFlags[request.id]),
-                        });
-                        toast({ title: "Verification approved" });
-                      } catch (reviewError) {
-                        toast({
-                          title: "Approval failed",
-                          description: reviewError.message,
-                          variant: "destructive",
-                        });
-                      }
-                    }}
+                    onClick={() =>
+                      runAction(
+                        () =>
+                          decideAdminOrganizationVerificationRequest(request.id, {
+                            decision: "approved",
+                            reviewerNotes: reviewerNotes[request.id] || "",
+                            useAdminOverride: Boolean(overrideFlags[request.id]),
+                          }),
+                        "Verification approved",
+                      )
+                    }
                     size="sm"
                     className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
-                    disabled={actingId === request.id}
+                    disabled={actingId === "Verification approved"}
                   >
                     <CheckCircle className="h-3.5 w-3.5" />
                     Verify
                   </Button>
                   <Button
-                    onClick={async () => {
-                      try {
-                        await decide(request.id, {
-                          decision: "rejected",
-                          reviewerNotes: reviewerNotes[request.id] || "",
-                          useAdminOverride: false,
-                        });
-                        toast({ title: "Verification rejected" });
-                      } catch (reviewError) {
-                        toast({
-                          title: "Rejection failed",
-                          description: reviewError.message,
-                          variant: "destructive",
-                        });
-                      }
-                    }}
+                    onClick={() =>
+                      runAction(
+                        () =>
+                          decideAdminOrganizationVerificationRequest(request.id, {
+                            decision: "rejected",
+                            reviewerNotes: reviewerNotes[request.id] || "",
+                            useAdminOverride: false,
+                          }),
+                        "Verification rejected",
+                      )
+                    }
                     size="sm"
                     variant="outline"
                     className="gap-1.5 text-red-600 hover:bg-red-50"
-                    disabled={actingId === request.id}
+                    disabled={actingId === "Verification rejected"}
                   >
                     <XCircle className="h-3.5 w-3.5" />
                     Reject
@@ -396,24 +389,17 @@ export default function AdminReview() {
         ) : (
           <div className="space-y-4">
             {financialAccounts.map((account) => (
-              <div
-                key={account.id}
-                className="rounded-xl border border-border/50 bg-white p-5"
-              >
+              <div key={account.id} className="rounded-xl border border-border/50 bg-white p-5">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
                   <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-teal-50">
                     <CreditCard className="h-6 w-6 text-teal-700" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex flex-wrap items-center gap-2">
-                      <h3 className="font-heading font-semibold">
-                        {account.organization_name}
-                      </h3>
+                      <h3 className="font-heading font-semibold">{account.organization_name}</h3>
                       <StatusBadge status={account.status} />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {account.organization_email}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{account.organization_email}</p>
 
                     <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
                       <ReviewField label="Account holder" value={account.account_holder_name} />
@@ -466,22 +452,17 @@ export default function AdminReview() {
                   <Button
                     size="sm"
                     className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
-                    disabled={financialActingId === account.id}
-                    onClick={async () => {
-                      try {
-                        await decideFinancialAccount(account.id, {
-                          decision: "ready",
-                          reviewNotes: financialNotes[account.id] || "",
-                        });
-                        toast({ title: "Financial account approved" });
-                      } catch (reviewError) {
-                        toast({
-                          title: "Approval failed",
-                          description: reviewError.message,
-                          variant: "destructive",
-                        });
-                      }
-                    }}
+                    disabled={actingId === "Financial account approved"}
+                    onClick={() =>
+                      runAction(
+                        () =>
+                          decideAdminFinancialAccount(account.id, {
+                            decision: "ready",
+                            reviewNotes: financialNotes[account.id] || "",
+                          }),
+                        "Financial account approved",
+                      )
+                    }
                   >
                     <CheckCircle className="h-3.5 w-3.5" />
                     Approve
@@ -490,23 +471,18 @@ export default function AdminReview() {
                     size="sm"
                     variant="outline"
                     className="gap-1.5 text-red-600 hover:bg-red-50"
-                    disabled={financialActingId === account.id}
-                    onClick={async () => {
-                      try {
-                        await decideFinancialAccount(account.id, {
-                          decision: "restricted",
-                          reviewNotes: financialNotes[account.id] || "",
-                          restrictedReason: restrictionReasons[account.id] || "",
-                        });
-                        toast({ title: "Financial account restricted" });
-                      } catch (reviewError) {
-                        toast({
-                          title: "Restriction failed",
-                          description: reviewError.message,
-                          variant: "destructive",
-                        });
-                      }
-                    }}
+                    disabled={actingId === "Financial account restricted"}
+                    onClick={() =>
+                      runAction(
+                        () =>
+                          decideAdminFinancialAccount(account.id, {
+                            decision: "restricted",
+                            reviewNotes: financialNotes[account.id] || "",
+                            restrictedReason: restrictionReasons[account.id] || "",
+                          }),
+                        "Financial account restricted",
+                      )
+                    }
                   >
                     <XCircle className="h-3.5 w-3.5" />
                     Restrict
@@ -622,103 +598,67 @@ export default function AdminReview() {
                     </div>
                   </div>
 
-                  <div className="flex min-w-[240px] flex-col gap-2">
-                    <Link to={`/events/${event.id}`}>
-                      <Button variant="outline" className="w-full gap-2">
-                        <ExternalLink className="h-4 w-4" />
-                        Open Public Event
-                      </Button>
+                  <div className="flex w-full flex-col gap-2 lg:w-56">
+                    <Link
+                      to={`/events/${event.id}`}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium text-teal-700"
+                    >
+                      Open public event
+                      <ExternalLink className="h-4 w-4" />
                     </Link>
                     <Button
-                      className="w-full bg-amber-600 hover:bg-amber-700"
-                      disabled={eventActingId === event.id}
+                      variant="outline"
+                      className="justify-center gap-2 text-red-600 hover:bg-red-50"
+                      disabled={actingId === "Event oversight updated"}
                       onClick={() =>
-                        handleEventDecision(event.id, {
-                          status: "cancelled",
-                          rsvpOpen: false,
-                          reviewNotes: eventNotes[event.id] ?? event.admin_review_notes ?? "",
-                        })
+                        runAction(
+                          () =>
+                            decideAdminEvent(event.id, {
+                              status: "cancelled",
+                              rsvpOpen: false,
+                              reviewNotes: eventNotes[event.id] ?? event.admin_review_notes ?? "",
+                            }),
+                          "Event oversight updated",
+                        )
                       }
                     >
-                      Cancel Event
+                      Cancel event
                     </Button>
                     <Button
                       variant="outline"
-                      className="w-full"
-                      disabled={eventActingId === event.id}
+                      className="justify-center gap-2"
+                      disabled={actingId === "Event oversight updated"}
                       onClick={() =>
-                        handleEventDecision(event.id, {
-                          rsvpOpen: false,
-                          reviewNotes: eventNotes[event.id] ?? event.admin_review_notes ?? "",
-                        })
+                        runAction(
+                          () =>
+                            decideAdminEvent(event.id, {
+                              rsvpOpen: false,
+                              reviewNotes: eventNotes[event.id] ?? event.admin_review_notes ?? "",
+                            }),
+                          "Event oversight updated",
+                        )
                       }
                     >
                       Close RSVP
                     </Button>
                     <Button
-                      variant="outline"
-                      className="w-full"
-                      disabled={eventActingId === event.id}
+                      className="justify-center gap-2 bg-emerald-600 hover:bg-emerald-700"
+                      disabled={actingId === "Event oversight updated"}
                       onClick={() =>
-                        handleEventDecision(event.id, {
-                          status: "upcoming",
-                          rsvpOpen: true,
-                          reviewNotes: eventNotes[event.id] ?? event.admin_review_notes ?? "",
-                        })
+                        runAction(
+                          () =>
+                            decideAdminEvent(event.id, {
+                              status: "upcoming",
+                              rsvpOpen: true,
+                              reviewNotes: eventNotes[event.id] ?? event.admin_review_notes ?? "",
+                            }),
+                          "Event oversight updated",
+                        )
                       }
                     >
-                      Restore Event
+                      Restore event
                     </Button>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </TabsContent>
-
-      <TabsContent value="skills" className="mt-0">
-        {skills.length === 0 ? (
-          <EmptyState
-            icon={CheckCircle}
-            title="All caught up"
-            description="No pending skill categories to review."
-          />
-        ) : (
-          <div className="space-y-3">
-            {skills.map((skill) => (
-              <div
-                key={skill.id}
-                className="flex items-center gap-4 rounded-xl border border-border/50 bg-white p-4"
-              >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50">
-                  <Tag className="h-5 w-5 text-blue-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">{skill.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {skill.category} · {skill.level}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleSkillApprove(skill, true)}
-                    size="sm"
-                    variant="outline"
-                    className="gap-1 text-emerald-600 hover:bg-emerald-50"
-                  >
-                    <CheckCircle className="h-3.5 w-3.5" />
-                    Approve
-                  </Button>
-                  <Button
-                    onClick={() => handleSkillApprove(skill, false)}
-                    size="sm"
-                    variant="outline"
-                    className="gap-1 text-red-600 hover:bg-red-50"
-                  >
-                    <XCircle className="h-3.5 w-3.5" />
-                    Reject
-                  </Button>
                 </div>
               </div>
             ))}
@@ -729,21 +669,36 @@ export default function AdminReview() {
   );
 }
 
-function OverviewCard({ icon: Icon, title, value }) {
+function AttentionRow({ label, value, actionLabel, onAction }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-white p-5 shadow-sm shadow-black/5">
-      <div className="inline-flex rounded-2xl bg-secondary/40 p-3 text-teal-700">
-        <Icon className="h-5 w-5" />
+    <div className="flex items-center justify-between gap-4 rounded-2xl bg-secondary/25 px-4 py-3">
+      <div>
+        <div className="text-sm font-medium text-foreground">{label}</div>
+        <div className="text-xs text-muted-foreground">{value}</div>
       </div>
-      <div className="mt-4 font-heading text-3xl font-bold text-foreground">{value}</div>
-      <div className="mt-1 text-sm font-medium text-foreground">{title}</div>
+      <button
+        type="button"
+        onClick={onAction}
+        className="text-sm font-medium text-teal-700 hover:text-teal-800"
+      >
+        {actionLabel}
+      </button>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-secondary/20 p-4">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-1 font-heading text-2xl font-bold text-foreground">{value}</div>
     </div>
   );
 }
 
 function QueuePreview({ title, description, items, emptyTitle }) {
   return (
-    <section className="rounded-3xl border border-border/60 bg-white p-6">
+    <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
       <h2 className="font-heading text-lg font-semibold text-foreground">{title}</h2>
       <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       {items.length === 0 ? (
@@ -751,15 +706,14 @@ function QueuePreview({ title, description, items, emptyTitle }) {
       ) : (
         <div className="mt-4 space-y-3">
           {items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between gap-3 rounded-2xl bg-secondary/25 px-4 py-3"
-            >
-              <div>
-                <div className="text-sm font-medium text-foreground">{item.title}</div>
-                <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+            <div key={item.id} className="rounded-2xl bg-secondary/20 px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-medium text-foreground">{item.title}</div>
+                  <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                </div>
+                <StatusBadge status={item.status} />
               </div>
-              <StatusBadge status={item.status} />
             </div>
           ))}
         </div>
@@ -771,8 +725,8 @@ function QueuePreview({ title, description, items, emptyTitle }) {
 function ReviewField({ label, value }) {
   return (
     <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-1 font-medium">{value || "Not provided"}</dd>
+      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-sm text-foreground">{value || "Not provided"}</dd>
     </div>
   );
 }

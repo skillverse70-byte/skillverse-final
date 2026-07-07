@@ -1,22 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchRegularDashboardData } from "@/services/dashboard/dashboard.service";
+import { fetchAdminDashboardData } from "@/services/dashboard/dashboard.service";
 
-export function useDashboardData() {
+export function useAdminDashboardData() {
   const [state, setState] = useState({
-    user: null,
-    stats: {},
-    recommendationSignals: {},
-    enrollments: [],
-    swapRequests: [],
-    applications: [],
-    rsvps: [],
-    sessions: [],
+    summary: {},
+    oversight: {},
+    organizationVerificationRequests: [],
+    financialAccounts: [],
+    events: [],
     loading: true,
     error: "",
   });
 
   const load = useCallback(async () => {
-    const data = await fetchRegularDashboardData();
+    const data = await fetchAdminDashboardData();
     setState({
       ...data,
       loading: false,
@@ -30,7 +27,7 @@ export function useDashboardData() {
 
     const run = async () => {
       try {
-        const data = await fetchRegularDashboardData();
+        const data = await fetchAdminDashboardData();
         if (!active) {
           return;
         }
@@ -45,14 +42,13 @@ export function useDashboardData() {
           setState((current) => ({
             ...current,
             loading: false,
-            error: error.message || "Failed to load your dashboard.",
+            error: error.message || "Failed to load the admin dashboard.",
           }));
         }
       }
     };
 
     run();
-
     return () => {
       active = false;
     };

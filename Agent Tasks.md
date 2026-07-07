@@ -965,6 +965,7 @@ At the end of this phase, the existing role-specific workspaces at `/dashboard`,
 
 ### TASK-902: Upgrade Existing Actor Dashboard Frontends
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
+- **Status:** Complete
 - **Owner:** Frontend
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/dashboard`, `/org`, `/admin`

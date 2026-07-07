@@ -1,22 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchRegularDashboardData } from "@/services/dashboard/dashboard.service";
+import { fetchOrganizationDashboardData } from "@/services/dashboard/dashboard.service";
 
-export function useDashboardData() {
+export function useOrganizationDashboardData() {
   const [state, setState] = useState({
-    user: null,
+    organization: null,
+    verification: null,
+    financialAccount: null,
     stats: {},
-    recommendationSignals: {},
+    coursePerformance: [],
+    courses: [],
     enrollments: [],
-    swapRequests: [],
+    events: [],
+    opportunities: [],
     applications: [],
-    rsvps: [],
-    sessions: [],
     loading: true,
     error: "",
   });
 
   const load = useCallback(async () => {
-    const data = await fetchRegularDashboardData();
+    const data = await fetchOrganizationDashboardData();
     setState({
       ...data,
       loading: false,
@@ -30,7 +32,7 @@ export function useDashboardData() {
 
     const run = async () => {
       try {
-        const data = await fetchRegularDashboardData();
+        const data = await fetchOrganizationDashboardData();
         if (!active) {
           return;
         }
@@ -45,14 +47,13 @@ export function useDashboardData() {
           setState((current) => ({
             ...current,
             loading: false,
-            error: error.message || "Failed to load your dashboard.",
+            error: error.message || "Failed to load your organization dashboard.",
           }));
         }
       }
     };
 
     run();
-
     return () => {
       active = false;
     };
@@ -63,3 +64,4 @@ export function useDashboardData() {
     refresh: load,
   };
 }
+

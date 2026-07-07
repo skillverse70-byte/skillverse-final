@@ -15,7 +15,7 @@ function normalizeOrganization(organization) {
   };
 }
 
-function normalizeOpportunity(opportunity) {
+export function normalizeOpportunity(opportunity) {
   const organization = normalizeOrganization(opportunity.organization);
 
   return {
@@ -60,7 +60,7 @@ function normalizeOpportunity(opportunity) {
   };
 }
 
-function normalizeApplication(application) {
+export function normalizeApplication(application) {
   return {
     ...application,
     opportunity_id: application.opportunity_id ?? null,
@@ -75,7 +75,7 @@ function normalizeApplication(application) {
   };
 }
 
-function normalizeApplicant(application) {
+export function normalizeApplicant(application) {
   return {
     ...application,
     status: application.status || "applied",

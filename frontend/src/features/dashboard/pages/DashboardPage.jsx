@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeftRight,
@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   Link2,
   MessageCircle,
+  Sparkles,
 } from "lucide-react";
 import StatusBadge from "@/components/shared/StatusBadge";
 import EmptyState from "@/components/shared/EmptyState";
@@ -22,103 +23,149 @@ import DashboardStats from "@/features/dashboard/components/DashboardStats";
 import LearningEnrollmentCard from "@/features/courses/components/LearningEnrollmentCard";
 import ParticipationReviewDialog from "@/features/reviews/components/ParticipationReviewDialog";
 import SwapRequestCard from "@/features/skills/components/SwapRequestCard";
-import { useLearnerEnrollments } from "@/hooks/courses/useLearnerEnrollments";
+import { useToast } from "@/components/ui/use-toast";
 import { useDashboardData } from "@/hooks/dashboard/useDashboardData";
-import { useDashboardSwapRequests } from "@/hooks/dashboard/useDashboardSwapRequests";
+import { useWorkspaceTab } from "@/hooks/dashboard/useWorkspaceTab";
 import { ensureSwapConversation } from "@/services/messages/swap-messaging.service";
+import {
+  acceptSwapRequest,
+  cancelSwapRequest,
+  rejectSwapRequest,
+} from "@/services/skills/skills.service";
 import moment from "moment";
 
 const validTabs = ["overview", "learning", "sessions", "swaps", "applications", "events"];
 
 export default function DashboardPage() {
-  const location = useLocation();
-  const tabParam = new URLSearchParams(location.search).get("tab");
-  const initialTab = validTabs.includes(tabParam) ? tabParam : "overview";
-  const [activeTab, setActiveTab] = useState(initialTab);
-
-  const { applications, rsvps, sessions = [], loading } = useDashboardData();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { activeTab, setActiveTab } = useWorkspaceTab(validTabs, "overview");
   const {
+    stats,
+    recommendationSignals,
     enrollments,
-    summary: learningSummary,
-    loading: enrollmentsLoading,
-  } = useLearnerEnrollments();
-  const {
-    requests,
-    requestGroups,
-    loading: swapsLoading,
-    actingId,
-    error: swapsError,
-    refresh: refreshSwaps,
-    acceptRequest,
-    rejectRequest,
-    cancelRequest,
-  } = useDashboardSwapRequests();
+    sessions = [],
+    swapRequests = [],
+    applications,
+    rsvps,
+    loading,
+    error,
+    refresh,
+  } = useDashboardData();
+  const [actingId, setActingId] = useState(null);
+  const [swapError, setSwapError] = useState("");
 
-  if (loading || swapsLoading || enrollmentsLoading) {
-    return <PageLoader />;
-  }
+  const requestGroups = useMemo(() => {
+    const incoming = [];
+    const outgoing = [];
+    const active = [];
+    const closed = [];
 
-  const stats = [
-    {
-      icon: BookOpen,
-      label: "Courses",
-      count: enrollments.length,
-      color: "bg-teal-50 text-teal-600",
-    },
-    {
-      icon: ArrowLeftRight,
-      label: "Skill Swaps",
-      count: requests.length,
-      color: "bg-amber-50 text-amber-600",
-    },
-    {
-      icon: Briefcase,
-      label: "Applications",
-      count: applications.length,
-      color: "bg-purple-50 text-purple-600",
-    },
-    {
-      icon: Calendar,
-      label: "Events",
-      count: rsvps.length,
-      color: "bg-blue-50 text-blue-600",
-    },
-  ];
+    swapRequests.forEach((request) => {
+      if (request.status === "accepted") {
+        active.push(request);
+        return;
+      }
+
+      if (request.status === "pending") {
+        if (request.my_role === "recipient") {
+          incoming.push(request);
+        } else {
+          outgoing.push(request);
+        }
+        return;
+      }
+
+      closed.push(request);
+    });
+
+    return { incoming, outgoing, active, closed };
+  }, [swapRequests]);
+
+  const upcomingSessions = useMemo(
+    () =>
+      sessions
+        .filter((session) => session.status === "planned" || session.status === "confirmed")
+        .sort(
+          (left, right) =>
+            new Date(left.scheduled_start_at).getTime() -
+            new Date(right.scheduled_start_at).getTime(),
+        ),
+    [sessions],
+  );
+  const completedSessions = useMemo(
+    () =>
+      sessions
+        .filter((session) => session.status === "completed")
+        .sort(
+          (left, right) =>
+            new Date(right.completed_at || right.updated_at).getTime() -
+            new Date(left.completed_at || left.updated_at).getTime(),
+        ),
+    [sessions],
+  );
+  const learningSummary = useMemo(() => {
+    const activeEnrollments = enrollments.filter((item) => item.status === "active");
+    const completedEnrollments = enrollments.filter((item) => item.status === "completed");
+    const totalProgress = enrollments.reduce(
+      (sum, enrollment) => sum + Number(enrollment.progress_percent || 0),
+      0,
+    );
+
+    return {
+      activeCount: activeEnrollments.length,
+      completedCount: completedEnrollments.length,
+      averageProgress: enrollments.length ? Math.round(totalProgress / enrollments.length) : 0,
+      nextUp: activeEnrollments[0] || enrollments[0] || null,
+    };
+  }, [enrollments]);
 
   const priorityItems = [
     ...requestGroups.incoming.slice(0, 2),
     ...requestGroups.active.slice(0, 2),
   ];
-  const upcomingSessions = sessions
-    .filter((session) => session.status === "planned" || session.status === "confirmed")
-    .sort(
-      (left, right) =>
-        new Date(left.scheduled_start_at).getTime() - new Date(right.scheduled_start_at).getTime(),
-    );
-  const completedSessions = sessions
-    .filter((session) => session.status === "completed")
-    .sort(
-      (left, right) =>
-        new Date(right.completed_at || right.updated_at).getTime() -
-        new Date(left.completed_at || left.updated_at).getTime(),
-    );
+
+  if (loading) {
+    return <PageLoader />;
+  }
+
+  const runSwapAction = async (id, action, successTitle) => {
+    setSwapError("");
+    setActingId(id);
+    try {
+      await action();
+      await refresh();
+      toast({ title: successTitle });
+    } catch (requestError) {
+      console.error(requestError);
+      setSwapError(requestError.message || "Swap action failed.");
+      toast({
+        title: "Swap action failed",
+        description: requestError.message || "Unable to update the swap request.",
+        variant: "destructive",
+      });
+      throw requestError;
+    } finally {
+      setActingId(null);
+    }
+  };
 
   const openDetails = (request) => {
-    window.location.href = `/skill-swap?request=${request.id}`;
+    navigate(`/skill-swap?request=${request.id}`);
   };
 
   const openMessages = async (request) => {
     const conversation = await ensureSwapConversation({
       swapRequestId: request.id,
     });
-    window.location.href = `/messages?conversation=${encodeURIComponent(conversation.id)}`;
+    navigate(`/messages?conversation=${encodeURIComponent(conversation.id)}`);
   };
 
   const openSessionConversation = async (session) => {
     const conversation = await ensureSwapConversation({
       swapRequestId: session.swap_request,
     });
-    window.location.href = `/messages?conversation=${encodeURIComponent(conversation.id)}`;
+    navigate(`/messages?conversation=${encodeURIComponent(conversation.id)}`);
   };
 
   const workspaceTabs = [
@@ -150,13 +197,48 @@ export default function DashboardPage() {
       value: "applications",
       label: "Applications",
       icon: Briefcase,
-      description: "Jobs and applications.",
+      description: "Jobs and opportunity progress.",
     },
     {
       value: "events",
       label: "Events",
       icon: Calendar,
-      description: "RSVPs and activity.",
+      description: "RSVPs and attendance.",
+    },
+  ];
+
+  const statsCards = [
+    {
+      icon: BookOpen,
+      label: "Active courses",
+      count: stats.active_courses ?? learningSummary.activeCount,
+      description: "Continue your current learning tracks.",
+      color: "bg-teal-50 text-teal-600",
+      onClick: () => setActiveTab("learning"),
+    },
+    {
+      icon: ArrowLeftRight,
+      label: "Active swaps",
+      count: stats.active_swaps ?? requestGroups.active.length,
+      description: "Open current exchange conversations.",
+      color: "bg-amber-50 text-amber-600",
+      onClick: () => setActiveTab("swaps"),
+    },
+    {
+      icon: Briefcase,
+      label: "Applications",
+      count: stats.applications ?? applications.length,
+      description: "Track your job and internship pipeline.",
+      color: "bg-purple-50 text-purple-600",
+      onClick: () => setActiveTab("applications"),
+    },
+    {
+      icon: Calendar,
+      label: "Event RSVPs",
+      count: stats.active_rsvps ?? rsvps.length,
+      description: "See events you plan to join.",
+      color: "bg-blue-50 text-blue-600",
+      onClick: () => setActiveTab("events"),
     },
   ];
 
@@ -164,14 +246,20 @@ export default function DashboardPage() {
     <WorkspaceShell
       eyebrow="Regular user workspace"
       title="My Dashboard"
-      description="Learning, swaps, sessions, and opportunities."
+      description="Learning, swaps, sessions, applications, and events from one connected workspace."
       value={activeTab}
       onValueChange={setActiveTab}
       tabs={workspaceTabs}
       showTabDescriptions={false}
     >
       <TabsContent value="overview" className="mt-0 space-y-6">
-        <DashboardStats stats={stats} />
+        <DashboardStats stats={statsCards} />
+
+        {error ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)]">
           <section className="rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-emerald-50 p-6">
@@ -191,14 +279,8 @@ export default function DashboardPage() {
             </p>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <MetricCard
-                label="Active courses"
-                value={learningSummary.activeCount}
-              />
-              <MetricCard
-                label="Completed courses"
-                value={learningSummary.completedCount}
-              />
+              <MetricCard label="Active courses" value={learningSummary.activeCount} />
+              <MetricCard label="Completed courses" value={learningSummary.completedCount} />
               <MetricCard
                 label="Average progress"
                 value={`${learningSummary.averageProgress}%`}
@@ -217,9 +299,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:bg-slate-50"
-                onClick={() => {
-                  window.location.href = "/courses";
-                }}
+                onClick={() => navigate("/courses")}
               >
                 Browse courses
               </button>
@@ -247,52 +327,94 @@ export default function DashboardPage() {
                 onAction={() => setActiveTab("sessions")}
               />
               <AttentionRow
-                label="Courses in progress"
-                value={learningSummary.activeCount}
-                actionLabel="Open learning"
-                onAction={() => setActiveTab("learning")}
+                label="Applications in progress"
+                value={applications.length}
+                actionLabel="Open applications"
+                onAction={() => setActiveTab("applications")}
               />
             </div>
           </section>
         </div>
 
-        {priorityItems.length > 0 ? (
-          <section className="space-y-4">
-            <div className="flex flex-col gap-3 rounded-3xl border border-border/60 bg-white p-6 lg:flex-row lg:items-center lg:justify-between">
-              <div>
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)]">
+          {priorityItems.length > 0 ? (
+            <section className="space-y-4 rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+              <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <BellRing className="h-5 w-5 text-amber-600" />
                   <h2 className="font-heading text-xl font-semibold text-foreground">
                     Swap updates
                   </h2>
                 </div>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-teal-700"
+                  onClick={() => setActiveTab("swaps")}
+                >
+                  Open swap workspace
+                  <ArrowLeftRight className="h-4 w-4" />
+                </button>
               </div>
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 text-sm font-medium text-teal-700"
-                onClick={() => setActiveTab("swaps")}
-              >
-                Open swap workspace
-                <ArrowLeftRight className="h-4 w-4" />
-              </button>
-            </div>
 
-            <div className="space-y-4">
-              {priorityItems.map((request) => (
-                <SwapRequestCard
-                  key={`priority-${request.id}`}
-                  request={request}
-                  acting={actingId === request.id}
-                  onAccept={acceptRequest}
-                  onReject={rejectRequest}
-                  onCancel={cancelRequest}
-                  onOpenDetails={openDetails}
-                  onOpenMessage={openMessages}
-                />
-              ))}
+              <div className="space-y-4">
+                {priorityItems.map((request) => (
+                  <SwapRequestCard
+                    key={`priority-${request.id}`}
+                    request={request}
+                    acting={actingId === request.id}
+                    onAccept={(id, note) =>
+                      runSwapAction(id, () => acceptSwapRequest(id, note), "Swap accepted")
+                    }
+                    onReject={(id, note) =>
+                      runSwapAction(id, () => rejectSwapRequest(id, note), "Swap rejected")
+                    }
+                    onCancel={(id, note) =>
+                      runSwapAction(id, () => cancelSwapRequest(id, note), "Swap updated")
+                    }
+                    onOpenDetails={openDetails}
+                    onOpenMessage={openMessages}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : (
+            <EmptyState
+              icon={ArrowLeftRight}
+              title="Your swap queue is clear"
+              description="New swap requests and active exchanges will show up here."
+              actionLabel="Open skill swap"
+              onAction={() => navigate("/skill-swap")}
+            />
+          )}
+
+          <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-teal-600" />
+              <h2 className="font-heading text-lg font-semibold text-foreground">
+                Recommendation signals
+              </h2>
             </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              These signals keep discovery connected across courses, swaps, jobs, and events.
+            </p>
+            <SignalGroup
+              title="Fields"
+              items={recommendationSignals.profile_fields}
+            />
+            <SignalGroup
+              title="Skills you offer"
+              items={recommendationSignals.offered_skills}
+            />
+            <SignalGroup
+              title="Skills you want"
+              items={recommendationSignals.learning_skills}
+            />
+            <SignalGroup
+              title="Activity"
+              items={recommendationSignals.activity_signals}
+            />
           </section>
-        ) : null}
+        </div>
       </TabsContent>
 
       <TabsContent value="learning" className="mt-0 space-y-6">
@@ -301,10 +423,8 @@ export default function DashboardPage() {
             icon={BookOpen}
             title="No courses yet"
             description="Browse courses and start learning something new."
-            actionLabel="Browse Courses"
-            onAction={() => {
-              window.location.href = "/courses";
-            }}
+            actionLabel="Browse courses"
+            onAction={() => navigate("/courses")}
           />
         ) : (
           <div className="space-y-4">
@@ -335,9 +455,7 @@ export default function DashboardPage() {
             </div>
 
             {upcomingSessions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nothing is scheduled right now.
-              </p>
+              <p className="text-sm text-muted-foreground">Nothing is scheduled right now.</p>
             ) : (
               upcomingSessions.map((session) => (
                 <div
@@ -490,23 +608,21 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {swapsError ? (
+          {swapError ? (
             <EmptyState
               icon={ArrowLeftRight}
-              title="We couldn't load your swap notifications"
-              description={swapsError}
-              actionLabel="Refresh"
-              onAction={refreshSwaps}
+              title="We couldn't update your swap flow"
+              description={swapError}
+              actionLabel="Try again"
+              onAction={() => setSwapError("")}
             />
-          ) : requests.length === 0 ? (
+          ) : swapRequests.length === 0 ? (
             <EmptyState
               icon={ArrowLeftRight}
               title="No skill swaps yet"
               description="Find someone to swap skills with. Skill swaps always stay free."
-              actionLabel="Find a Swap"
-              onAction={() => {
-                window.location.href = "/skill-swap";
-              }}
+              actionLabel="Find a swap"
+              onAction={() => navigate("/skill-swap")}
             />
           ) : (
             <div className="space-y-6">
@@ -516,9 +632,15 @@ export default function DashboardPage() {
                   description="Requests waiting for your answer."
                   items={requestGroups.incoming}
                   actingId={actingId}
-                  onAccept={acceptRequest}
-                  onReject={rejectRequest}
-                  onCancel={cancelRequest}
+                  onAccept={(id, note) =>
+                    runSwapAction(id, () => acceptSwapRequest(id, note), "Swap accepted")
+                  }
+                  onReject={(id, note) =>
+                    runSwapAction(id, () => rejectSwapRequest(id, note), "Swap rejected")
+                  }
+                  onCancel={(id, note) =>
+                    runSwapAction(id, () => cancelSwapRequest(id, note), "Swap updated")
+                  }
                   onOpenDetails={openDetails}
                   onOpenMessage={openMessages}
                 />
@@ -530,9 +652,15 @@ export default function DashboardPage() {
                   description="Accepted swaps you can move straight into messaging."
                   items={requestGroups.active}
                   actingId={actingId}
-                  onAccept={acceptRequest}
-                  onReject={rejectRequest}
-                  onCancel={cancelRequest}
+                  onAccept={(id, note) =>
+                    runSwapAction(id, () => acceptSwapRequest(id, note), "Swap accepted")
+                  }
+                  onReject={(id, note) =>
+                    runSwapAction(id, () => rejectSwapRequest(id, note), "Swap rejected")
+                  }
+                  onCancel={(id, note) =>
+                    runSwapAction(id, () => cancelSwapRequest(id, note), "Swap updated")
+                  }
                   onOpenDetails={openDetails}
                   onOpenMessage={openMessages}
                 />
@@ -544,9 +672,15 @@ export default function DashboardPage() {
                   description="Requests you have already sent."
                   items={requestGroups.outgoing}
                   actingId={actingId}
-                  onAccept={acceptRequest}
-                  onReject={rejectRequest}
-                  onCancel={cancelRequest}
+                  onAccept={(id, note) =>
+                    runSwapAction(id, () => acceptSwapRequest(id, note), "Swap accepted")
+                  }
+                  onReject={(id, note) =>
+                    runSwapAction(id, () => rejectSwapRequest(id, note), "Swap rejected")
+                  }
+                  onCancel={(id, note) =>
+                    runSwapAction(id, () => cancelSwapRequest(id, note), "Swap updated")
+                  }
                   onOpenDetails={openDetails}
                   onOpenMessage={openMessages}
                 />
@@ -558,9 +692,15 @@ export default function DashboardPage() {
                   description="Closed requests kept for reference."
                   items={requestGroups.closed}
                   actingId={actingId}
-                  onAccept={acceptRequest}
-                  onReject={rejectRequest}
-                  onCancel={cancelRequest}
+                  onAccept={(id, note) =>
+                    runSwapAction(id, () => acceptSwapRequest(id, note), "Swap accepted")
+                  }
+                  onReject={(id, note) =>
+                    runSwapAction(id, () => rejectSwapRequest(id, note), "Swap rejected")
+                  }
+                  onCancel={(id, note) =>
+                    runSwapAction(id, () => cancelSwapRequest(id, note), "Swap updated")
+                  }
                   onOpenDetails={openDetails}
                   onOpenMessage={openMessages}
                 />
@@ -570,20 +710,109 @@ export default function DashboardPage() {
         </div>
       </TabsContent>
 
-      <TabsContent value="applications" className="mt-0">
-        <EmptyState
-          icon={Briefcase}
-          title="Applications workspace is ready to scale"
-          description="Jobs, internships, and application tracking will live here without crowding your learning or swap workflow."
-        />
+      <TabsContent value="applications" className="mt-0 space-y-4">
+        {applications.length === 0 ? (
+          <EmptyState
+            icon={Briefcase}
+            title="No applications yet"
+            description="When you apply to a job, internship, program, or volunteer role, the progress will show up here."
+            actionLabel="Browse jobs"
+            onAction={() => navigate("/jobs")}
+          />
+        ) : (
+          applications.map((application) => (
+            <div key={application.id} className="rounded-2xl border border-border/60 bg-white p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-heading text-lg font-semibold text-foreground">
+                      {application.opportunity_title}
+                    </h3>
+                    <StatusBadge status={application.status} />
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {application.company_name} · {application.opportunity_type}
+                  </p>
+                  {application.deadline ? (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Deadline {moment(application.deadline).format("MMM D, YYYY")}
+                    </p>
+                  ) : null}
+                  {application.reviewer_notes ? (
+                    <div className="mt-3 rounded-xl bg-secondary/25 px-3 py-2 text-sm text-foreground">
+                      {application.reviewer_notes}
+                    </div>
+                  ) : null}
+                </div>
+                <Link
+                  to={`/jobs/${application.opportunity_id}`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium text-teal-700"
+                >
+                  Open listing
+                  <ExternalLink className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          ))
+        )}
       </TabsContent>
 
-      <TabsContent value="events" className="mt-0">
-        <EmptyState
-          icon={Calendar}
-          title="Events workspace is ready to scale"
-          description="RSVPs, event attendance, and future community participation can grow here as their own focused section."
-        />
+      <TabsContent value="events" className="mt-0 space-y-4">
+        {rsvps.length === 0 ? (
+          <EmptyState
+            icon={Calendar}
+            title="No event RSVPs yet"
+            description="Events you plan to attend will be collected here with their status and next step."
+            actionLabel="Browse events"
+            onAction={() => navigate("/events")}
+          />
+        ) : (
+          rsvps.map((rsvp) => (
+            <div key={rsvp.id} className="rounded-2xl border border-border/60 bg-white p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-heading text-lg font-semibold text-foreground">
+                      {rsvp.event_title}
+                    </h3>
+                    <StatusBadge status={rsvp.status} />
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{rsvp.organization_name}</p>
+                  {rsvp.starts_at ? (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Starts {moment(rsvp.starts_at).format("MMM D, YYYY · h:mm A")}
+                    </p>
+                  ) : null}
+                  {rsvp.attended_at ? (
+                    <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Attendance recorded
+                    </div>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    to={`/events/${rsvp.event_id}`}
+                    className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium text-teal-700"
+                  >
+                    View event
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
+                  {rsvp.attended_at ? (
+                    <ParticipationReviewDialog
+                      context="event"
+                      sourceId={rsvp.event_id}
+                      title="Review this event"
+                      description="Share feedback after meaningful participation."
+                      triggerLabel="Leave review"
+                      triggerVariant="outline"
+                    />
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </TabsContent>
     </WorkspaceShell>
   );
@@ -648,5 +877,29 @@ function RequestGroup({
         ))}
       </div>
     </section>
+  );
+}
+
+function SignalGroup({ title, items = [] }) {
+  return (
+    <div className="mt-4">
+      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {items.length === 0 ? (
+          <span className="text-sm text-muted-foreground">No signals yet.</span>
+        ) : (
+          items.map((item) => (
+            <span
+              key={`${title}-${item}`}
+              className="rounded-full bg-secondary/35 px-3 py-1 text-xs font-medium text-foreground"
+            >
+              {item}
+            </span>
+          ))
+        )}
+      </div>
+    </div>
   );
 }
