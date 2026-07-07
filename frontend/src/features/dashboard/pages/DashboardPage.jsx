@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeftRight,
   BellRing,
@@ -8,31 +8,40 @@ import {
   Briefcase,
   Calendar,
   CheckCircle2,
+  Clock3,
   ExternalLink,
+  LayoutDashboard,
   Link2,
   MessageCircle,
 } from "lucide-react";
 import StatusBadge from "@/components/shared/StatusBadge";
 import EmptyState from "@/components/shared/EmptyState";
-import PageHeader from "@/components/shared/PageHeader";
 import PageLoader from "@/components/shared/PageLoader";
+import WorkspaceShell from "@/components/shared/WorkspaceShell";
 import DashboardStats from "@/features/dashboard/components/DashboardStats";
+import LearningEnrollmentCard from "@/features/courses/components/LearningEnrollmentCard";
 import ParticipationReviewDialog from "@/features/reviews/components/ParticipationReviewDialog";
 import SwapRequestCard from "@/features/skills/components/SwapRequestCard";
+import { useLearnerEnrollments } from "@/hooks/courses/useLearnerEnrollments";
 import { useDashboardData } from "@/hooks/dashboard/useDashboardData";
 import { useDashboardSwapRequests } from "@/hooks/dashboard/useDashboardSwapRequests";
 import { ensureSwapConversation } from "@/services/messages/swap-messaging.service";
 import moment from "moment";
 
-const validTabs = ["learning", "swaps", "applications", "events"];
+const validTabs = ["overview", "learning", "sessions", "swaps", "applications", "events"];
 
 export default function DashboardPage() {
   const location = useLocation();
   const tabParam = new URLSearchParams(location.search).get("tab");
-  const initialTab = validTabs.includes(tabParam) ? tabParam : "learning";
+  const initialTab = validTabs.includes(tabParam) ? tabParam : "overview";
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  const { enrollments, applications, rsvps, sessions = [], loading } = useDashboardData();
+  const { applications, rsvps, sessions = [], loading } = useDashboardData();
+  const {
+    enrollments,
+    summary: learningSummary,
+    loading: enrollmentsLoading,
+  } = useLearnerEnrollments();
   const {
     requests,
     requestGroups,
@@ -45,7 +54,7 @@ export default function DashboardPage() {
     cancelRequest,
   } = useDashboardSwapRequests();
 
-  if (loading || swapsLoading) {
+  if (loading || swapsLoading || enrollmentsLoading) {
     return <PageLoader />;
   }
 
@@ -112,510 +121,532 @@ export default function DashboardPage() {
     window.location.href = `/messages?conversation=${encodeURIComponent(conversation.id)}`;
   };
 
+  const workspaceTabs = [
+    {
+      value: "overview",
+      label: "Overview",
+      icon: LayoutDashboard,
+      description: "Priority updates.",
+    },
+    {
+      value: "learning",
+      label: "Learning",
+      icon: BookOpen,
+      description: "Courses and progress.",
+    },
+    {
+      value: "sessions",
+      label: "Sessions",
+      icon: Clock3,
+      description: "Upcoming and completed.",
+    },
+    {
+      value: "swaps",
+      label: "Skill Swaps",
+      icon: ArrowLeftRight,
+      description: "Requests and active exchanges.",
+    },
+    {
+      value: "applications",
+      label: "Applications",
+      icon: Briefcase,
+      description: "Jobs and applications.",
+    },
+    {
+      value: "events",
+      label: "Events",
+      icon: Calendar,
+      description: "RSVPs and activity.",
+    },
+  ];
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <PageHeader
-        title="My Dashboard"
-        description="Track the swaps that need attention, continue active exchanges, and keep your learning moving."
-      />
-      <DashboardStats stats={stats} />
+    <WorkspaceShell
+      eyebrow="Regular user workspace"
+      title="My Dashboard"
+      description="Learning, swaps, sessions, and opportunities."
+      value={activeTab}
+      onValueChange={setActiveTab}
+      tabs={workspaceTabs}
+      showTabDescriptions={false}
+    >
+      <TabsContent value="overview" className="mt-0 space-y-6">
+        <DashboardStats stats={stats} />
 
-      {priorityItems.length > 0 ? (
-        <section className="mb-8 space-y-4">
-          <div className="flex flex-col gap-3 rounded-3xl border border-border/60 bg-white p-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <BellRing className="h-5 w-5 text-amber-600" />
-                <h2 className="font-heading text-xl font-semibold text-foreground">
-                  Skill swap updates
-                </h2>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Respond to new requests and jump straight into active swap conversations from here.
-              </p>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)]">
+          <section className="rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-emerald-50 p-6">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-teal-700">
+              <BookOpen className="h-3.5 w-3.5" />
+              Learning focus
             </div>
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 text-sm font-medium text-teal-700"
-              onClick={() => setActiveTab("swaps")}
-            >
-              Open full swap workspace
-              <ArrowLeftRight className="h-4 w-4" />
-            </button>
-          </div>
+            <h2 className="font-heading text-2xl font-bold text-foreground">
+              {learningSummary.nextUp?.course_program?.title || "Start your next course"}
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              {learningSummary.nextUp?.next_lesson
+                ? `Next unlocked lesson: ${learningSummary.nextUp.next_lesson.title}.`
+                : enrollments.length > 0
+                  ? "Pick up where you left off across your active courses."
+                  : "Browse courses and create your first learning track."}
+            </p>
 
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <MetricCard
+                label="Active courses"
+                value={learningSummary.activeCount}
+              />
+              <MetricCard
+                label="Completed courses"
+                value={learningSummary.completedCount}
+              />
+              <MetricCard
+                label="Average progress"
+                value={`${learningSummary.averageProgress}%`}
+              />
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
+                onClick={() => setActiveTab("learning")}
+              >
+                Open learning workspace
+                <ExternalLink className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:bg-slate-50"
+                onClick={() => {
+                  window.location.href = "/courses";
+                }}
+              >
+                Browse courses
+              </button>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+            <div className="flex items-center gap-2">
+              <BellRing className="h-5 w-5 text-amber-600" />
+              <h2 className="font-heading text-lg font-semibold text-foreground">
+                Attention queue
+              </h2>
+            </div>
+            <div className="mt-5 space-y-3">
+              <AttentionRow
+                label="Incoming swap requests"
+                value={requestGroups.incoming.length}
+                actionLabel="Open swaps"
+                onAction={() => setActiveTab("swaps")}
+              />
+              <AttentionRow
+                label="Upcoming sessions"
+                value={upcomingSessions.length}
+                actionLabel="Open sessions"
+                onAction={() => setActiveTab("sessions")}
+              />
+              <AttentionRow
+                label="Courses in progress"
+                value={learningSummary.activeCount}
+                actionLabel="Open learning"
+                onAction={() => setActiveTab("learning")}
+              />
+            </div>
+          </section>
+        </div>
+
+        {priorityItems.length > 0 ? (
+          <section className="space-y-4">
+            <div className="flex flex-col gap-3 rounded-3xl border border-border/60 bg-white p-6 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <BellRing className="h-5 w-5 text-amber-600" />
+                  <h2 className="font-heading text-xl font-semibold text-foreground">
+                    Swap updates
+                  </h2>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 text-sm font-medium text-teal-700"
+                onClick={() => setActiveTab("swaps")}
+              >
+                Open swap workspace
+                <ArrowLeftRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {priorityItems.map((request) => (
+                <SwapRequestCard
+                  key={`priority-${request.id}`}
+                  request={request}
+                  acting={actingId === request.id}
+                  onAccept={acceptRequest}
+                  onReject={rejectRequest}
+                  onCancel={cancelRequest}
+                  onOpenDetails={openDetails}
+                  onOpenMessage={openMessages}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </TabsContent>
+
+      <TabsContent value="learning" className="mt-0 space-y-6">
+        {enrollments.length === 0 ? (
+          <EmptyState
+            icon={BookOpen}
+            title="No courses yet"
+            description="Browse courses and start learning something new."
+            actionLabel="Browse Courses"
+            onAction={() => {
+              window.location.href = "/courses";
+            }}
+          />
+        ) : (
           <div className="space-y-4">
-            {priorityItems.map((request) => (
-              <SwapRequestCard
-                key={`priority-${request.id}`}
-                request={request}
-                acting={actingId === request.id}
-                onAccept={acceptRequest}
-                onReject={rejectRequest}
-                onCancel={cancelRequest}
-                onOpenDetails={openDetails}
-                onOpenMessage={openMessages}
+            {enrollments.map((enrollment) => (
+              <LearningEnrollmentCard
+                key={enrollment.id}
+                enrollment={enrollment}
+                primaryLabel="Continue course"
               />
             ))}
           </div>
-        </section>
-      ) : null}
+        )}
+      </TabsContent>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6 rounded-xl bg-secondary/50 p-1">
-          <TabsTrigger
-            value="learning"
-            className="rounded-lg data-[state=active]:bg-white"
-          >
-            My Learning
-          </TabsTrigger>
-          <TabsTrigger
-            value="swaps"
-            className="rounded-lg data-[state=active]:bg-white"
-          >
-            Skill Swaps
-          </TabsTrigger>
-          <TabsTrigger
-            value="applications"
-            className="rounded-lg data-[state=active]:bg-white"
-          >
-            Applications
-          </TabsTrigger>
-          <TabsTrigger
-            value="events"
-            className="rounded-lg data-[state=active]:bg-white"
-          >
-            Events
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="learning">
-          <div className="space-y-6">
-            <section className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-teal-600" />
-                <h2 className="font-heading text-lg font-semibold text-foreground">
-                  Learning sessions
+      <TabsContent value="sessions" className="mt-0">
+        <div className="grid gap-4 xl:grid-cols-2">
+          <section className="space-y-3 rounded-2xl border border-border/60 bg-white p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="font-heading text-base font-semibold text-foreground">
+                  Upcoming sessions
                 </h2>
+                <p className="text-sm text-muted-foreground">
+                  Confirmed or planned learning exchanges.
+                </p>
               </div>
+              <StatusBadge status="planned" label={`${upcomingSessions.length}`} />
+            </div>
 
-              {upcomingSessions.length === 0 && completedSessions.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border/60 bg-white p-5 text-sm text-muted-foreground">
-                  No learning sessions planned yet. Once a swap is accepted, use Messages to lock in time and store the meeting link.
-                </div>
-              ) : (
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <div className="space-y-3 rounded-2xl border border-border/60 bg-white p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="font-heading text-base font-semibold text-foreground">
-                          Upcoming sessions
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          Your next confirmed or planned exchange sessions.
-                        </p>
-                      </div>
-                      <StatusBadge status="planned" label={`${upcomingSessions.length}`} />
-                    </div>
-
-                    {upcomingSessions.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Nothing is scheduled right now.
-                      </p>
-                    ) : (
-                      upcomingSessions.slice(0, 4).map((session) => (
-                        <div
-                          key={session.id}
-                          className="rounded-2xl border border-border/50 bg-secondary/20 p-4"
-                        >
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h4 className="font-medium text-foreground">{session.title}</h4>
-                            <StatusBadge
-                              status={session.status}
-                              label={session.status === "confirmed" ? "Confirmed" : "Planned"}
-                            />
-                          </div>
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            With {session.counterparty?.full_name || "your swap partner"} on{" "}
-                            {moment(session.scheduled_start_at).format("ddd, MMM D · h:mm A")}
-                            {session.timezone ? ` (${session.timezone})` : ""}
-                          </p>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <ParticipationReviewDialog
-                              context="skill_swap"
-                              sourceId={session.swap_request}
-                              title="Review this completed swap"
-                              description="Rate the exchange after meaningful participation. Future course and event review flows will use this same review contract."
-                              triggerLabel="Leave review"
-                              triggerVariant="outline"
-                            />
-                            {session.meeting_url ? (
-                              <a
-                                href={session.meeting_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium text-teal-700"
-                              >
-                                <Link2 className="h-4 w-4" />
-                                Open link
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </a>
-                            ) : null}
-                            <button
-                              type="button"
-                              className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium text-foreground"
-                              onClick={() => openSessionConversation(session)}
-                            >
-                              <MessageCircle className="h-4 w-4 text-teal-600" />
-                              Open conversation
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="space-y-3 rounded-2xl border border-border/60 bg-white p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="font-heading text-base font-semibold text-foreground">
-                          Completed records
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          A lightweight record of what was finished.
-                        </p>
-                      </div>
-                      <StatusBadge status="completed" label={`${completedSessions.length}`} />
-                    </div>
-
-                    {completedSessions.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Completed sessions will show up here after you wrap them up.
-                      </p>
-                    ) : (
-                      completedSessions.slice(0, 4).map((session) => (
-                        <div
-                          key={session.id}
-                          className="rounded-2xl border border-border/50 bg-secondary/20 p-4"
-                        >
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h4 className="font-medium text-foreground">{session.title}</h4>
-                            <StatusBadge status="completed" />
-                          </div>
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            Completed with {session.counterparty?.full_name || "your swap partner"}{" "}
-                            {moment(session.completed_at || session.updated_at).fromNow()}.
-                          </p>
-                          {session.completion_notes ? (
-                            <div className="mt-3 rounded-xl bg-white px-3 py-2 text-sm text-foreground">
-                              <div className="mb-1 inline-flex items-center gap-2 font-medium text-teal-700">
-                                <CheckCircle2 className="h-4 w-4" />
-                                Completion notes
-                              </div>
-                              <p>{session.completion_notes}</p>
-                            </div>
-                          ) : null}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {enrollments.length === 0 ? (
-              <EmptyState
-                icon={BookOpen}
-                title="No courses yet"
-                description="Browse courses and start learning something new."
-                actionLabel="Browse Courses"
-                onAction={() => {
-                  window.location.href = "/courses";
-                }}
-              />
+            {upcomingSessions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nothing is scheduled right now.
+              </p>
             ) : (
-              <div className="space-y-3">
-              {enrollments.map((enrollment) => (
+              upcomingSessions.map((session) => (
                 <div
-                  key={enrollment.id}
-                  className="flex items-center gap-4 rounded-xl border border-border/50 bg-white p-4"
+                  key={session.id}
+                  className="rounded-2xl border border-border/50 bg-secondary/20 p-4"
                 >
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-teal-50">
-                    <BookOpen className="h-5 w-5 text-teal-600" />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="font-medium text-foreground">{session.title}</h4>
+                    <StatusBadge
+                      status={session.status}
+                      label={session.status === "confirmed" ? "Confirmed" : "Planned"}
+                    />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium">
-                      {enrollment.course_program?.title || "Course"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Enrolled{" "}
-                      {enrollment.enrolled_date
-                        ? moment(enrollment.enrolled_date).fromNow()
-                        : "recently"}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="h-2 w-24 overflow-hidden rounded-full bg-secondary">
-                      <div
-                        className="h-full rounded-full bg-teal-500"
-                        style={{
-                          width: `${enrollment.progress_percent || 0}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {enrollment.progress_percent || 0}%
-                    </span>
-                  </div>
-                  <StatusBadge status={enrollment.status} />
-                  {enrollment.course_program?.id && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    With {session.counterparty?.full_name || "your swap partner"} on{" "}
+                    {moment(session.scheduled_start_at).format("ddd, MMM D · h:mm A")}
+                    {session.timezone ? ` (${session.timezone})` : ""}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <ParticipationReviewDialog
+                      context="skill_swap"
+                      sourceId={session.swap_request}
+                      title="Review this completed swap"
+                      description="Rate the exchange after meaningful participation. Future course and event review flows will use this same review contract."
+                      triggerLabel="Leave review"
+                      triggerVariant="outline"
+                    />
+                    {session.meeting_url ? (
+                      <a
+                        href={session.meeting_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium text-teal-700"
+                      >
+                        <Link2 className="h-4 w-4" />
+                        Open link
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    ) : null}
                     <button
                       type="button"
-                      onClick={() => {
-                        window.location.href = `/courses/${enrollment.course_program.id}`;
-                      }}
-                      className="text-xs font-medium text-teal-700 hover:text-teal-800"
+                      className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium text-foreground"
+                      onClick={() => openSessionConversation(session)}
                     >
-                      Open
+                      <MessageCircle className="h-4 w-4 text-teal-600" />
+                      Open conversation
                     </button>
-                  )}
+                  </div>
                 </div>
-              ))}
-              </div>
+              ))
             )}
-          </div>
-        </TabsContent>
+          </section>
 
-        <TabsContent value="swaps">
-          <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-3">
-              <button
-                type="button"
-                className="rounded-2xl border border-border/60 bg-white p-5 text-left"
-                onClick={() => setActiveTab("swaps")}
-              >
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <BellRing className="h-4 w-4 text-amber-600" />
-                  Needs your response
-                </div>
-                <p className="mt-2 font-heading text-3xl font-bold text-foreground">
-                  {requestGroups.incoming.length}
+          <section className="space-y-3 rounded-2xl border border-border/60 bg-white p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="font-heading text-base font-semibold text-foreground">
+                  Completed records
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  A lightweight record of what was finished.
                 </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Incoming swap requests waiting on you.
-                </p>
-              </button>
-              <button
-                type="button"
-                className="rounded-2xl border border-border/60 bg-white p-5 text-left"
-                onClick={() => setActiveTab("swaps")}
-              >
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <MessageCircle className="h-4 w-4 text-emerald-600" />
-                  Active swaps
-                </div>
-                <p className="mt-2 font-heading text-3xl font-bold text-foreground">
-                  {requestGroups.active.length}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Open a conversation with your current exchange partners.
-                </p>
-              </button>
-              <button
-                type="button"
-                className="rounded-2xl border border-border/60 bg-white p-5 text-left"
-                onClick={() => setActiveTab("swaps")}
-              >
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <StatusBadge status="pending" label="Outgoing" />
-                </div>
-                <p className="mt-2 font-heading text-3xl font-bold text-foreground">
-                  {requestGroups.outgoing.length}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Requests you have already sent.
-                </p>
-              </button>
+              </div>
+              <StatusBadge status="completed" label={`${completedSessions.length}`} />
             </div>
 
-            {swapsError ? (
-              <EmptyState
-                icon={ArrowLeftRight}
-                title="We couldn't load your swap notifications"
-                description={swapsError}
-                actionLabel="Refresh"
-                onAction={refreshSwaps}
-              />
-            ) : requests.length === 0 ? (
-              <EmptyState
-                icon={ArrowLeftRight}
-                title="No skill swaps yet"
-                description="Find someone to swap skills with. Skill swaps always stay free."
-                actionLabel="Find a Swap"
-                onAction={() => {
-                  window.location.href = "/skill-swap";
-                }}
-              />
+            {completedSessions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Completed sessions will show up here after you wrap them up.
+              </p>
             ) : (
-              <div className="space-y-6">
-                {requestGroups.incoming.length > 0 ? (
-                  <section className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <StatusBadge status="pending" label="Needs response" />
-                      <h2 className="font-heading text-lg font-semibold text-foreground">
-                        Incoming requests
-                      </h2>
+              completedSessions.map((session) => (
+                <div
+                  key={session.id}
+                  className="rounded-2xl border border-border/50 bg-secondary/20 p-4"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="font-medium text-foreground">{session.title}</h4>
+                    <StatusBadge status="completed" />
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Completed with {session.counterparty?.full_name || "your swap partner"}{" "}
+                    {moment(session.completed_at || session.updated_at).fromNow()}.
+                  </p>
+                  {session.completion_notes ? (
+                    <div className="mt-3 rounded-xl bg-white px-3 py-2 text-sm text-foreground">
+                      <div className="mb-1 inline-flex items-center gap-2 font-medium text-teal-700">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Completion notes
+                      </div>
+                      <p>{session.completion_notes}</p>
                     </div>
-                    <div className="space-y-3">
-                      {requestGroups.incoming.map((request) => (
-                        <SwapRequestCard
-                          key={request.id}
-                          request={request}
-                          acting={actingId === request.id}
-                          onAccept={acceptRequest}
-                          onReject={rejectRequest}
-                          onCancel={cancelRequest}
-                          onOpenDetails={openDetails}
-                          onOpenMessage={openMessages}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-
-                {requestGroups.active.length > 0 ? (
-                  <section className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <StatusBadge status="accepted" label="Active" />
-                      <h2 className="font-heading text-lg font-semibold text-foreground">
-                        Active swaps
-                      </h2>
-                    </div>
-                    <div className="space-y-3">
-                      {requestGroups.active.map((request) => (
-                        <SwapRequestCard
-                          key={request.id}
-                          request={request}
-                          acting={actingId === request.id}
-                          onAccept={acceptRequest}
-                          onReject={rejectRequest}
-                          onCancel={cancelRequest}
-                          onOpenDetails={openDetails}
-                          onOpenMessage={openMessages}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-
-                {requestGroups.outgoing.length > 0 || requestGroups.closed.length > 0 ? (
-                  <section className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <StatusBadge status="closed" label="History" />
-                      <h2 className="font-heading text-lg font-semibold text-foreground">
-                        Outgoing and history
-                      </h2>
-                    </div>
-                    <div className="space-y-3">
-                      {[...requestGroups.outgoing, ...requestGroups.closed].map((request) => (
-                        <SwapRequestCard
-                          key={request.id}
-                          request={request}
-                          acting={actingId === request.id}
-                          onAccept={acceptRequest}
-                          onReject={rejectRequest}
-                          onCancel={cancelRequest}
-                          onOpenDetails={openDetails}
-                          onOpenMessage={openMessages}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-              </div>
+                  ) : null}
+                </div>
+              ))
             )}
+          </section>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="swaps" className="mt-0">
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <button
+              type="button"
+              className="rounded-2xl border border-border/60 bg-white p-5 text-left"
+              onClick={() => setActiveTab("swaps")}
+            >
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <BellRing className="h-4 w-4 text-amber-600" />
+                Needs your response
+              </div>
+              <p className="mt-2 font-heading text-3xl font-bold text-foreground">
+                {requestGroups.incoming.length}
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Incoming swap requests waiting on you.
+              </p>
+            </button>
+            <button
+              type="button"
+              className="rounded-2xl border border-border/60 bg-white p-5 text-left"
+              onClick={() => setActiveTab("swaps")}
+            >
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <MessageCircle className="h-4 w-4 text-emerald-600" />
+                Active swaps
+              </div>
+              <p className="mt-2 font-heading text-3xl font-bold text-foreground">
+                {requestGroups.active.length}
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Open a conversation with your current exchange partners.
+              </p>
+            </button>
+            <button
+              type="button"
+              className="rounded-2xl border border-border/60 bg-white p-5 text-left"
+              onClick={() => setActiveTab("swaps")}
+            >
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <StatusBadge status="pending" label="Outgoing" />
+              </div>
+              <p className="mt-2 font-heading text-3xl font-bold text-foreground">
+                {requestGroups.outgoing.length}
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Requests you have already sent.
+              </p>
+            </button>
           </div>
-        </TabsContent>
 
-        <TabsContent value="applications">
-          {applications.length === 0 ? (
+          {swapsError ? (
             <EmptyState
-              icon={Briefcase}
-              title="No applications yet"
-              description="Apply for jobs and internships that match your skills."
-              actionLabel="Browse Jobs"
+              icon={ArrowLeftRight}
+              title="We couldn't load your swap notifications"
+              description={swapsError}
+              actionLabel="Refresh"
+              onAction={refreshSwaps}
+            />
+          ) : requests.length === 0 ? (
+            <EmptyState
+              icon={ArrowLeftRight}
+              title="No skill swaps yet"
+              description="Find someone to swap skills with. Skill swaps always stay free."
+              actionLabel="Find a Swap"
               onAction={() => {
-                window.location.href = "/jobs";
+                window.location.href = "/skill-swap";
               }}
             />
           ) : (
-            <div className="space-y-3">
-              {applications.map((application) => (
-                <div
-                  key={application.id}
-                  className="flex items-center gap-4 rounded-xl border border-border/50 bg-white p-4"
-                >
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-purple-50">
-                    <Briefcase className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium">
-                      {application.job_title || "Position"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {application.company_name} · Applied{" "}
-                      {application.applied_date
-                        ? moment(application.applied_date).fromNow()
-                        : "recently"}
-                    </div>
-                  </div>
-                  <StatusBadge status={application.status} />
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
+            <div className="space-y-6">
+              {requestGroups.incoming.length > 0 ? (
+                <RequestGroup
+                  title="Incoming requests"
+                  description="Requests waiting for your answer."
+                  items={requestGroups.incoming}
+                  actingId={actingId}
+                  onAccept={acceptRequest}
+                  onReject={rejectRequest}
+                  onCancel={cancelRequest}
+                  onOpenDetails={openDetails}
+                  onOpenMessage={openMessages}
+                />
+              ) : null}
 
-        <TabsContent value="events">
-          {rsvps.length === 0 ? (
-            <EmptyState
-              icon={Calendar}
-              title="No events yet"
-              description="RSVP to upcoming events and workshops."
-              actionLabel="Find Events"
-              onAction={() => {
-                window.location.href = "/events";
-              }}
-            />
-          ) : (
-            <div className="space-y-3">
-              {rsvps.map((rsvp) => (
-                <div
-                  key={rsvp.id}
-                  className="flex items-center gap-4 rounded-xl border border-border/50 bg-white p-4"
-                >
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50">
-                    <Calendar className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium">Event RSVP</div>
-                    <div className="text-xs text-muted-foreground">
-                      Registered{" "}
-                      {rsvp.registered_date
-                        ? moment(rsvp.registered_date).fromNow()
-                        : "recently"}
-                    </div>
-                  </div>
-                  <StatusBadge
-                    status={rsvp.status === "going" ? "active" : rsvp.status}
-                    label={rsvp.status === "going" ? "Going" : undefined}
-                  />
-                </div>
-              ))}
+              {requestGroups.active.length > 0 ? (
+                <RequestGroup
+                  title="Active swaps"
+                  description="Accepted swaps you can move straight into messaging."
+                  items={requestGroups.active}
+                  actingId={actingId}
+                  onAccept={acceptRequest}
+                  onReject={rejectRequest}
+                  onCancel={cancelRequest}
+                  onOpenDetails={openDetails}
+                  onOpenMessage={openMessages}
+                />
+              ) : null}
+
+              {requestGroups.outgoing.length > 0 ? (
+                <RequestGroup
+                  title="Outgoing requests"
+                  description="Requests you have already sent."
+                  items={requestGroups.outgoing}
+                  actingId={actingId}
+                  onAccept={acceptRequest}
+                  onReject={rejectRequest}
+                  onCancel={cancelRequest}
+                  onOpenDetails={openDetails}
+                  onOpenMessage={openMessages}
+                />
+              ) : null}
+
+              {requestGroups.closed.length > 0 ? (
+                <RequestGroup
+                  title="Resolved history"
+                  description="Closed requests kept for reference."
+                  items={requestGroups.closed}
+                  actingId={actingId}
+                  onAccept={acceptRequest}
+                  onReject={rejectRequest}
+                  onCancel={cancelRequest}
+                  onOpenDetails={openDetails}
+                  onOpenMessage={openMessages}
+                />
+              ) : null}
             </div>
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="applications" className="mt-0">
+        <EmptyState
+          icon={Briefcase}
+          title="Applications workspace is ready to scale"
+          description="Jobs, internships, and application tracking will live here without crowding your learning or swap workflow."
+        />
+      </TabsContent>
+
+      <TabsContent value="events" className="mt-0">
+        <EmptyState
+          icon={Calendar}
+          title="Events workspace is ready to scale"
+          description="RSVPs, event attendance, and future community participation can grow here as their own focused section."
+        />
+      </TabsContent>
+    </WorkspaceShell>
+  );
+}
+
+function MetricCard({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-white/80 p-4 shadow-sm shadow-teal-100">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-1 font-heading text-2xl font-bold text-foreground">{value}</div>
     </div>
+  );
+}
+
+function AttentionRow({ label, value, actionLabel, onAction }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-2xl bg-secondary/25 px-4 py-3">
+      <div>
+        <div className="text-sm font-medium text-foreground">{label}</div>
+        <div className="text-xs text-muted-foreground">Count: {value}</div>
+      </div>
+      <button
+        type="button"
+        onClick={onAction}
+        className="text-sm font-medium text-teal-700 hover:text-teal-800"
+      >
+        {actionLabel}
+      </button>
+    </div>
+  );
+}
+
+function RequestGroup({
+  title,
+  description,
+  items,
+  actingId,
+  onAccept,
+  onReject,
+  onCancel,
+  onOpenDetails,
+  onOpenMessage,
+}) {
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="font-heading text-lg font-semibold text-foreground">{title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      </div>
+      <div className="space-y-4">
+        {items.map((request) => (
+          <SwapRequestCard
+            key={request.id}
+            request={request}
+            acting={actingId === request.id}
+            onAccept={onAccept}
+            onReject={onReject}
+            onCancel={onCancel}
+            onOpenDetails={onOpenDetails}
+            onOpenMessage={onOpenMessage}
+          />
+        ))}
+      </div>
+    </section>
   );
 }

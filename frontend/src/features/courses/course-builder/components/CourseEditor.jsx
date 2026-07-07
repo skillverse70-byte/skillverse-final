@@ -51,6 +51,15 @@ export default function CourseEditor({ course, org, onSaved, onCancel }) {
         if (!lesson.title?.trim()) {
           return `Lesson ${lessonIndex + 1} in module ${moduleIndex + 1} needs a title.`;
         }
+        if (lesson.type === "video" && !lesson.content_url?.trim()) {
+          return `Video lesson ${lessonIndex + 1} in module ${moduleIndex + 1} needs a video URL.`;
+        }
+        if (lesson.type === "resource" && !lesson.content_file && !lesson.content_file_url) {
+          return `Document/resource lesson ${lessonIndex + 1} in module ${moduleIndex + 1} needs an uploaded file.`;
+        }
+        if (lesson.type === "checklist" && !(lesson.checklist_items || []).some((item) => item?.trim())) {
+          return `Checklist lesson ${lessonIndex + 1} in module ${moduleIndex + 1} needs at least one checklist item.`;
+        }
       }
     }
 

@@ -1,8 +1,14 @@
+from django.conf import settings
 from rest_framework.throttling import ScopedRateThrottle
 
 
 class AuthEndpointThrottle(ScopedRateThrottle):
     scope = "auth"
+
+    def allow_request(self, request, view):
+        if not settings.ENABLE_AUTH_THROTTLING:
+            return True
+        return super().allow_request(request, view)
 
     def get_cache_key(self, request, view):
         if request.user and request.user.is_authenticated:

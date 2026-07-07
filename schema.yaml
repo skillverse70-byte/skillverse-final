@@ -54,6 +54,58 @@ paths:
               schema:
                 $ref: '#/components/schemas/OrganizationVerificationRequest'
           description: ''
+  /api/admin/payments/financial-accounts/:
+    get:
+      operationId: payments_admin_financial_account_list
+      tags:
+      - payments
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminFinancialAccount'
+          description: ''
+  /api/admin/payments/financial-accounts/{id}/decision/:
+    post:
+      operationId: payments_admin_financial_account_decide
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - payments
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinancialAccountReviewDecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FinancialAccountReviewDecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FinancialAccountReviewDecisionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminFinancialAccount'
+          description: ''
   /api/auth/jwt/refresh/:
     post:
       operationId: auth_jwt_refresh_create
@@ -630,6 +682,255 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/courses/manage/enrollments/:
+    get:
+      operationId: courses_manage_enrollment_list
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrganizationEnrollment'
+          description: ''
+  /api/events/:
+    get:
+      operationId: events_public_list
+      tags:
+      - events
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventSummary'
+          description: ''
+  /api/events/{id}/:
+    get:
+      operationId: events_public_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - events
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+          description: ''
+  /api/events/{id}/rsvp/:
+    post:
+      operationId: events_rsvp_create_or_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventRSVPWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventRSVPWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventRSVPWriteRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRSVPSummary'
+          description: ''
+  /api/events/manage/:
+    get:
+      operationId: events_manage_list
+      tags:
+      - events
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventDetail'
+          description: ''
+    post:
+      operationId: events_manage_create
+      tags:
+      - events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+          description: ''
+  /api/events/manage/{id}/:
+    get:
+      operationId: events_manage_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - events
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+          description: ''
+    put:
+      operationId: events_manage_replace
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+          description: ''
+    patch:
+      operationId: events_manage_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEventWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEventWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEventWriteRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+          description: ''
+    delete:
+      operationId: events_manage_delete
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - events
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/events/rsvps/:
+    get:
+      operationId: events_rsvp_list
+      tags:
+      - events
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventRSVPSummary'
+          description: ''
   /api/fields/catalog/:
     get:
       operationId: fields_catalog_list
@@ -662,6 +963,287 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthCheckResponse'
+          description: ''
+  /api/jobs/:
+    get:
+      operationId: jobs_public_list
+      tags:
+      - opportunities
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OpportunitySummary'
+          description: ''
+  /api/jobs/{id}/:
+    get:
+      operationId: jobs_public_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - opportunities
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityDetail'
+          description: ''
+  /api/jobs/{id}/apply/:
+    post:
+      operationId: jobs_apply_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - opportunities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobApplicationCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/JobApplicationCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/JobApplicationCreateRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobApplicationSummary'
+          description: ''
+  /api/jobs/applications/:
+    get:
+      operationId: jobs_applications_mine_list
+      tags:
+      - opportunities
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobApplicationSummary'
+          description: ''
+  /api/jobs/manage/:
+    get:
+      operationId: jobs_manage_list
+      tags:
+      - opportunities
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OpportunityDetail'
+          description: ''
+    post:
+      operationId: jobs_manage_create
+      tags:
+      - opportunities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpportunityWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OpportunityWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OpportunityWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityDetail'
+          description: ''
+  /api/jobs/manage/{id}/:
+    get:
+      operationId: jobs_manage_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - opportunities
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityDetail'
+          description: ''
+    put:
+      operationId: jobs_manage_replace
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - opportunities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpportunityWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OpportunityWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OpportunityWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityDetail'
+          description: ''
+    patch:
+      operationId: jobs_manage_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - opportunities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOpportunityWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOpportunityWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOpportunityWriteRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpportunityDetail'
+          description: ''
+    delete:
+      operationId: jobs_manage_delete
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - opportunities
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/jobs/manage/applications/:
+    get:
+      operationId: jobs_manage_applications_list
+      tags:
+      - opportunities
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApplicantSummary'
+          description: ''
+  /api/jobs/manage/applications/{id}/:
+    patch:
+      operationId: jobs_manage_applications_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - opportunities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicantStatusUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicantStatusUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicantStatusUpdateRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicantSummary'
           description: ''
   /api/messages/threads/:
     get:
@@ -958,6 +1540,203 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrganizationVerificationRequest'
+          description: ''
+  /api/payments/chapa/callback/:
+    get:
+      operationId: payments_chapa_callback_get
+      parameters:
+      - in: query
+        name: trx_ref
+        schema:
+          type: string
+      - in: query
+        name: tx_ref
+        schema:
+          type: string
+      tags:
+      - payments
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapaCallbackResponse'
+          description: ''
+    post:
+      operationId: payments_chapa_callback_post
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChapaCallbackRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChapaCallbackRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChapaCallbackRequestRequest'
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapaCallbackResponse'
+          description: ''
+  /api/payments/course-checkouts/:
+    get:
+      operationId: payments_course_checkout_list
+      tags:
+      - payments
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentTransaction'
+          description: ''
+    post:
+      operationId: payments_course_checkout_create
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCheckoutCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentCheckoutCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentCheckoutCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTransaction'
+          description: ''
+  /api/payments/course-checkouts/{tx_ref}/:
+    get:
+      operationId: payments_course_checkout_retrieve
+      parameters:
+      - in: path
+        name: tx_ref
+        schema:
+          type: string
+        required: true
+      tags:
+      - payments
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTransaction'
+          description: ''
+  /api/payments/course-checkouts/{tx_ref}/verify/:
+    post:
+      operationId: payments_course_checkout_verify
+      parameters:
+      - in: path
+        name: tx_ref
+        schema:
+          type: string
+        required: true
+      tags:
+      - payments
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTransaction'
+          description: ''
+  /api/payments/financial-account/me/:
+    get:
+      operationId: payments_financial_account_me_retrieve
+      tags:
+      - payments
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialAccount'
+          description: ''
+    put:
+      operationId: payments_financial_account_me_update
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinancialAccountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FinancialAccountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FinancialAccountRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialAccount'
+          description: ''
+    patch:
+      operationId: payments_financial_account_me_partial_update
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFinancialAccountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFinancialAccountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFinancialAccountRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialAccount'
           description: ''
   /api/profile/fields/:
     get:
@@ -1537,8 +2316,263 @@ paths:
               schema:
                 $ref: '#/components/schemas/SkillSwapRequest'
           description: ''
+  /api/v1/payment/webhook/:
+    post:
+      operationId: payments_chapa_webhook
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapaWebhookResponse'
+          description: ''
 components:
   schemas:
+    AdminFinancialAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization_id:
+          type: integer
+          readOnly: true
+        organization_verification_status:
+          type: string
+          readOnly: true
+        provider:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FinancialAccountStatusEnum'
+          readOnly: true
+        business_name:
+          type: string
+          readOnly: true
+        account_holder_name:
+          type: string
+          readOnly: true
+        bank_name:
+          type: string
+          readOnly: true
+        bank_code:
+          type: string
+          readOnly: true
+        account_number_last4:
+          type: string
+          readOnly: true
+        mobile_money_number:
+          type: string
+          readOnly: true
+        setup_notes:
+          type: string
+          readOnly: true
+        provider_account_reference:
+          type: string
+          readOnly: true
+        restricted_reason:
+          type: string
+          readOnly: true
+        review_notes:
+          type: string
+          readOnly: true
+        reviewed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_ready:
+          type: boolean
+          readOnly: true
+        can_publish_paid_courses:
+          type: boolean
+          readOnly: true
+        can_accept_paid_enrollments:
+          type: boolean
+          readOnly: true
+        enrollment_gate_label:
+          type: string
+          readOnly: true
+        enrollment_gate_reason:
+          type: string
+          readOnly: true
+        has_submission_details:
+          type: boolean
+          readOnly: true
+        organization_name:
+          type: string
+          readOnly: true
+        organization_email:
+          type: string
+          format: email
+          readOnly: true
+        reviewed_by_email:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+      required:
+      - account_holder_name
+      - account_number_last4
+      - bank_code
+      - bank_name
+      - business_name
+      - can_accept_paid_enrollments
+      - can_publish_paid_courses
+      - created_at
+      - enrollment_gate_label
+      - enrollment_gate_reason
+      - has_submission_details
+      - id
+      - is_ready
+      - mobile_money_number
+      - organization_email
+      - organization_id
+      - organization_name
+      - organization_verification_status
+      - provider
+      - provider_account_reference
+      - restricted_reason
+      - review_notes
+      - reviewed_at
+      - reviewed_by
+      - reviewed_by_email
+      - setup_notes
+      - status
+      - submitted_at
+      - updated_at
+      - verified_at
+    ApplicantInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+      required:
+      - email
+      - full_name
+      - id
+    ApplicantOpportunity:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/OpportunityTypeEnum'
+          readOnly: true
+      required:
+      - id
+      - title
+      - type
+    ApplicantStatusUpdateStatusEnum:
+      enum:
+      - applied
+      - shortlisted
+      - interview
+      - hired
+      - rejected
+      type: string
+      description: |-
+        * `applied` - applied
+        * `shortlisted` - shortlisted
+        * `interview` - interview
+        * `hired` - hired
+        * `rejected` - rejected
+    ApplicantSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/JobApplicationStatusEnum'
+          readOnly: true
+        cover_letter:
+          type: string
+          readOnly: true
+        reviewer_notes:
+          type: string
+          readOnly: true
+        applied_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        applicant:
+          allOf:
+          - $ref: '#/components/schemas/ApplicantInfo'
+          readOnly: true
+        opportunity:
+          allOf:
+          - $ref: '#/components/schemas/ApplicantOpportunity'
+          readOnly: true
+      required:
+      - applicant
+      - applied_at
+      - cover_letter
+      - id
+      - opportunity
+      - reviewed_at
+      - reviewer_notes
+      - status
     AuthUser:
       type: object
       properties:
@@ -1587,6 +2621,39 @@ components:
     BlankEnum:
       enum:
       - ''
+    ChapaCallbackRequestRequest:
+      type: object
+      properties:
+        tx_ref:
+          type: string
+          minLength: 1
+        trx_ref:
+          type: string
+          minLength: 1
+        status:
+          type: string
+          minLength: 1
+        ref_id:
+          type: string
+          minLength: 1
+    ChapaCallbackResponse:
+      type: object
+      properties:
+        received:
+          type: boolean
+        tx_ref:
+          type: string
+        payment_status:
+          type: string
+      required:
+      - received
+    ChapaWebhookResponse:
+      type: object
+      properties:
+        received:
+          type: boolean
+      required:
+      - received
     ContextEnum:
       enum:
       - skill_swap
@@ -1621,9 +2688,11 @@ components:
       - id
       - lessons
       - title
-    CourseModuleRequest:
+    CourseModuleWriteRequest:
       type: object
       properties:
+        id:
+          type: integer
         title:
           type: string
           minLength: 1
@@ -1638,7 +2707,7 @@ components:
         lessons:
           type: array
           items:
-            $ref: '#/components/schemas/LessonItemRequest'
+            $ref: '#/components/schemas/LessonItemWriteRequest'
       required:
       - lessons
       - title
@@ -1656,6 +2725,9 @@ components:
           readOnly: true
         organization_verification_status:
           type: string
+          readOnly: true
+        financial_account:
+          nullable: true
           readOnly: true
         title:
           type: string
@@ -1706,6 +2778,7 @@ components:
       required:
       - created_at
       - enrolled_count
+      - financial_account
       - id
       - modules
       - organization_id
@@ -1738,6 +2811,9 @@ components:
           readOnly: true
         organization_verification_status:
           type: string
+          readOnly: true
+        financial_account:
+          nullable: true
           readOnly: true
         title:
           type: string
@@ -1784,6 +2860,7 @@ components:
       required:
       - created_at
       - enrolled_count
+      - financial_account
       - id
       - organization_id
       - organization_name
@@ -1828,7 +2905,7 @@ components:
         modules:
           type: array
           items:
-            $ref: '#/components/schemas/CourseModuleRequest'
+            $ref: '#/components/schemas/CourseModuleWriteRequest'
       required:
       - title
     DirectionEnum:
@@ -1869,6 +2946,9 @@ components:
           readOnly: true
         organization_verification_status:
           type: string
+          readOnly: true
+        financial_account:
+          nullable: true
           readOnly: true
         title:
           type: string
@@ -1915,6 +2995,7 @@ components:
       required:
       - created_at
       - enrolled_count
+      - financial_account
       - id
       - organization_id
       - organization_name
@@ -2083,6 +3164,327 @@ components:
       - id
       - next_lesson_id
       - total_lessons
+    EventDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization:
+          allOf:
+          - $ref: '#/components/schemas/EventOrganizationSummary'
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+        location:
+          type: string
+          readOnly: true
+        is_online:
+          type: boolean
+          readOnly: true
+        cover_image_url:
+          type: string
+          format: uri
+          readOnly: true
+        max_attendees:
+          type: integer
+          readOnly: true
+          nullable: true
+        current_attendees:
+          type: integer
+          readOnly: true
+        spots_remaining:
+          type: integer
+          nullable: true
+          readOnly: true
+        rsvp_open:
+          type: boolean
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/EventStatusEnum'
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        viewer_rsvp_status:
+          type: string
+          nullable: true
+          readOnly: true
+        tags:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        meeting_url:
+          type: string
+          readOnly: true
+      required:
+      - category
+      - cover_image_url
+      - created_at
+      - current_attendees
+      - description
+      - ends_at
+      - id
+      - is_online
+      - location
+      - max_attendees
+      - meeting_url
+      - organization
+      - rsvp_open
+      - spots_remaining
+      - starts_at
+      - status
+      - tags
+      - title
+      - updated_at
+      - viewer_rsvp_status
+    EventOrganizationSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/OrganizationTypeEnum'
+        verification_status:
+          $ref: '#/components/schemas/OrganizationVerificationStatusEnum'
+      required:
+      - id
+      - name
+      - type
+    EventRSVPSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        event_id:
+          type: integer
+          readOnly: true
+        event_title:
+          type: string
+          readOnly: true
+        organization_id:
+          type: integer
+          readOnly: true
+        organization_name:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/RSVPStatusEnum'
+          readOnly: true
+        attended_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - attended_at
+      - created_at
+      - ends_at
+      - event_id
+      - event_title
+      - id
+      - organization_id
+      - organization_name
+      - starts_at
+      - status
+      - updated_at
+    EventRSVPWriteRequest:
+      type: object
+      properties:
+        status:
+          allOf:
+          - $ref: '#/components/schemas/RSVPStatusEnum'
+          default: going
+    EventStatusEnum:
+      enum:
+      - upcoming
+      - live
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `upcoming` - Upcoming
+        * `live` - Live
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+    EventSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization:
+          allOf:
+          - $ref: '#/components/schemas/EventOrganizationSummary'
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+        location:
+          type: string
+          readOnly: true
+        is_online:
+          type: boolean
+          readOnly: true
+        cover_image_url:
+          type: string
+          format: uri
+          readOnly: true
+        max_attendees:
+          type: integer
+          readOnly: true
+          nullable: true
+        current_attendees:
+          type: integer
+          readOnly: true
+        spots_remaining:
+          type: integer
+          nullable: true
+          readOnly: true
+        rsvp_open:
+          type: boolean
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/EventStatusEnum'
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        viewer_rsvp_status:
+          type: string
+          nullable: true
+          readOnly: true
+        tags:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - cover_image_url
+      - created_at
+      - current_attendees
+      - description
+      - ends_at
+      - id
+      - is_online
+      - location
+      - max_attendees
+      - organization
+      - rsvp_open
+      - spots_remaining
+      - starts_at
+      - status
+      - tags
+      - title
+      - updated_at
+      - viewer_rsvp_status
+    EventWriteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 120
+        location:
+          type: string
+          maxLength: 255
+        is_online:
+          type: boolean
+        meeting_url:
+          type: string
+          format: uri
+          maxLength: 200
+        cover_image_url:
+          type: string
+          format: uri
+          maxLength: 200
+        max_attendees:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        rsvp_open:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/EventStatusEnum'
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        tags: {}
+      required:
+      - starts_at
+      - title
     ExperienceLevelEnum:
       enum:
       - student
@@ -2112,6 +3514,175 @@ components:
       - id
       - name
       - slug
+    FinancialAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization_id:
+          type: integer
+          readOnly: true
+        organization_verification_status:
+          type: string
+          readOnly: true
+        provider:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/FinancialAccountStatusEnum'
+          readOnly: true
+        business_name:
+          type: string
+          maxLength: 255
+        account_holder_name:
+          type: string
+          maxLength: 255
+        bank_name:
+          type: string
+          maxLength: 255
+        bank_code:
+          type: string
+          maxLength: 64
+        account_number_last4:
+          type: string
+          readOnly: true
+        mobile_money_number:
+          type: string
+          maxLength: 32
+        setup_notes:
+          type: string
+        provider_account_reference:
+          type: string
+          readOnly: true
+        restricted_reason:
+          type: string
+          readOnly: true
+        review_notes:
+          type: string
+          readOnly: true
+        reviewed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_ready:
+          type: boolean
+          readOnly: true
+        can_publish_paid_courses:
+          type: boolean
+          readOnly: true
+        can_accept_paid_enrollments:
+          type: boolean
+          readOnly: true
+        enrollment_gate_label:
+          type: string
+          readOnly: true
+        enrollment_gate_reason:
+          type: string
+          readOnly: true
+        has_submission_details:
+          type: boolean
+          readOnly: true
+      required:
+      - account_number_last4
+      - can_accept_paid_enrollments
+      - can_publish_paid_courses
+      - created_at
+      - enrollment_gate_label
+      - enrollment_gate_reason
+      - has_submission_details
+      - id
+      - is_ready
+      - organization_id
+      - organization_verification_status
+      - provider
+      - provider_account_reference
+      - restricted_reason
+      - review_notes
+      - reviewed_at
+      - reviewed_by
+      - status
+      - submitted_at
+      - updated_at
+      - verified_at
+    FinancialAccountRequest:
+      type: object
+      properties:
+        business_name:
+          type: string
+          maxLength: 255
+        account_holder_name:
+          type: string
+          maxLength: 255
+        bank_name:
+          type: string
+          maxLength: 255
+        bank_code:
+          type: string
+          maxLength: 64
+        account_number:
+          type: string
+          writeOnly: true
+        mobile_money_number:
+          type: string
+          maxLength: 32
+        setup_notes:
+          type: string
+    FinancialAccountReviewDecisionDecisionEnum:
+      enum:
+      - ready
+      - restricted
+      type: string
+      description: |-
+        * `ready` - ready
+        * `restricted` - restricted
+    FinancialAccountReviewDecisionRequest:
+      type: object
+      properties:
+        decision:
+          $ref: '#/components/schemas/FinancialAccountReviewDecisionDecisionEnum'
+        review_notes:
+          type: string
+        restricted_reason:
+          type: string
+      required:
+      - decision
+    FinancialAccountStatusEnum:
+      enum:
+      - not_started
+      - pending
+      - ready
+      - restricted
+      type: string
+      description: |-
+        * `not_started` - Not Started
+        * `pending` - Pending
+        * `ready` - Ready
+        * `restricted` - Restricted
     GenericDetail:
       type: object
       properties:
@@ -2129,6 +3700,91 @@ components:
       required:
       - service
       - status
+    JobApplicationCreateRequest:
+      type: object
+      properties:
+        cover_letter:
+          type: string
+    JobApplicationStatusEnum:
+      enum:
+      - applied
+      - shortlisted
+      - interview
+      - hired
+      - rejected
+      - withdrawn
+      type: string
+      description: |-
+        * `applied` - Applied
+        * `shortlisted` - Shortlisted
+        * `interview` - Interview
+        * `hired` - Hired
+        * `rejected` - Rejected
+        * `withdrawn` - Withdrawn
+    JobApplicationSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        opportunity_id:
+          type: integer
+          readOnly: true
+        opportunity_title:
+          type: string
+          readOnly: true
+        opportunity_type:
+          allOf:
+          - $ref: '#/components/schemas/OpportunityTypeEnum'
+          readOnly: true
+        company_name:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/JobApplicationStatusEnum'
+          readOnly: true
+        cover_letter:
+          type: string
+          readOnly: true
+        reviewer_notes:
+          type: string
+          readOnly: true
+        deadline:
+          type: string
+          format: date
+          readOnly: true
+        applied_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - applied_at
+      - company_name
+      - cover_letter
+      - created_at
+      - deadline
+      - id
+      - opportunity_id
+      - opportunity_title
+      - opportunity_type
+      - reviewed_at
+      - reviewer_notes
+      - status
+      - updated_at
     LearningSession:
       type: object
       properties:
@@ -2287,6 +3943,17 @@ components:
           type: string
           format: uri
           maxLength: 200
+        content_file_url:
+          type: string
+          readOnly: true
+        has_content_file:
+          type: boolean
+          readOnly: true
+        checklist_items:
+          type: array
+          items:
+            type: string
+          readOnly: true
         duration_minutes:
           type: integer
           maximum: 9223372036854775807
@@ -2303,40 +3970,10 @@ components:
         progression_gate:
           type: boolean
       required:
+      - checklist_items
+      - content_file_url
+      - has_content_file
       - id
-      - title
-      - type
-    LessonItemRequest:
-      type: object
-      properties:
-        title:
-          type: string
-          minLength: 1
-          maxLength: 255
-        type:
-          $ref: '#/components/schemas/LessonItemTypeEnum'
-        description:
-          type: string
-        content_url:
-          type: string
-          format: uri
-          maxLength: 200
-        duration_minutes:
-          type: integer
-          maximum: 9223372036854775807
-          minimum: 0
-          format: int64
-          nullable: true
-        sort_order:
-          type: integer
-          maximum: 9223372036854775807
-          minimum: 0
-          format: int64
-        is_required:
-          type: boolean
-        progression_gate:
-          type: boolean
-      required:
       - title
       - type
     LessonItemTypeEnum:
@@ -2357,6 +3994,57 @@ components:
         * `quiz` - Quiz
         * `assignment` - Assignment
         * `reading` - Reading
+    LessonItemWriteRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/LessonItemTypeEnum'
+        description:
+          type: string
+        content_url:
+          type: string
+          format: uri
+          maxLength: 200
+        content_file:
+          type: string
+          format: binary
+          nullable: true
+        checklist_items:
+          type: array
+          items:
+            type: string
+            minLength: 1
+        duration_minutes:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        sort_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        is_required:
+          type: boolean
+        progression_gate:
+          type: boolean
+        upload_key:
+          type: string
+          writeOnly: true
+        retain_existing_file:
+          type: boolean
+          writeOnly: true
+          default: false
+      required:
+      - title
+      - type
     LogoutRequest:
       type: object
       properties:
@@ -2583,6 +4271,309 @@ components:
       - full_name
       - id
       - interests_summary
+    OpportunityDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization:
+          allOf:
+          - $ref: '#/components/schemas/OpportunityOrganizationSummary'
+          readOnly: true
+        company_name:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/OpportunityTypeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OpportunityStatusEnum'
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+        location:
+          type: string
+          readOnly: true
+        is_remote:
+          type: boolean
+          readOnly: true
+        experience_level:
+          allOf:
+          - $ref: '#/components/schemas/ExperienceLevelEnum'
+          readOnly: true
+        salary_range:
+          type: string
+          readOnly: true
+        deadline:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        required_skills:
+          readOnly: true
+        field_signals:
+          readOnly: true
+        application_count:
+          type: integer
+          readOnly: true
+        viewer_application_status:
+          type: string
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - application_count
+      - category
+      - company_name
+      - created_at
+      - deadline
+      - description
+      - experience_level
+      - field_signals
+      - id
+      - is_remote
+      - location
+      - organization
+      - required_skills
+      - salary_range
+      - status
+      - title
+      - type
+      - updated_at
+      - viewer_application_status
+    OpportunityOrganizationSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/OrganizationTypeEnum'
+        verification_status:
+          $ref: '#/components/schemas/OrganizationVerificationStatusEnum'
+      required:
+      - id
+      - name
+      - type
+    OpportunityStatusEnum:
+      enum:
+      - draft
+      - open
+      - closed
+      - filled
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `open` - Open
+        * `closed` - Closed
+        * `filled` - Filled
+    OpportunitySummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization:
+          allOf:
+          - $ref: '#/components/schemas/OpportunityOrganizationSummary'
+          readOnly: true
+        company_name:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/OpportunityTypeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OpportunityStatusEnum'
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+        location:
+          type: string
+          readOnly: true
+        is_remote:
+          type: boolean
+          readOnly: true
+        experience_level:
+          allOf:
+          - $ref: '#/components/schemas/ExperienceLevelEnum'
+          readOnly: true
+        salary_range:
+          type: string
+          readOnly: true
+        deadline:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        required_skills:
+          readOnly: true
+        field_signals:
+          readOnly: true
+        application_count:
+          type: integer
+          readOnly: true
+        viewer_application_status:
+          type: string
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - application_count
+      - category
+      - company_name
+      - created_at
+      - deadline
+      - description
+      - experience_level
+      - field_signals
+      - id
+      - is_remote
+      - location
+      - organization
+      - required_skills
+      - salary_range
+      - status
+      - title
+      - type
+      - updated_at
+      - viewer_application_status
+    OpportunityTypeEnum:
+      enum:
+      - job
+      - internship
+      - program
+      - volunteer
+      type: string
+      description: |-
+        * `job` - Job
+        * `internship` - Internship
+        * `program` - Program
+        * `volunteer` - Volunteer
+    OpportunityWriteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          minLength: 1
+        type:
+          $ref: '#/components/schemas/OpportunityTypeEnum'
+        status:
+          $ref: '#/components/schemas/OpportunityStatusEnum'
+        category:
+          type: string
+          maxLength: 120
+        location:
+          type: string
+          maxLength: 255
+        is_remote:
+          type: boolean
+        experience_level:
+          oneOf:
+          - $ref: '#/components/schemas/ExperienceLevelEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        salary_range:
+          type: string
+          maxLength: 120
+        deadline:
+          type: string
+          format: date
+          nullable: true
+        required_skills: {}
+        field_signals: {}
+      required:
+      - description
+      - title
+    OrganizationEnrollment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/EnrollmentStatusEnum'
+        progress_percent:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        enrolled_at:
+          type: string
+          format: date-time
+          readOnly: true
+        enrolled_date:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        course_program:
+          allOf:
+          - $ref: '#/components/schemas/EnrollmentCourseProgram'
+          readOnly: true
+        total_lessons:
+          type: integer
+          readOnly: true
+        completed_lessons:
+          type: integer
+          readOnly: true
+        next_lesson_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        learner:
+          readOnly: true
+      required:
+      - completed_lessons
+      - course_program
+      - enrolled_at
+      - enrolled_date
+      - id
+      - learner
+      - next_lesson_id
+      - total_lessons
     OrganizationProfile:
       type: object
       properties:
@@ -3019,6 +5010,13 @@ components:
           minLength: 1
       required:
       - email
+    PatchedApplicantStatusUpdateRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ApplicantStatusUpdateStatusEnum'
+        reviewer_notes:
+          type: string
     PatchedCourseProgramWriteRequest:
       type: object
       properties:
@@ -3056,7 +5054,73 @@ components:
         modules:
           type: array
           items:
-            $ref: '#/components/schemas/CourseModuleRequest'
+            $ref: '#/components/schemas/CourseModuleWriteRequest'
+    PatchedEventWriteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 120
+        location:
+          type: string
+          maxLength: 255
+        is_online:
+          type: boolean
+        meeting_url:
+          type: string
+          format: uri
+          maxLength: 200
+        cover_image_url:
+          type: string
+          format: uri
+          maxLength: 200
+        max_attendees:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        rsvp_open:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/EventStatusEnum'
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        tags: {}
+    PatchedFinancialAccountRequest:
+      type: object
+      properties:
+        business_name:
+          type: string
+          maxLength: 255
+        account_holder_name:
+          type: string
+          maxLength: 255
+        bank_name:
+          type: string
+          maxLength: 255
+        bank_code:
+          type: string
+          maxLength: 64
+        account_number:
+          type: string
+          writeOnly: true
+        mobile_money_number:
+          type: string
+          maxLength: 32
+        setup_notes:
+          type: string
     PatchedLearningSessionUpdateRequest:
       type: object
       properties:
@@ -3090,6 +5154,41 @@ components:
         status:
           $ref: '#/components/schemas/LearningSessionStatusEnum'
         metadata: {}
+    PatchedOpportunityWriteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          minLength: 1
+        type:
+          $ref: '#/components/schemas/OpportunityTypeEnum'
+        status:
+          $ref: '#/components/schemas/OpportunityStatusEnum'
+        category:
+          type: string
+          maxLength: 120
+        location:
+          type: string
+          maxLength: 255
+        is_remote:
+          type: boolean
+        experience_level:
+          oneOf:
+          - $ref: '#/components/schemas/ExperienceLevelEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        salary_range:
+          type: string
+          maxLength: 120
+        deadline:
+          type: string
+          format: date
+          nullable: true
+        required_skills: {}
+        field_signals: {}
     PatchedOrganizationProfileUpdateRequest:
       type: object
       properties:
@@ -3148,6 +5247,135 @@ components:
         experience_note:
           type: string
           maxLength: 255
+    PaymentCheckoutCreateRequest:
+      type: object
+      properties:
+        course_program_id:
+          type: integer
+          minimum: 1
+        phone_number:
+          type: string
+          pattern: ^0[79]\d{8}$
+      required:
+      - course_program_id
+    PaymentTransaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        provider:
+          type: string
+          readOnly: true
+        tx_ref:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        currency:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PaymentTransactionStatusEnum'
+          readOnly: true
+        checkout_url:
+          type: string
+          format: uri
+          readOnly: true
+        provider_reference:
+          type: string
+          readOnly: true
+        provider_method:
+          type: string
+          readOnly: true
+        provider_mode:
+          type: string
+          readOnly: true
+        failure_reason:
+          type: string
+          readOnly: true
+        last_verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        enrollment_ready:
+          type: boolean
+          readOnly: true
+        receipt_url:
+          type: string
+          readOnly: true
+        course_program:
+          type: object
+          properties:
+            id:
+              type: integer
+            title:
+              type: string
+            is_free:
+              type: boolean
+          readOnly: true
+        organization:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+          readOnly: true
+      required:
+      - amount
+      - checkout_url
+      - course_program
+      - created_at
+      - currency
+      - enrollment_ready
+      - failure_reason
+      - id
+      - last_verified_at
+      - organization
+      - provider
+      - provider_method
+      - provider_mode
+      - provider_reference
+      - receipt_url
+      - status
+      - tx_ref
+      - updated_at
+      - verified_at
+    PaymentTransactionStatusEnum:
+      enum:
+      - pending
+      - succeeded
+      - failed
+      - cancelled
+      - refunded
+      - reversed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `succeeded` - Succeeded
+        * `failed` - Failed
+        * `cancelled` - Cancelled
+        * `refunded` - Refunded
+        * `reversed` - Reversed
     ProfileUserSummary:
       type: object
       properties:
@@ -3165,6 +5393,16 @@ components:
       - full_name
       - id
       - role
+    RSVPStatusEnum:
+      enum:
+      - going
+      - interested
+      - cancelled
+      type: string
+      description: |-
+        * `going` - Going
+        * `interested` - Interested
+        * `cancelled` - Cancelled
     RatingReview:
       type: object
       properties:

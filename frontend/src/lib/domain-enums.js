@@ -70,6 +70,15 @@ export const financialAccountStatuses = Object.freeze({
   restricted: "restricted",
 });
 
+export const paymentTransactionStatuses = Object.freeze({
+  pending: "pending",
+  succeeded: "succeeded",
+  failed: "failed",
+  cancelled: "cancelled",
+  refunded: "refunded",
+  reversed: "reversed",
+});
+
 export const opportunityTypes = Object.freeze({
   job: "job",
   internship: "internship",

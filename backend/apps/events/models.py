@@ -13,6 +13,14 @@ class Event(models.Model):
     )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    category = models.CharField(max_length=120, blank=True)
+    location = models.CharField(max_length=255, blank=True)
+    is_online = models.BooleanField(default=False)
+    meeting_url = models.URLField(blank=True)
+    cover_image_url = models.URLField(blank=True)
+    max_attendees = models.PositiveIntegerField(null=True, blank=True)
+    rsvp_open = models.BooleanField(default=True)
+    tags = models.JSONField(default=list, blank=True)
     status = models.CharField(
         max_length=16,
         choices=EventStatus.choices,
@@ -61,4 +69,3 @@ class EventRSVP(models.Model):
 
     def __str__(self):
         return f"{self.user.email} -> {self.event.title}"
-

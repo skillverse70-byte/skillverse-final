@@ -671,9 +671,12 @@ Phase 7 source-of-truth note:
 - Never trust initiation alone; payment success must be confirmed by verification.
 - Webhook signature verification is mandatory before processing.
 - Sandbox/live differences must come from settings only.
+- Phase 7 V1 payment scope is direct Chapa payment only.
+- Split payment and Chapa subaccount routing are explicitly out of scope for Phase 7 unless a later task adds them.
 
 ### TASK-701: Implement Financial Account Readiness Backend
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
+- **Status:** Complete
 - **Owner:** Backend
 - **Actor(s):** Organization
 - **Route(s):** `/org`, `/organization-profile`, `/course-builder`
@@ -684,10 +687,11 @@ Phase 7 source-of-truth note:
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Financial-account setup state exists and can gate monetization
 - **Blockers:** None
-- **Description:** Build the backend readiness model that decides whether a verified organization may accept paid enrollments. This task must shape internal finance/account state so later Chapa checkout work in `TASK-703` can rely on it without redefining provider rules.
+- **Description:** Build the backend readiness model that decides whether a verified organization may accept paid enrollments. This task must shape internal finance/account state so later direct Chapa payment work in `TASK-703` can rely on it without redefining provider rules. Do not introduce split-payment or subaccount-routing behavior in this task.
 
 ### TASK-702: Build Financial Setup and Monetization Readiness UI
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
+- **Status:** Complete
 - **Owner:** Frontend
 - **Actor(s):** Organization, Regular User
 - **Route(s):** `/org`, `/organization-profile`, `/course-builder`, `/courses/:id`
@@ -698,10 +702,11 @@ Phase 7 source-of-truth note:
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Organization operators can see monetization readiness and learners can see blocked-vs-available enrollment state
 - **Blockers:** None
-- **Description:** Deliver the frontend visibility for finance setup readiness and enrollment gating. This task must mirror the backend/payment-service meanings of `ready`, `pending`, blocked paid enrollment, and `Enrollment Unavailable` without inventing frontend-only payment states.
+- **Description:** Deliver the frontend visibility for finance setup readiness and enrollment gating. This task must mirror the backend/payment-service meanings of `ready`, `pending`, blocked paid enrollment, and `Enrollment Unavailable` without inventing frontend-only payment states. UI language should prepare users for direct Chapa payment, not split-payout behavior.
 
 ### TASK-703: Implement Chapa-Oriented Payment Flow Backend
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
+- **Status:** Complete
 - **Owner:** Backend
 - **Actor(s):** Organization, Regular User
 - **Route(s):** `/courses/:id`, `/dashboard`, `/org`
@@ -710,12 +715,13 @@ Phase 7 source-of-truth note:
 - **Spec:** `PRD.md` Sections `4.1`, `6.5`
 - **Setup reference:** Payment provider assumptions in `PRD.md` and `backend/BACKEND_SETUP.md`; Chapa integration contract in `Agents/PAYMENT_SERVICE.md`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Checkout initiation, price/currency handling, and post-payment enrollment readiness are contract-defined
+- **Definition of Done:** Direct-payment initiation, authorization/verification handling where required, price/currency handling, and post-payment enrollment readiness are contract-defined
 - **Blockers:** None
-- **Description:** Implement the backend payment contract for Chapa-oriented paid-course enrollment. Use `Agents/PAYMENT_SERVICE.md` as the execution contract: all Chapa API calls must go through `backend/apps/payments/services/payment.py`, hosted checkout should be the default V1 path unless a task explicitly says otherwise, initiation must persist a pending local transaction, webhook signatures must be verified before processing, and final enrollment/value delivery must happen only after server-side verification succeeds.
+- **Description:** Implement the backend payment contract for direct Chapa paid-course enrollment. Use `Agents/PAYMENT_SERVICE.md` as the execution contract: all Chapa API calls must go through `backend/apps/payments/services/payment.py`; implement the direct-payment path defined in the Chapa docs, including initiation, any required authorization step, and server-side verification; initiation must persist a pending local transaction; webhook signatures must be verified before processing; and final enrollment/value delivery must happen only after server-side verification succeeds. Do not implement split payment or subaccount routing in this task.
 
 ### TASK-704: Build Paid Enrollment UI and Blocked Enrollment States
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
+- **Status:** Complete
 - **Owner:** Frontend
 - **Actor(s):** Regular User, Organization
 - **Route(s):** `/courses/:id`, `/dashboard`, `/org`
@@ -724,12 +730,13 @@ Phase 7 source-of-truth note:
 - **Spec:** `PRD.md` Sections `5.3`, `6.5`; `schema.yaml` payment/enrollment endpoints when added
 - **Setup reference:** Payment UI deferment rationale in `frontend/FRONTEND_PRD_READY.md`; checkout/status semantics must match `Agents/PAYMENT_SERVICE.md`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Paid and blocked enrollment states are visible, including explicit `Enrollment Unavailable`
+- **Definition of Done:** Paid and blocked enrollment states are visible, including explicit `Enrollment Unavailable`, and the learner can enter the direct Chapa payment flow exposed by the backend
 - **Blockers:** None
-- **Description:** Deliver the learner-facing UI for course pricing, checkout entry, and blocked enrollment rules. Frontend must consume backend-generated checkout/initiation results and payment states from schema-backed endpoints rather than constructing Chapa requests directly in the browser.
+- **Description:** Deliver the learner-facing UI for course pricing, direct-payment entry, and blocked enrollment rules. Frontend must consume backend-generated initiation/authorization/verification results and payment states from schema-backed endpoints rather than constructing Chapa requests directly in the browser. Do not build split-payout UI in this task.
 
 ### TASK-705: Implement Enrollment and Progress Backend
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
+- **Status:** Complete
 - **Owner:** Backend
 - **Actor(s):** Regular User, Organization
 - **Route(s):** `/courses/:id`, `/dashboard`, `/org`
@@ -740,10 +747,11 @@ Phase 7 source-of-truth note:
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Enrollment records, enrollment states, and progress states are persisted and available for dashboards
 - **Blockers:** None
-- **Description:** Build the backend enrollment and progress layer used by learners, organizations, and dashboards. When a course is paid, enrollment activation must be driven by verified payment outcomes from the Chapa flow defined in `Agents/PAYMENT_SERVICE.md`, not by checkout initiation alone.
+- **Description:** Build the backend enrollment and progress layer used by learners, organizations, and dashboards. When a course is paid, enrollment activation must be driven by verified outcomes from the direct Chapa payment flow defined in `Agents/PAYMENT_SERVICE.md`, not by initiation alone.
 
 ### TASK-706: Build Learner Enrollment and Progress UI
 - **Phase:** Phase 7: Payments, Enrollment, and Learning Progress
+- **Status:** Complete
 - **Owner:** Frontend
 - **Actor(s):** Regular User
 - **Route(s):** `/courses/:id`, `/dashboard`
@@ -773,6 +781,7 @@ At the end of this phase, organizations can publish events and opportunities, an
 
 ### TASK-801: Implement Event and RSVP Backend
 - **Phase:** Phase 8: Events, Opportunities, and Applications
+- **Status:** Complete
 - **Owner:** Backend
 - **Actor(s):** Organization, Regular User, Guest
 - **Route(s):** `/events`, `/events/:id`, `/org`
@@ -787,6 +796,7 @@ At the end of this phase, organizations can publish events and opportunities, an
 
 ### TASK-802: Build Event Discovery and RSVP UI
 - **Phase:** Phase 8: Events, Opportunities, and Applications
+- **Status:** Complete
 - **Owner:** Frontend
 - **Actor(s):** Guest, Regular User
 - **Route(s):** `/events`, `/events/:id`
@@ -801,6 +811,7 @@ At the end of this phase, organizations can publish events and opportunities, an
 
 ### TASK-803: Implement Opportunity and Application Backend
 - **Phase:** Phase 8: Events, Opportunities, and Applications
+- **Status:** Complete
 - **Owner:** Backend
 - **Actor(s):** Organization, Regular User, Guest
 - **Route(s):** `/jobs`, `/jobs/:id`, `/org`
@@ -815,6 +826,7 @@ At the end of this phase, organizations can publish events and opportunities, an
 
 ### TASK-804: Build Opportunity Discovery and Application UI
 - **Phase:** Phase 8: Events, Opportunities, and Applications
+- **Status:** Complete
 - **Owner:** Frontend
 - **Actor(s):** Guest, Regular User
 - **Route(s):** `/jobs`, `/jobs/:id`, `/dashboard`
@@ -829,6 +841,7 @@ At the end of this phase, organizations can publish events and opportunities, an
 
 ### TASK-805: Build Organization Applicant Pipeline Management
 - **Phase:** Phase 8: Events, Opportunities, and Applications
+- **Status:** Complete
 - **Owner:** Both
 - **Actor(s):** Organization
 - **Route(s):** `/org`

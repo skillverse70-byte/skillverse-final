@@ -1,180 +1,160 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { appClient } from "@/api/appClient";
-import { Input } from "@/components/ui/input";
-import {
-  Search,
-  Briefcase,
-  MapPin,
-  Globe,
-  Clock,
-  CheckCircle,
-  Building,
-  ArrowRight,
-} from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import React, { useEffect, useMemo, useState } from "react";
+import { Briefcase, Search } from "lucide-react";
 import EmptyState from "@/components/shared/EmptyState";
-import moment from "moment";
+import PageLoader from "@/components/shared/PageLoader";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import OpportunityCard from "@/features/jobs/components/OpportunityCard";
+import { fetchPublicOpportunities } from "@/services/jobs/jobs.service";
 
 const typeLabels = {
-  full_time: "Full Time",
-  part_time: "Part Time",
-  internship: "Internship",
-  freelance: "Freelance",
-  volunteer: "Volunteer",
+  job: "Jobs",
+  internship: "Internships",
+  program: "Programs",
+  volunteer: "Volunteer roles",
 };
 
-export default function Jobs() {
-  const [jobs, setJobs] = useState([]);
+export default function JobsPage() {
+  const [opportunities, setOpportunities] = useState([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+
     const load = async () => {
       try {
-        const data = await appClient.entities.Job.filter(
-          { status: "open" },
-          "-created_date",
-          50,
-        );
-        setJobs(data);
-      } catch (e) {
-        console.error(e);
+        const data = await fetchPublicOpportunities();
+        if (active) {
+          setOpportunities(data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     };
+
     load();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const filtered = jobs.filter(
-    (j) =>
-      (!search ||
-        j.title?.toLowerCase().includes(search.toLowerCase()) ||
-        j.company_name?.toLowerCase().includes(search.toLowerCase())) &&
-      (typeFilter === "all" || j.type === typeFilter),
+  const filtered = useMemo(
+    () =>
+      opportunities.filter((opportunity) => {
+        const searchValue = search.trim().toLowerCase();
+        const matchesSearch =
+          !searchValue ||
+          opportunity.title?.toLowerCase().includes(searchValue) ||
+          opportunity.company_name?.toLowerCase().includes(searchValue) ||
+          opportunity.category?.toLowerCase().includes(searchValue) ||
+          opportunity.required_skills.some((skill) =>
+            skill.toLowerCase().includes(searchValue),
+          );
+        const matchesType =
+          typeFilter === "all" || opportunity.type === typeFilter;
+        const matchesStatus =
+          statusFilter === "all" || opportunity.status === statusFilter;
+
+        return matchesSearch && matchesType && matchesStatus;
+      }),
+    [opportunities, search, typeFilter, statusFilter],
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      <div className="mb-8">
-        <h1 className="font-heading font-bold text-3xl text-foreground mb-2">
-          Jobs & Internships
-        </h1>
-        <p className="text-muted-foreground">
-          Opportunities matched to the skills you're building.
-        </p>
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-2xl">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-teal-700">
+            Opportunity hub
+          </p>
+          <h1 className="font-heading text-3xl font-bold text-foreground sm:text-4xl">
+            Jobs & Opportunities
+          </h1>
+          <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+            Roles, internships, and programs published by organizations across the platform.
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-border/60 bg-white px-5 py-4 shadow-sm shadow-black/5">
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl bg-amber-50 p-3 text-amber-700">
+              <Briefcase className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                Live openings
+              </div>
+              <div className="font-heading text-2xl font-bold text-foreground">
+                {opportunities.length}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-8">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="mb-8 grid gap-3 rounded-3xl border border-border/60 bg-white p-4 shadow-sm shadow-black/5 md:grid-cols-[minmax(0,1fr)_180px_180px]">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search jobs or companies..."
+            placeholder="Search by role, organization, category, or skill"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
             className="pl-10"
           />
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-full sm:w-44">
-            <SelectValue placeholder="Job Type" />
+          <SelectTrigger>
+            <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="full_time">Full Time</SelectItem>
-            <SelectItem value="part_time">Part Time</SelectItem>
-            <SelectItem value="internship">Internship</SelectItem>
-            <SelectItem value="freelance">Freelance</SelectItem>
+            <SelectItem value="all">All types</SelectItem>
+            <SelectItem value="job">Jobs</SelectItem>
+            <SelectItem value="internship">Internships</SelectItem>
+            <SelectItem value="program">Programs</SelectItem>
             <SelectItem value="volunteer">Volunteer</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger>
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="open">Open</SelectItem>
+            <SelectItem value="filled">Filled</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
-        </div>
+        <PageLoader />
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Briefcase}
-          title="No openings right now"
-          description="Check back soon or adjust your filters. New opportunities are added regularly."
+          title="No opportunities found"
+          description="Try a different filter or check back soon for new openings."
         />
       ) : (
-        <div className="space-y-4">
-          {filtered.map((job) => (
-            <Link key={job.id} to={`/jobs/${job.id}`}>
-              <div className="bg-white rounded-2xl border border-border/50 p-5 sm:p-6 card-hover flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
-                  <Building className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <h3 className="font-heading font-semibold text-base">
-                      {job.title}
-                    </h3>
-                    {job.is_verified && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-200">
-                        <CheckCircle className="w-3 h-3" /> Verified
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {job.company_name}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                    <span className="px-2 py-0.5 rounded-full bg-secondary font-medium">
-                      {typeLabels[job.type] || job.type}
-                    </span>
-                    <span className="capitalize px-2 py-0.5 rounded-full bg-secondary font-medium">
-                      {job.experience_level} level
-                    </span>
-                    {job.is_remote ? (
-                      <span className="flex items-center gap-1">
-                        <Globe className="w-3.5 h-3.5" /> Remote
-                      </span>
-                    ) : job.location ? (
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" /> {job.location}
-                      </span>
-                    ) : null}
-                    {job.salary_range && <span>{job.salary_range}</span>}
-                    {job.deadline && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" /> Apply by{" "}
-                        {moment(job.deadline).format("MMM D")}
-                      </span>
-                    )}
-                  </div>
-                  {job.required_skills?.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {job.required_skills.slice(0, 4).map((s) => (
-                        <span
-                          key={s}
-                          className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700"
-                        >
-                          {s}
-                        </span>
-                      ))}
-                      {job.required_skills.length > 4 && (
-                        <span className="text-xs text-muted-foreground">
-                          +{job.required_skills.length - 4} more
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <ArrowRight className="w-5 h-5 text-muted-foreground flex-shrink-0 hidden sm:block" />
-              </div>
-            </Link>
-          ))}
+        <div className="space-y-5">
+          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+            <span>{filtered.length} opportunities</span>
+            <span className="text-border">·</span>
+            <span>{typeFilter === "all" ? "All opportunity types" : typeLabels[typeFilter]}</span>
+          </div>
+
+          <div className="space-y-4">
+            {filtered.map((opportunity) => (
+              <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+            ))}
+          </div>
         </div>
       )}
     </div>

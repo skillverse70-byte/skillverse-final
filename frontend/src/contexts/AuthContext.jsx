@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     
     if (shouldRedirect) {
-      authService.logout("/");
+      authService.logout("/login");
     } else {
       authService.logout();
     }

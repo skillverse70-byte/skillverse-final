@@ -92,6 +92,15 @@ class FinancialAccountStatus(models.TextChoices):
     RESTRICTED = "restricted", "Restricted"
 
 
+class PaymentTransactionStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    SUCCEEDED = "succeeded", "Succeeded"
+    FAILED = "failed", "Failed"
+    CANCELLED = "cancelled", "Cancelled"
+    REFUNDED = "refunded", "Refunded"
+    REVERSED = "reversed", "Reversed"
+
+
 class OpportunityType(models.TextChoices):
     JOB = "job", "Job"
     INTERNSHIP = "internship", "Internship"

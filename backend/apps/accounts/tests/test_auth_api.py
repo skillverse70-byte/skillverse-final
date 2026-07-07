@@ -4,6 +4,7 @@ from django.core.management import call_command
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core import mail
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -289,7 +290,8 @@ class AuthApiTests(APITestCase):
         )
         self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_login_endpoint_is_rate_limited(self):
+    @override_settings(ENABLE_AUTH_THROTTLING=True)
+    def test_login_endpoint_is_rate_limited_when_enabled(self):
         cache.clear()
         user = User.objects.create_user(
             email="throttle@example.com",

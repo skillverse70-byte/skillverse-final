@@ -1,7 +1,8 @@
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.common.enums import EnrollmentStatus
-from apps.courses.models import EnrollmentLessonProgress
+from apps.courses.models import Enrollment, EnrollmentLessonProgress
 
 
 def ordered_modules(course_program):
@@ -53,6 +54,9 @@ def calculate_progression_state(enrollment):
                     "type": lesson.item_type,
                     "description": lesson.description,
                     "content_url": lesson.content_url,
+                    "content_file_url": lesson.content_file.url if lesson.content_file else "",
+                    "has_content_file": bool(lesson.content_file),
+                    "checklist_items": list(lesson.checklist_items or []),
                     "duration_minutes": lesson.duration_minutes,
                     "sort_order": lesson.sort_order,
                     "is_required": lesson.is_required,
@@ -102,6 +106,27 @@ def sync_enrollment_state(enrollment):
 
     enrollment.save(update_fields=["progress_percent", "status", "completed_at", "updated_at"])
     return state
+
+
+def activate_paid_enrollment(payment_transaction):
+    if payment_transaction.status != "succeeded":
+        raise ValueError("A payment must be verified before enrollment activation.")
+
+    try:
+        with transaction.atomic():
+            enrollment, _ = Enrollment.objects.get_or_create(
+                user=payment_transaction.user,
+                course_program=payment_transaction.course_program,
+                defaults={"status": EnrollmentStatus.ACTIVE},
+            )
+    except IntegrityError:
+        enrollment = Enrollment.objects.get(
+            user=payment_transaction.user,
+            course_program=payment_transaction.course_program,
+        )
+
+    sync_enrollment_state(enrollment)
+    return enrollment
 
 
 def complete_lesson_for_enrollment(enrollment, lesson_item):

@@ -68,6 +68,8 @@ class LessonItem(models.Model):
     )
     description = models.TextField(blank=True)
     content_url = models.URLField(blank=True)
+    content_file = models.FileField(upload_to="course_lessons/", blank=True)
+    checklist_items = models.JSONField(default=list, blank=True)
     duration_minutes = models.PositiveIntegerField(null=True, blank=True)
     sort_order = models.PositiveIntegerField(default=0)
     is_required = models.BooleanField(default=True)

@@ -1,7 +1,7 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.common.enums import CourseProgramStatus, LessonItemType
+from apps.common.enums import CourseProgramStatus, LessonItemType, Role
 from apps.common.trust import can_organization_create_paid_course
 from apps.courses.models import CourseModule, CourseProgram, Enrollment, LessonItem
 from apps.courses.services import calculate_progression_state
@@ -12,6 +12,9 @@ class LessonItemSerializer(serializers.ModelSerializer):
         source="item_type",
         choices=LessonItemType.choices,
     )
+    content_file_url = serializers.SerializerMethodField()
+    has_content_file = serializers.SerializerMethodField()
+    checklist_items = serializers.SerializerMethodField()
 
     class Meta:
         model = LessonItem
@@ -21,10 +24,122 @@ class LessonItemSerializer(serializers.ModelSerializer):
             "type",
             "description",
             "content_url",
+            "content_file_url",
+            "has_content_file",
+            "checklist_items",
             "duration_minutes",
             "sort_order",
             "is_required",
             "progression_gate",
+        ]
+        read_only_fields = ["id"]
+
+    def _can_view_content(self):
+        return bool(self.context.get("include_lesson_content"))
+
+    @extend_schema_field(serializers.CharField(allow_blank=True))
+    def get_content_file_url(self, obj):
+        if not self._can_view_content() or not obj.content_file:
+            return ""
+        request = self.context.get("request")
+        try:
+            url = obj.content_file.url
+        except ValueError:
+            return ""
+        return request.build_absolute_uri(url) if request else url
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_has_content_file(self, obj):
+        return bool(obj.content_file)
+
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
+    def get_checklist_items(self, obj):
+        if not self._can_view_content():
+            return []
+        return list(obj.checklist_items or [])
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not self._can_view_content():
+            data["description"] = ""
+            data["content_url"] = ""
+            data["checklist_items"] = []
+            data["content_file_url"] = ""
+        return data
+
+
+class LessonItemWriteSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+    type = serializers.ChoiceField(
+        source="item_type",
+        choices=LessonItemType.choices,
+    )
+    content_file = serializers.FileField(required=False, allow_null=True)
+    checklist_items = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        allow_empty=True,
+    )
+    upload_key = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    retain_existing_file = serializers.BooleanField(required=False, default=False, write_only=True)
+
+    class Meta:
+        model = LessonItem
+        fields = [
+            "id",
+            "title",
+            "type",
+            "description",
+            "content_url",
+            "content_file",
+            "checklist_items",
+            "duration_minutes",
+            "sort_order",
+            "is_required",
+            "progression_gate",
+            "upload_key",
+            "retain_existing_file",
+        ]
+
+    def validate_checklist_items(self, value):
+        cleaned = []
+        for item in value or []:
+            text = str(item).strip()
+            if text:
+                cleaned.append(text)
+        return cleaned
+
+    def validate(self, attrs):
+        item_type = attrs.get("item_type") or getattr(self.instance, "item_type", "")
+        content_url = str(attrs.get("content_url") or "").strip()
+        content_file = attrs.get("content_file")
+        checklist_items = attrs.get("checklist_items", [])
+
+        if item_type == LessonItemType.VIDEO and not content_url:
+            raise serializers.ValidationError({"content_url": "Video lessons need a video URL."})
+        if (
+            item_type == LessonItemType.RESOURCE
+            and not content_file
+            and not attrs.get("retain_existing_file")
+        ):
+            raise serializers.ValidationError({"content_file": "Document/resource lessons need an uploaded file."})
+        if item_type == LessonItemType.CHECKLIST and not checklist_items:
+            raise serializers.ValidationError({"checklist_items": "Checklist lessons need at least one checklist item."})
+        return attrs
+
+
+class CourseModuleWriteSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+    lessons = LessonItemWriteSerializer(many=True, source="lesson_items")
+
+    class Meta:
+        model = CourseModule
+        fields = [
+            "id",
+            "title",
+            "description",
+            "sort_order",
+            "lessons",
         ]
         read_only_fields = ["id"]
 
@@ -53,6 +168,7 @@ class CourseProgramSummarySerializer(serializers.ModelSerializer):
         source="organization.verification_status",
         read_only=True,
     )
+    financial_account = serializers.SerializerMethodField()
 
     class Meta:
         model = CourseProgram
@@ -61,6 +177,7 @@ class CourseProgramSummarySerializer(serializers.ModelSerializer):
             "organization_id",
             "organization_name",
             "organization_verification_status",
+            "financial_account",
             "title",
             "description",
             "category",
@@ -90,6 +207,17 @@ class CourseProgramSummarySerializer(serializers.ModelSerializer):
             return obj.enrolled_count
         return obj.enrollments.count()
 
+    @extend_schema_field(serializers.JSONField(allow_null=True))
+    def get_financial_account(self, obj):
+        financial_account = getattr(obj.organization, "financial_account", None)
+        if financial_account is None:
+            return None
+
+        return {
+            "provider": financial_account.provider,
+            "status": financial_account.status,
+        }
+
 
 class CourseProgramDetailSerializer(CourseProgramSummarySerializer):
     modules = CourseModuleSerializer(many=True)
@@ -99,7 +227,7 @@ class CourseProgramDetailSerializer(CourseProgramSummarySerializer):
 
 
 class CourseProgramWriteSerializer(serializers.ModelSerializer):
-    modules = CourseModuleSerializer(many=True, required=False)
+    modules = CourseModuleWriteSerializer(many=True, required=False)
     status = serializers.ChoiceField(choices=CourseProgramStatus.choices, required=False)
 
     class Meta:
@@ -186,10 +314,15 @@ class CourseProgramWriteSerializer(serializers.ModelSerializer):
         return instance
 
     def _replace_modules(self, course_program, modules_data):
+        existing_lessons = {
+            lesson.id: lesson
+            for lesson in LessonItem.objects.filter(module__course_program=course_program)
+        }
         course_program.modules.all().delete()
         for module_index, module_data in enumerate(modules_data):
             module_data = dict(module_data)
             lessons_data = module_data.pop("lesson_items", [])
+            module_data.pop("id", None)
             module_sort_order = module_data.pop("sort_order", module_index)
             module = CourseModule.objects.create(
                 course_program=course_program,
@@ -198,7 +331,22 @@ class CourseProgramWriteSerializer(serializers.ModelSerializer):
             )
             for lesson_index, lesson_data in enumerate(lessons_data):
                 lesson_data = dict(lesson_data)
+                existing_lesson = existing_lessons.get(lesson_data.pop("id", None))
                 lesson_sort_order = lesson_data.pop("sort_order", lesson_index)
+                retain_existing_file = lesson_data.pop("retain_existing_file", False)
+                lesson_data.pop("upload_key", None)
+                lesson_type = lesson_data.get("item_type")
+                if lesson_type != LessonItemType.RESOURCE:
+                    lesson_data["content_file"] = None
+                elif (
+                    not lesson_data.get("content_file")
+                    and retain_existing_file
+                    and existing_lesson
+                    and existing_lesson.content_file
+                ):
+                    lesson_data["content_file"] = existing_lesson.content_file.name
+                if lesson_type != LessonItemType.CHECKLIST:
+                    lesson_data["checklist_items"] = []
                 LessonItem.objects.create(
                     module=module,
                     sort_order=lesson_sort_order,
@@ -263,3 +411,30 @@ class EnrollmentDetailSerializer(EnrollmentSummarySerializer):
     @extend_schema_field(serializers.ListField())
     def get_modules(self, obj):
         return self._progression_state(obj)["modules"]
+
+
+class OrganizationEnrollmentSerializer(EnrollmentSummarySerializer):
+    learner = serializers.SerializerMethodField()
+
+    class Meta(EnrollmentSummarySerializer.Meta):
+        fields = [
+            "id",
+            "status",
+            "progress_percent",
+            "enrolled_at",
+            "enrolled_date",
+            "completed_at",
+            "course_program",
+            "total_lessons",
+            "completed_lessons",
+            "next_lesson_id",
+            "learner",
+        ]
+
+    @extend_schema_field(serializers.JSONField())
+    def get_learner(self, obj):
+        return {
+            "id": obj.user_id,
+            "full_name": obj.user.full_name,
+            "email": obj.user.email,
+        }

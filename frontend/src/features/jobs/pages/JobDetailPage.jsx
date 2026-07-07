@@ -1,87 +1,180 @@
-import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { appClient } from "@/api/appClient";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Briefcase, MapPin, Globe, Clock, ArrowLeft, CheckCircle, Building, Send } from "lucide-react";
-import StatusBadge from "@/components/shared/StatusBadge";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  Briefcase,
+  Building,
+  CheckCircle,
+  Clock3,
+  Globe,
+  MapPin,
+  Send,
+} from "lucide-react";
 import BookmarkButton from "@/components/shared/BookmarkButton";
-import moment from "moment";
+import EmptyState from "@/components/shared/EmptyState";
+import PageLoader from "@/components/shared/PageLoader";
+import StatusBadge from "@/components/shared/StatusBadge";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { jobApplicationStatuses, roles } from "@/lib/domain-enums";
+import {
+  ApiError,
+  applyToOpportunity,
+  fetchOpportunityDetail,
+} from "@/services/jobs/jobs.service";
+import moment from "moment";
 
-const typeLabels = { full_time: "Full Time", part_time: "Part Time", internship: "Internship", freelance: "Freelance", volunteer: "Volunteer" };
+const typeLabels = {
+  job: "Job",
+  internship: "Internship",
+  program: "Program",
+  volunteer: "Volunteer",
+};
 
-export default function JobDetail() {
+const experienceLabels = {
+  student: "Student",
+  early_career: "Early Career",
+  mid_career: "Mid Career",
+  experienced: "Experienced",
+};
+
+export default function JobDetailPage() {
   const { id } = useParams();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
-  const [applied, setApplied] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
+  const { toast } = useToast();
+  const { isAuthenticated, actorRole, navigateToLogin } = useAuth();
 
   useEffect(() => {
+    let active = true;
+
     const load = async () => {
       try {
-        const data = await appClient.entities.Job.get(id);
-        setJob(data);
-      } catch(e) { console.error(e); }
-      setLoading(false);
+        const data = await fetchOpportunityDetail(id, { authenticated: isAuthenticated });
+        if (active) {
+          setJob(data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
     };
+
     load();
-  }, [id]);
+
+    return () => {
+      active = false;
+    };
+  }, [id, isAuthenticated]);
 
   const handleApply = async () => {
+    if (!isAuthenticated) {
+      navigateToLogin();
+      return;
+    }
+
+    if (actorRole !== roles.regularUser) {
+      toast({
+        title: "Applications are for regular users",
+        description:
+          "Organizations and admins can browse opportunities, but only regular users can apply in V1.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setApplying(true);
     try {
-      const me = await appClient.auth.me();
-      await appClient.entities.JobApplication.create({
-        user_id: me.id,
-        job_id: id,
-        job_title: job.title,
-        company_name: job.company_name,
-        cover_letter: coverLetter,
-        applied_date: new Date().toISOString().split("T")[0],
+      await applyToOpportunity(id, { coverLetter });
+      const refreshed = await fetchOpportunityDetail(id, { authenticated: true });
+      setJob(refreshed);
+      toast({
+        title: "Application submitted",
+        description: "Your application was sent successfully.",
       });
-      setApplied(true);
-    } catch(e) { console.error(e); }
-    setApplying(false);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Unable to submit application",
+        description:
+          error instanceof ApiError
+            ? error.message
+            : "Something went wrong while submitting your application.",
+        variant: "destructive",
+      });
+    } finally {
+      setApplying(false);
+    }
   };
 
   if (loading) {
-    return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>;
+    return <PageLoader />;
   }
 
   if (!job) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <h2 className="font-heading font-bold text-xl mb-2">Job not found</h2>
-        <Link to="/jobs"><Button variant="outline">Back to Jobs</Button></Link>
+      <div className="mx-auto max-w-4xl px-4 py-20 sm:px-6">
+        <EmptyState
+          icon={Briefcase}
+          title="Opportunity not found"
+          description="This listing may have been removed or is no longer public."
+          actionLabel="Back to Jobs"
+          onAction={() => {
+            window.location.href = "/jobs";
+          }}
+        />
       </div>
     );
   }
 
-  const organization = {
-    id: job.organization_id,
-    verification_status: job.organization_verification_status,
-    is_verified: job.is_verified,
-  };
+  const canApply = job.status === "open";
+  const alreadyApplied = Boolean(job.viewer_application_status);
+  const isRegularUser = actorRole === roles.regularUser;
+  const applicationSummary = useMemo(() => {
+    if (!isAuthenticated) {
+      return "Sign in as a regular user to apply.";
+    }
+    if (!isRegularUser) {
+      return "Only regular users can apply in V1.";
+    }
+    if (alreadyApplied) {
+      return `Application status: ${job.viewer_application_status.replace("_", " ")}.`;
+    }
+    return "Send your application directly through the platform.";
+  }, [alreadyApplied, isAuthenticated, isRegularUser, job.viewer_application_status]);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-      <Link to="/jobs" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Back to Jobs
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <Link
+        to="/jobs"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to Jobs
       </Link>
 
-      <div className="bg-white rounded-2xl border border-border/50 p-6 sm:p-8">
-        <div className="flex items-start gap-4 mb-6">
-          <div className="w-14 h-14 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
-            <Building className="w-7 h-7 text-purple-600" />
+      <div className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5 sm:p-8">
+        <div className="mb-6 flex items-start gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+            <Building className="h-7 w-7" />
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <h1 className="font-heading font-bold text-2xl">{job.title}</h1>
-              <StatusBadge organization={organization} />
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <h1 className="font-heading text-2xl font-bold text-foreground">
+                {job.title}
+              </h1>
+              <StatusBadge status={job.status} />
+              {job.viewer_application_status ? (
+                <StatusBadge status={job.viewer_application_status} />
+              ) : null}
             </div>
             <p className="text-muted-foreground">
               {job.organization_id ? (
@@ -96,88 +189,148 @@ export default function JobDetail() {
               )}
             </p>
           </div>
-          <BookmarkButton itemType="job" itemId={job.id} itemTitle={job.title} itemSubtitle={job.company_name} itemCategory={job.category} />
+          <BookmarkButton
+            itemType="job"
+            itemId={job.id}
+            itemTitle={job.title}
+            itemSubtitle={job.company_name}
+            itemCategory={job.category}
+          />
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-6">
-          <StatusBadge status={job.status} />
-          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-secondary text-muted-foreground">{typeLabels[job.type]}</span>
-          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-secondary text-muted-foreground capitalize">{job.experience_level} level</span>
+        <div className="mb-6 flex flex-wrap gap-2">
+          <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground">
+            {typeLabels[job.type] || job.type}
+          </span>
+          {job.experience_level ? (
+            <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground">
+              {experienceLabels[job.experience_level] || job.experience_level}
+            </span>
+          ) : null}
+          {job.category ? (
+            <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground">
+              {job.category}
+            </span>
+          ) : null}
+          <StatusBadge organization={job.organization} />
         </div>
 
-        <div className="grid sm:grid-cols-3 gap-4 mb-8 p-4 rounded-xl bg-secondary/30">
+        <div className="mb-8 grid gap-4 rounded-2xl bg-secondary/25 p-4 sm:grid-cols-3">
           <div className="flex items-center gap-2 text-sm">
-            {job.is_remote ? <Globe className="w-4 h-4 text-teal-600" /> : <MapPin className="w-4 h-4 text-teal-600" />}
+            {job.is_remote ? (
+              <Globe className="h-4 w-4 text-teal-600" />
+            ) : (
+              <MapPin className="h-4 w-4 text-teal-600" />
+            )}
             <span>{job.is_remote ? "Remote" : job.location || "Location TBA"}</span>
           </div>
-          {job.salary_range && (
+          {job.salary_range ? (
             <div className="flex items-center gap-2 text-sm">
-              <Briefcase className="w-4 h-4 text-teal-600" />
+              <Briefcase className="h-4 w-4 text-teal-600" />
               <span>{job.salary_range}</span>
             </div>
-          )}
-          {job.deadline && (
+          ) : null}
+          {job.deadline ? (
             <div className="flex items-center gap-2 text-sm">
-              <Clock className="w-4 h-4 text-teal-600" />
+              <Clock3 className="h-4 w-4 text-teal-600" />
               <span>Apply by {moment(job.deadline).format("MMM D, YYYY")}</span>
             </div>
-          )}
+          ) : null}
         </div>
 
-        <div className="mb-8">
-          <h2 className="font-heading font-semibold text-lg mb-3">About this role</h2>
-          <p className="text-foreground leading-relaxed whitespace-pre-wrap">{job.description}</p>
-        </div>
+        <section className="mb-8">
+          <h2 className="mb-3 font-heading text-lg font-semibold">About this opportunity</h2>
+          <p className="whitespace-pre-wrap leading-relaxed text-foreground">
+            {job.description}
+          </p>
+        </section>
 
-        {job.required_skills?.length > 0 && (
-          <div className="mb-8">
-            <h2 className="font-heading font-semibold text-lg mb-3">Required Skills</h2>
+        {job.required_skills.length > 0 ? (
+          <section className="mb-8">
+            <h2 className="mb-3 font-heading text-lg font-semibold">Required skills</h2>
             <div className="flex flex-wrap gap-2">
-              {job.required_skills.map(s => (
-                <span key={s} className="px-3 py-1.5 rounded-full bg-teal-50 text-teal-700 text-sm font-medium">{s}</span>
+              {job.required_skills.map((skill) => (
+                <span
+                  key={skill}
+                  className="rounded-full bg-teal-50 px-3 py-1.5 text-sm font-medium text-teal-700"
+                >
+                  {skill}
+                </span>
               ))}
             </div>
-          </div>
-        )}
+          </section>
+        ) : null}
 
-        {/* Apply */}
-        <div className="border-t border-border/50 pt-6">
-          {applied ? (
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 text-emerald-700">
-              <CheckCircle className="w-5 h-5" />
-              <span className="font-medium">Application submitted! You'll hear back soon.</span>
+        {job.field_signals.length > 0 ? (
+          <section className="mb-8">
+            <h2 className="mb-3 font-heading text-lg font-semibold">Relevant fields</h2>
+            <div className="flex flex-wrap gap-2">
+              {job.field_signals.map((fieldSignal) => (
+                <span
+                  key={fieldSignal}
+                  className="rounded-full bg-sky-50 px-3 py-1.5 text-sm font-medium text-sky-700"
+                >
+                  {fieldSignal}
+                </span>
+              ))}
             </div>
-          ) : job.status === "open" ? (
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="bg-teal-600 hover:bg-teal-700 gap-2 h-11">
-                  <Send className="w-4 h-4" /> Apply Now
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Apply for {job.title}</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 mt-4">
-                  <div>
-                    <Label className="text-sm font-medium">Cover Letter (optional)</Label>
-                    <Textarea
-                      placeholder="Tell the team why you'd be a great fit..."
-                      value={coverLetter}
-                      onChange={e => setCoverLetter(e.target.value)}
-                      className="mt-1.5 resize-none"
-                      rows={5}
-                    />
-                  </div>
-                  <Button onClick={handleApply} disabled={applying} className="w-full bg-teal-600 hover:bg-teal-700 gap-2">
-                    {applying ? "Submitting..." : "Submit Application"}
+          </section>
+        ) : null}
+
+        <div className="border-t border-border/60 pt-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <h2 className="font-heading text-lg font-semibold text-foreground">
+                Apply
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {applicationSummary}
+              </p>
+            </div>
+
+            {alreadyApplied ? (
+              <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                You already applied to this opportunity.
+              </div>
+            ) : canApply ? (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="h-11 gap-2 bg-teal-600 hover:bg-teal-700">
+                    <Send className="h-4 w-4" />
+                    Apply now
                   </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          ) : (
-            <Button disabled className="gap-2">Applications Closed</Button>
-          )}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Apply for {job.title}</DialogTitle>
+                  </DialogHeader>
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium">
+                        Cover letter
+                      </Label>
+                      <Textarea
+                        placeholder="Share why you are a good fit for this opportunity."
+                        value={coverLetter}
+                        onChange={(event) => setCoverLetter(event.target.value)}
+                        className="mt-1.5 resize-none"
+                        rows={6}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleApply}
+                      disabled={applying}
+                      className="w-full bg-teal-600 hover:bg-teal-700"
+                    >
+                      {applying ? "Submitting..." : "Submit application"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            ) : (
+              <Button disabled>Applications closed</Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

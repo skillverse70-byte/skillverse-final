@@ -2,13 +2,31 @@ import { ApiError, apiRequest } from "@/lib/http-client";
 import { authenticatedApiRequest } from "@/services/auth/backend-auth-client";
 import { fetchOrganizationProfileData } from "@/services/organizations/organization.service";
 
+function ensureClientKey(value) {
+  if (value) {
+    return value;
+  }
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `lesson-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function normalizeLesson(lesson, index = 0) {
   return {
     id: lesson.id,
+    client_key: ensureClientKey(lesson.client_key || lesson.id),
     title: lesson.title || "",
     type: lesson.type || "reading",
     description: lesson.description || "",
     content_url: lesson.content_url || "",
+    content_file_url: lesson.content_file_url || "",
+    has_content_file: lesson.has_content_file ?? Boolean(lesson.content_file_url),
+    content_file: null,
+    content_file_name: lesson.content_file_url
+      ? decodeURIComponent((lesson.content_file_url.split("/").pop() || "").split("?")[0])
+      : "",
+    checklist_items: Array.isArray(lesson.checklist_items) ? lesson.checklist_items : [],
     duration_minutes: lesson.duration_minutes ?? "",
     sort_order: lesson.sort_order ?? index,
     is_required: lesson.is_required ?? true,
@@ -30,6 +48,27 @@ function normalizeModule(module, index = 0) {
       normalizeLesson(lesson, lessonIndex),
     ),
   };
+}
+
+function findLessonById(modules, lessonId) {
+  if (!lessonId) {
+    return null;
+  }
+
+  for (const module of modules) {
+    const lesson = (module.lessons || []).find(
+      (candidate) => Number(candidate.id) === Number(lessonId),
+    );
+    if (lesson) {
+      return {
+        ...lesson,
+        module_id: module.id,
+        module_title: module.title,
+      };
+    }
+  }
+
+  return null;
 }
 
 function normalizeCourse(course) {
@@ -64,24 +103,47 @@ function normalizeCourse(course) {
 }
 
 function normalizeEnrollment(enrollment) {
+  const modules = Array.isArray(enrollment.modules)
+    ? enrollment.modules.map((module, index) => normalizeModule(module, index))
+    : [];
+  const nextLessonId = enrollment.next_lesson_id ?? null;
+
   return {
     ...enrollment,
     enrolled_date: enrollment.enrolled_date || enrollment.enrolled_at || null,
     course_program: enrollment.course_program
       ? normalizeCourse(enrollment.course_program)
       : null,
-    modules: Array.isArray(enrollment.modules)
-      ? enrollment.modules.map((module, index) => normalizeModule(module, index))
-      : [],
+    modules,
     total_lessons: enrollment.total_lessons ?? 0,
     completed_lessons: enrollment.completed_lessons ?? 0,
     progress_percent: enrollment.progress_percent ?? 0,
-    next_lesson_id: enrollment.next_lesson_id ?? null,
+    next_lesson_id: nextLessonId,
+    next_lesson: findLessonById(modules, nextLessonId),
+  };
+}
+
+function normalizePaymentTransaction(transaction) {
+  return {
+    ...transaction,
+    amount:
+      typeof transaction.amount === "number"
+        ? transaction.amount
+        : Number.parseFloat(transaction.amount || "0") || 0,
+    currency: transaction.currency || "ETB",
+    checkout_url: transaction.checkout_url || "",
+    provider_reference: transaction.provider_reference || "",
+    provider_method: transaction.provider_method || "",
+    provider_mode: transaction.provider_mode || "",
+    failure_reason: transaction.failure_reason || "",
+    enrollment_ready: transaction.enrollment_ready ?? false,
+    receipt_url: transaction.receipt_url || "",
   };
 }
 
 function buildCourseWritePayload(payload) {
-  return {
+  const uploads = [];
+  const normalizedPayload = {
     title: payload.title?.trim() || "",
     description: payload.description || "",
     category: payload.category || "",
@@ -94,14 +156,18 @@ function buildCourseWritePayload(payload) {
     enrollment_open: payload.enrollment_open ?? true,
     status: payload.status || "draft",
     modules: (payload.modules || []).map((module, moduleIndex) => ({
+      id: module.id,
       title: module.title?.trim() || "",
       description: module.description || "",
       sort_order: module.sort_order ?? moduleIndex,
       lessons: (module.lessons || []).map((lesson, lessonIndex) => ({
+        id: lesson.id,
+        client_key: ensureClientKey(lesson.client_key || lesson.id),
         title: lesson.title?.trim() || "",
         type: lesson.type || "reading",
         description: lesson.description || "",
         content_url: lesson.content_url || "",
+        checklist_items: Array.isArray(lesson.checklist_items) ? lesson.checklist_items : [],
         duration_minutes:
           lesson.duration_minutes === "" || lesson.duration_minutes === undefined
             ? null
@@ -109,9 +175,31 @@ function buildCourseWritePayload(payload) {
         sort_order: lesson.sort_order ?? lessonIndex,
         is_required: lesson.is_required ?? true,
         progression_gate: lesson.progression_gate ?? false,
+        retain_existing_file: Boolean(lesson.content_file_url) && !(lesson.content_file instanceof File),
       })),
     })),
   };
+
+  normalizedPayload.modules.forEach((module, moduleIndex) => {
+    module.lessons.forEach((lesson, lessonIndex) => {
+      const originalLesson = payload.modules?.[moduleIndex]?.lessons?.[lessonIndex];
+      if (originalLesson?.content_file instanceof File) {
+        const uploadKey = `lesson_upload_${lesson.client_key}`;
+        lesson.upload_key = uploadKey;
+        uploads.push({
+          key: uploadKey,
+          file: originalLesson.content_file,
+        });
+      }
+    });
+  });
+
+  const formData = new FormData();
+  formData.append("payload", JSON.stringify(normalizedPayload));
+  uploads.forEach(({ key, file }) => {
+    formData.append(key, file);
+  });
+  return formData;
 }
 
 export async function fetchPublishedCourses() {
@@ -155,6 +243,49 @@ export async function fetchLearnerEnrollments() {
   return enrollments.map(normalizeEnrollment);
 }
 
+export async function syncVerifiedCourseEnrollment(courseId) {
+  try {
+    return await fetchLearnerCourseProgress(courseId);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return enrollInCourse(courseId);
+    }
+    throw error;
+  }
+}
+
+export async function fetchCourseCheckouts() {
+  const transactions = await authenticatedApiRequest(
+    "/payments/course-checkouts/",
+    { method: "GET" },
+  );
+  return transactions.map(normalizePaymentTransaction);
+}
+
+export async function createCourseCheckout(courseId) {
+  const transaction = await authenticatedApiRequest(
+    "/payments/course-checkouts/",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        course_program_id: Number(courseId),
+      }),
+    },
+  );
+  return normalizePaymentTransaction(transaction);
+}
+
+export async function verifyCourseCheckout(txRef) {
+  const transaction = await authenticatedApiRequest(
+    `/payments/course-checkouts/${encodeURIComponent(txRef)}/verify/`,
+    { method: "POST" },
+  );
+  return normalizePaymentTransaction(transaction);
+}
+
 export async function fetchCourseBuilderData() {
   let organization = null;
 
@@ -182,10 +313,7 @@ export async function saveCourse({ course, payload, isNew }) {
     isNew ? "/courses/manage/" : `/courses/manage/${course.id}/`,
     {
       method: isNew ? "POST" : "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(buildCourseWritePayload(payload)),
+      body: buildCourseWritePayload(payload),
     },
   );
 

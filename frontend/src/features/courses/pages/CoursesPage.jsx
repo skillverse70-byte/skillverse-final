@@ -6,6 +6,7 @@ import PageLoader from "@/components/shared/PageLoader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getPaidCourseEnrollmentGate } from "@/lib/trust-state";
 import { fetchPublishedCourses } from "@/services/courses/courses.service";
 
 export default function CoursesPage() {
@@ -101,6 +102,17 @@ export default function CoursesPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((course) => (
             <Link key={course.id} to={`/courses/${course.id}`} className="group">
+              {(() => {
+                const enrollmentGate = getPaidCourseEnrollmentGate({
+                  organization: {
+                    verification_status: course.organization_verification_status,
+                  },
+                  financialAccount: course.financial_account || null,
+                  isFree: course.is_free,
+                  enrollmentOpen: course.enrollment_open,
+                });
+
+                return (
               <div className="bg-white rounded-2xl border border-border/50 overflow-hidden card-hover">
                 <div className="aspect-video bg-gradient-to-br from-teal-100 to-emerald-50 relative">
                   <div className="w-full h-full flex items-center justify-center">
@@ -115,7 +127,7 @@ export default function CoursesPage() {
                           : `${course.price_currency || "ETB"} ${course.price || 0}`
                       }
                     />
-                    {!course.enrollment_open && (
+                    {!enrollmentGate.canEnroll && (
                       <StatusBadge status="enrollment_unavailable" />
                     )}
                   </div>
@@ -155,6 +167,8 @@ export default function CoursesPage() {
                   </div>
                 </div>
               </div>
+                );
+              })()}
             </Link>
           ))}
         </div>

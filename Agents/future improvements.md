@@ -1,0 +1,2 @@
+1, Learners paid money should be accomilated in something like company wallet where the company and admin can see and the company gets the money at the end of each month. 
+2, Zoom integration for learners to work together without leaving the site. 

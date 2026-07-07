@@ -69,7 +69,17 @@ env = environ.Env(
     CELERY_RESULT_BACKEND=(str, "redis://127.0.0.1:6379/1"),
     EMAIL_PORT=(int, 587),
     RESEND_API_KEY=(str, ""),
+    CHAPA_ENV=(str, "test"),
+    CHAPA_SECRET_KEY=(str, ""),
+    CHAPA_PUBLIC_KEY=(str, ""),
+    CHAPA_WEBHOOK_SECRET=(str, ""),
+    CHAPA_ENCRYPTION_KEY=(str, ""),
+    CHAPA_RETURN_URL=(str, "http://localhost:5173/courses/{course_id}?payment_tx_ref={tx_ref}"),
+    CHAPA_CALLBACK_URL=(str, "http://localhost:8000/api/payments/chapa/callback/"),
+    CHAPA_HTTP_TIMEOUT_SECONDS=(int, 15),
     FRONTEND_APP_URL=(str, "http://localhost:5173"),
+    ENABLE_AUTH_THROTTLING=(bool, False),
+    PAYMENT_RATE_THROTTLE=(str, "20/hour"),
     AUTH_RATE_THROTTLE=(str, "20/hour"),
     AUTH_LOGIN_RATE_THROTTLE=(str, "10/hour"),
     AUTH_REGISTER_RATE_THROTTLE=(str, "5/hour"),
@@ -98,12 +108,14 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.common",
     "apps.organizations",
+    "apps.payments",
     "apps.skills",
     "apps.swaps",
     "apps.messaging",
     "apps.sessions",
     "apps.courses",
     "apps.events",
+    "apps.opportunities",
     "apps.reviews",
     "corsheaders",
     "rest_framework",
@@ -189,6 +201,16 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
 FRONTEND_APP_URL = env("FRONTEND_APP_URL")
+ENABLE_AUTH_THROTTLING = env.bool("ENABLE_AUTH_THROTTLING", default=False)
+CHAPA_ENV = env("CHAPA_ENV", default="test")
+CHAPA_BASE_URL = "https://api.chapa.co"
+CHAPA_SECRET_KEY = env("CHAPA_SECRET_KEY", default="")
+CHAPA_PUBLIC_KEY = env("CHAPA_PUBLIC_KEY", default="")
+CHAPA_WEBHOOK_SECRET = env("CHAPA_WEBHOOK_SECRET", default="")
+CHAPA_ENCRYPTION_KEY = env("CHAPA_ENCRYPTION_KEY", default="")
+CHAPA_RETURN_URL = env("CHAPA_RETURN_URL")
+CHAPA_CALLBACK_URL = env("CHAPA_CALLBACK_URL")
+CHAPA_HTTP_TIMEOUT_SECONDS = env.int("CHAPA_HTTP_TIMEOUT_SECONDS", default=15)
 
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False
@@ -226,6 +248,7 @@ REST_FRAMEWORK = {
         "auth_verify_email": env("AUTH_VERIFY_EMAIL_RATE_THROTTLE"),
         "auth_password_reset": env("AUTH_PASSWORD_RESET_RATE_THROTTLE"),
         "auth_organization_register": env("AUTH_ORGANIZATION_REGISTER_RATE_THROTTLE"),
+        "payment": env("PAYMENT_RATE_THROTTLE"),
     },
 }
 
@@ -256,6 +279,13 @@ SPECTACULAR_SETTINGS = {
         "CourseProgramStatusEnum": "apps.common.enums.CourseProgramStatus",
         "LessonItemTypeEnum": "apps.common.enums.LessonItemType",
         "EnrollmentStatusEnum": "apps.common.enums.EnrollmentStatus",
+        "EventStatusEnum": "apps.common.enums.EventStatus",
+        "FinancialAccountStatusEnum": "apps.common.enums.FinancialAccountStatus",
+        "PaymentTransactionStatusEnum": "apps.common.enums.PaymentTransactionStatus",
+        "RSVPStatusEnum": "apps.common.enums.RSVPStatus",
+        "OpportunityTypeEnum": "apps.common.enums.OpportunityType",
+        "OpportunityStatusEnum": "apps.common.enums.OpportunityStatus",
+        "JobApplicationStatusEnum": "apps.common.enums.JobApplicationStatus",
     },
 }
 

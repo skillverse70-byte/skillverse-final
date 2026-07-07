@@ -4,10 +4,10 @@ import { fetchDashboardData } from "@/services/dashboard/dashboard.service";
 export function useDashboardData() {
   const [state, setState] = useState({
     user: null,
-    enrollments: [],
     swaps: [],
     applications: [],
     rsvps: [],
+    sessions: [],
     loading: true,
   });
 

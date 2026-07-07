@@ -2,11 +2,16 @@ import { authenticatedApiRequest } from "@/services/auth/backend-auth-client";
 import { apiRequest } from "@/lib/http-client";
 
 export async function fetchOrganizationProfileData() {
-  const organization = await authenticatedApiRequest("/organizations/me/", {
-    method: "GET",
-  });
+  const [organization, financialAccount] = await Promise.all([
+    authenticatedApiRequest("/organizations/me/", {
+      method: "GET",
+    }),
+    authenticatedApiRequest("/payments/financial-account/me/", {
+      method: "GET",
+    }),
+  ]);
 
-  return { organization };
+  return { organization, financialAccount };
 }
 
 function buildOrganizationFormData(form) {
@@ -42,16 +47,35 @@ export async function saveOrganizationProfile({ form }) {
 }
 
 export async function fetchOrganizationManagementData() {
-  const [organization, verification] = await Promise.all([
+  const [organization, verification, financialAccount, courses, enrollments] = await Promise.all([
     authenticatedApiRequest("/organizations/me/", {
       method: "GET",
     }),
     authenticatedApiRequest("/organizations/verification/me/", {
       method: "GET",
     }),
+    authenticatedApiRequest("/payments/financial-account/me/", {
+      method: "GET",
+    }),
+    authenticatedApiRequest("/courses/manage/", {
+      method: "GET",
+    }),
+    authenticatedApiRequest("/courses/manage/enrollments/", {
+      method: "GET",
+    }),
   ]);
 
-  return { organization, verification };
+  return { organization, verification, financialAccount, courses, enrollments };
+}
+
+export async function saveFinancialAccountSetup(form) {
+  return authenticatedApiRequest("/payments/financial-account/me/", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(form),
+  });
 }
 
 export async function fetchPublicOrganizationProfile(organizationId) {
@@ -107,6 +131,40 @@ export async function decideAdminOrganizationVerificationRequest(
         decision,
         reviewer_notes: reviewerNotes,
         use_admin_override: useAdminOverride,
+      }),
+    },
+  );
+}
+
+export async function fetchAdminFinancialAccounts({ status } = {}) {
+  const searchParams = new URLSearchParams();
+  if (status) {
+    searchParams.set("status", status);
+  }
+
+  return authenticatedApiRequest(
+    `/admin/payments/financial-accounts/${
+      searchParams.toString() ? `?${searchParams.toString()}` : ""
+    }`,
+    { method: "GET" },
+  );
+}
+
+export async function decideAdminFinancialAccount(
+  financialAccountId,
+  { decision, reviewNotes = "", restrictedReason = "" },
+) {
+  return authenticatedApiRequest(
+    `/admin/payments/financial-accounts/${financialAccountId}/decision/`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        decision,
+        review_notes: reviewNotes,
+        restricted_reason: restrictedReason,
       }),
     },
   );

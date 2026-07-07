@@ -40,10 +40,10 @@ Legend:
 | `/skill-swap` | No | Yes | No | No | Free peer swap workflow only |
 | `/messages` | No | Yes | No | No | Swap/session messaging only |
 | `/saved-opportunities` | No | Yes | No | No | Regular-user saved items only |
-| `/org` | No | No | Yes | No | Organization dashboard/workspace |
+| `/org` | No | No | Yes | No | Structured organization workspace with overview, account setup, finance status, and publishing sections |
 | `/organization-profile` | No | No | Yes | No | Organization profile management |
 | `/course-builder` | No | No | Yes | No | Organization course authoring |
-| `/admin` | No | No | No | Yes | Admin dashboard and oversight |
+| `/admin` | No | No | No | Yes | Admin dashboard for organization verification, financial-account review, moderation, and oversight |
 
 ## Actor Home Rules
 

@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework.settings import api_settings
 from rest_framework import status
@@ -145,6 +146,7 @@ class RegularUserProfileApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("already", str(response.data).lower())
 
+    @override_settings(ENABLE_AUTH_THROTTLING=True)
     def test_profile_endpoints_do_not_share_auth_throttle_bucket(self):
         auth_limit = int(
             str(api_settings.DEFAULT_THROTTLE_RATES["auth"]).split("/", maxsplit=1)[0]

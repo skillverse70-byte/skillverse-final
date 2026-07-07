@@ -5,9 +5,9 @@ import {
   Edit2,
   Video,
   FileText,
+  FileUp,
   HelpCircle,
   ClipboardList,
-  Link as LinkIcon,
   ListChecks,
   NotebookPen,
 } from "lucide-react";
@@ -20,10 +20,30 @@ const lessonIcons = {
   reading: FileText,
   quiz: HelpCircle,
   assignment: ClipboardList,
-  resource: LinkIcon,
+  resource: FileUp,
   checklist: ListChecks,
   assessment: NotebookPen,
 };
+
+function lessonMeta(lesson) {
+  const parts = [lesson.type === "resource" ? "document" : lesson.type];
+  if (lesson.progression_gate) {
+    parts.push("gated");
+  }
+  if (lesson.is_required === false) {
+    parts.push("optional");
+  }
+  if (lesson.type === "resource" && (lesson.content_file_name || lesson.content_file_url)) {
+    parts.push("file attached");
+  }
+  if (lesson.type === "video" && lesson.content_url) {
+    parts.push("embedded");
+  }
+  if (lesson.type === "checklist" && lesson.checklist_items?.length) {
+    parts.push(`${lesson.checklist_items.length} items`);
+  }
+  return parts.join(" · ");
+}
 
 export default function ModuleEditor({ module, index, onUpdate, onDelete }) {
   const [showDialog, setShowDialog] = useState(false);
@@ -73,24 +93,24 @@ export default function ModuleEditor({ module, index, onUpdate, onDelete }) {
   };
 
   return (
-    <div className="border border-border/50 rounded-xl overflow-hidden">
-      <div className="flex items-center gap-2 p-3 bg-secondary/30">
-        <span className="text-xs font-bold text-muted-foreground w-6 text-center">
+    <div className="overflow-hidden rounded-xl border border-border/50">
+      <div className="flex items-center gap-2 bg-secondary/30 p-3">
+        <span className="w-6 text-center text-xs font-bold text-muted-foreground">
           {index + 1}
         </span>
         <Input
           value={module.title}
           onChange={(e) => onUpdate({ ...module, title: e.target.value })}
           placeholder="Module title"
-          className="border-0 bg-transparent focus-visible:ring-0 font-medium"
+          className="border-0 bg-transparent font-medium focus-visible:ring-0"
         />
         <Button
           variant="ghost"
           size="icon"
           onClick={onDelete}
-          className="text-red-500 hover:bg-red-50 flex-shrink-0"
+          className="flex-shrink-0 text-red-500 hover:bg-red-50"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
       <div className="px-3 pt-3">
@@ -101,42 +121,36 @@ export default function ModuleEditor({ module, index, onUpdate, onDelete }) {
           className="text-sm"
         />
       </div>
-      <div className="p-3 space-y-1">
+      <div className="space-y-1 p-3">
         {module.lessons?.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-3">
-            No lessons yet.
-          </p>
+          <p className="py-3 text-center text-xs text-muted-foreground">No lessons yet.</p>
         ) : (
           module.lessons?.map((lesson, lessonIndex) => {
             const Icon = lessonIcons[lesson.type] || FileText;
 
             return (
               <div
-                key={lessonIndex}
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary/50 group"
+                key={lesson.client_key || lesson.id || lessonIndex}
+                className="group flex items-center gap-2 rounded-lg p-2 hover:bg-secondary/50"
               >
-                <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm truncate">{lesson.title}</div>
-                  <div className="text-[11px] text-muted-foreground truncate">
-                    {lesson.type}
-                    {lesson.progression_gate ? " · gated" : ""}
-                    {lesson.is_required === false ? " · optional" : ""}
+                <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm">{lesson.title}</div>
+                  <div className="truncate text-[11px] text-muted-foreground">
+                    {lessonMeta(lesson)}
                   </div>
                 </div>
-                {lesson.duration_minutes && (
-                  <span className="text-xs text-muted-foreground">
-                    {lesson.duration_minutes}m
-                  </span>
-                )}
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {lesson.duration_minutes ? (
+                  <span className="text-xs text-muted-foreground">{lesson.duration_minutes}m</span>
+                ) : null}
+                <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7"
                     onClick={() => openEdit(lesson, lessonIndex)}
                   >
-                    <Edit2 className="w-3.5 h-3.5" />
+                    <Edit2 className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -144,7 +158,7 @@ export default function ModuleEditor({ module, index, onUpdate, onDelete }) {
                     className="h-7 w-7 text-red-500 hover:bg-red-50"
                     onClick={() => deleteLesson(lessonIndex)}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>
@@ -155,14 +169,14 @@ export default function ModuleEditor({ module, index, onUpdate, onDelete }) {
           variant="ghost"
           size="sm"
           onClick={openAdd}
-          className="w-full text-muted-foreground gap-1.5"
+          className="w-full gap-1.5 text-muted-foreground"
         >
-          <Plus className="w-3.5 h-3.5" /> Add Lesson
+          <Plus className="h-3.5 w-3.5" /> Add Lesson
         </Button>
       </div>
-      {showDialog && (
+      {showDialog ? (
         <LessonDialog lesson={editingLesson} onSave={handleSave} onClose={close} />
-      )}
+      ) : null}
     </div>
   );
 }

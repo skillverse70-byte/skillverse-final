@@ -1,133 +1,155 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { appClient } from "@/api/appClient";
-import { Input } from "@/components/ui/input";
-import {
-  Search,
-  Calendar,
-  MapPin,
-  Globe,
-  Users,
-  Clock,
-  CheckCircle,
-} from "lucide-react";
-import StatusBadge from "@/components/shared/StatusBadge";
+import React, { useEffect, useMemo, useState } from "react";
+import { Calendar, Globe, Search, SlidersHorizontal } from "lucide-react";
 import EmptyState from "@/components/shared/EmptyState";
-import moment from "moment";
+import PageLoader from "@/components/shared/PageLoader";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import EventCard from "@/features/events/components/EventCard";
+import { fetchEvents } from "@/services/events/events.service";
 
-export default function Events() {
+export default function EventsPage() {
   const [events, setEvents] = useState([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [modeFilter, setModeFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+
     const load = async () => {
       try {
-        const data = await appClient.entities.Event.list("-event_date", 50);
-        setEvents(data);
-      } catch (e) {
-        console.error(e);
+        const data = await fetchEvents();
+        if (active) {
+          setEvents(data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     };
+
     load();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const filtered = events.filter(
-    (e) => !search || e.title?.toLowerCase().includes(search.toLowerCase()),
+  const filtered = useMemo(
+    () =>
+      events.filter((event) => {
+        const searchValue = search.trim().toLowerCase();
+        const matchesSearch =
+          !searchValue ||
+          event.title?.toLowerCase().includes(searchValue) ||
+          event.description?.toLowerCase().includes(searchValue) ||
+          event.organization_name?.toLowerCase().includes(searchValue) ||
+          event.category?.toLowerCase().includes(searchValue);
+        const matchesStatus =
+          statusFilter === "all" || event.status === statusFilter;
+        const matchesMode =
+          modeFilter === "all" ||
+          (modeFilter === "online" ? event.is_online : !event.is_online);
+
+        return matchesSearch && matchesStatus && matchesMode;
+      }),
+    [events, search, statusFilter, modeFilter],
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      <div className="mb-8">
-        <h1 className="font-heading font-bold text-3xl text-foreground mb-2">
-          Events
-        </h1>
-        <p className="text-muted-foreground">
-          Workshops, meetups, and learning events from the community.
-        </p>
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-2xl">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-teal-700">
+            Public events
+          </p>
+          <h1 className="font-heading text-3xl font-bold text-foreground sm:text-4xl">
+            Events
+          </h1>
+          <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+            Workshops, meetups, and community sessions published by organizations.
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-border/60 bg-white px-5 py-4 shadow-sm shadow-black/5">
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl bg-sky-50 p-3 text-sky-700">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                Live catalog
+              </div>
+              <div className="font-heading text-2xl font-bold text-foreground">
+                {events.length}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Search events..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10"
-        />
+      <div className="mb-8 grid gap-3 rounded-3xl border border-border/60 bg-white p-4 shadow-sm shadow-black/5 md:grid-cols-[minmax(0,1fr)_180px_180px]">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by title, category, or organization"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger>
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="upcoming">Upcoming</SelectItem>
+            <SelectItem value="live">Live</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={modeFilter} onValueChange={setModeFilter}>
+          <SelectTrigger>
+            <SelectValue placeholder="Format" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All formats</SelectItem>
+            <SelectItem value="online">Online</SelectItem>
+            <SelectItem value="in_person">In person</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
-        </div>
+        <PageLoader />
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Calendar}
-          title="No events yet"
-          description="Check back soon! Organizations post events regularly."
+          title="No events found"
+          description="Try another search or filter. Organizations can publish events here as they go live."
         />
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((event) => (
-            <Link key={event.id} to={`/events/${event.id}`}>
-              <div className="bg-white rounded-2xl border border-border/50 overflow-hidden card-hover">
-                <div className="aspect-[2/1] bg-gradient-to-br from-blue-50 to-teal-50 relative">
-                  {event.cover_image ? (
-                    <img
-                      src={event.cover_image}
-                      alt={event.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Calendar className="w-10 h-10 text-blue-200" />
-                    </div>
-                  )}
-                  <div className="absolute top-3 left-3 flex gap-2">
-                    <StatusBadge status={event.status || "upcoming"} />
-                    {event.is_free && <StatusBadge status="free" />}
-                  </div>
-                </div>
-                <div className="p-5">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                    <Clock className="w-3.5 h-3.5" />
-                    {moment(event.event_date).format("MMM D, YYYY · h:mm A")}
-                  </div>
-                  <h3 className="font-heading font-semibold text-base mb-2 line-clamp-2">
-                    {event.title}
-                  </h3>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                    {event.is_online ? (
-                      <span className="flex items-center gap-1">
-                        <Globe className="w-3.5 h-3.5" /> Online
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" />{" "}
-                        {event.location || "TBA"}
-                      </span>
-                    )}
-                    {event.max_attendees && (
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5" />{" "}
-                        {event.current_attendees || 0}/{event.max_attendees}
-                      </span>
-                    )}
-                  </div>
-                  {event.organization_name && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      {event.organization_name}
-                      {event.is_verified && (
-                        <CheckCircle className="w-3 h-3 text-emerald-500" />
-                      )}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </Link>
-          ))}
+        <div className="space-y-5">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <SlidersHorizontal className="h-4 w-4" />
+            <span>{filtered.length} events</span>
+            <span className="text-border">·</span>
+            <span className="inline-flex items-center gap-1">
+              <Globe className="h-4 w-4" />
+              Public discovery
+            </span>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
         </div>
       )}
     </div>

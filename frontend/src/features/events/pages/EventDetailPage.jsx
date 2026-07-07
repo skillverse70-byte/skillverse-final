@@ -1,152 +1,330 @@
-import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { appClient } from "@/api/appClient";
-import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Globe, Users, Clock, ArrowLeft, CheckCircle } from "lucide-react";
-import StatusBadge from "@/components/shared/StatusBadge";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock3,
+  Globe,
+  MapPin,
+  Users,
+} from "lucide-react";
 import BookmarkButton from "@/components/shared/BookmarkButton";
+import EmptyState from "@/components/shared/EmptyState";
+import PageLoader from "@/components/shared/PageLoader";
+import StatusBadge from "@/components/shared/StatusBadge";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { roles, rsvpStatuses } from "@/lib/domain-enums";
+import {
+  ApiError,
+  fetchEventDetail,
+  submitEventRsvp,
+} from "@/services/events/events.service";
 import moment from "moment";
 
-export default function EventDetail() {
+export default function EventDetailPage() {
   const { id } = useParams();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [rsvpd, setRsvpd] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+  const { isAuthenticated, actorRole, navigateToLogin } = useAuth();
 
   useEffect(() => {
+    let active = true;
+
     const load = async () => {
       try {
-        const data = await appClient.entities.Event.get(id);
-        setEvent(data);
-      } catch(e) { console.error(e); }
-      setLoading(false);
+        const data = await fetchEventDetail(id, { authenticated: isAuthenticated });
+        if (active) {
+          setEvent(data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
     };
-    load();
-  }, [id]);
 
-  const handleRSVP = async () => {
+    load();
+
+    return () => {
+      active = false;
+    };
+  }, [id, isAuthenticated]);
+
+  const handleRsvp = async (statusValue) => {
+    if (!isAuthenticated) {
+      navigateToLogin();
+      return;
+    }
+
+    if (actorRole !== roles.regularUser) {
+      toast({
+        title: "RSVP is for regular users",
+        description:
+          "Organizations and admins can browse events, but only regular users can RSVP in V1.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      const me = await appClient.auth.me();
-      await appClient.entities.RSVP.create({ user_id: me.id, event_id: id, status: "going" });
-      setRsvpd(true);
-    } catch(e) { console.error(e); }
+      const rsvp = await submitEventRsvp(id, statusValue);
+      const nextEvent = await fetchEventDetail(id, { authenticated: true });
+      setEvent(nextEvent);
+      toast({
+        title:
+          rsvp.status === rsvpStatuses.going
+            ? "You're on the list"
+            : rsvp.status === rsvpStatuses.interested
+              ? "Marked as interested"
+              : "RSVP updated",
+        description:
+          rsvp.status === rsvpStatuses.cancelled
+            ? "Your RSVP was cancelled."
+            : "Your event participation status was updated.",
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Unable to update RSVP",
+        description:
+          error instanceof ApiError
+            ? error.message
+            : "Something went wrong while updating your RSVP.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
-    return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>;
+    return <PageLoader />;
   }
 
   if (!event) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <h2 className="font-heading font-bold text-xl mb-2">Event not found</h2>
-        <Link to="/events"><Button variant="outline">Back to Events</Button></Link>
+      <div className="mx-auto max-w-4xl px-4 py-20 sm:px-6">
+        <EmptyState
+          icon={Calendar}
+          title="Event not found"
+          description="This event may have been removed or is no longer public."
+          actionLabel="Back to Events"
+          onAction={() => {
+            window.location.href = "/events";
+          }}
+        />
       </div>
     );
   }
 
-  const spotsLeft = event.max_attendees ? event.max_attendees - (event.current_attendees || 0) : null;
-  const organization = {
-    id: event.organization_id,
-    verification_status: event.organization_verification_status,
-    is_verified: event.is_verified,
-  };
+  const isRegularUser = actorRole === roles.regularUser;
+  const currentRsvpStatus = event.viewer_rsvp_status;
+  const spotsLeft = event.spots_remaining;
+  const canShowRsvpActions = !isAuthenticated || isRegularUser;
+  const eventLocationLabel = event.is_online
+    ? "Online event"
+    : event.location || "Location to be announced";
+  const meetingAccessMessage =
+    event.is_online && !event.meeting_url
+      ? "RSVP with Going to unlock the session link."
+      : null;
+  const actionSummary = useMemo(() => {
+    if (!isAuthenticated) {
+      return "Sign in as a regular user to RSVP.";
+    }
+    if (!isRegularUser) {
+      return "Only regular users can RSVP in V1.";
+    }
+    if (currentRsvpStatus === rsvpStatuses.going) {
+      return "You're marked as going.";
+    }
+    if (currentRsvpStatus === rsvpStatuses.interested) {
+      return "You're following this event.";
+    }
+    return "Reserve your spot or save your interest.";
+  }, [currentRsvpStatus, isAuthenticated, isRegularUser]);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-      <Link to="/events" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Back to Events
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <Link
+        to="/events"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to Events
       </Link>
 
-      <div className="bg-white rounded-2xl border border-border/50 overflow-hidden">
-        <div className="aspect-[3/1] bg-gradient-to-br from-blue-50 to-teal-50 relative">
-          {event.cover_image ? (
-            <img src={event.cover_image} alt={event.title} className="w-full h-full object-cover" />
+      <div className="overflow-hidden rounded-3xl border border-border/60 bg-white shadow-sm shadow-black/5">
+        <div className="relative aspect-[3/1] bg-gradient-to-br from-sky-50 via-white to-teal-50">
+          {event.cover_image_url ? (
+            <img
+              src={event.cover_image_url}
+              alt={event.title}
+              className="h-full w-full object-cover"
+            />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Calendar className="w-16 h-16 text-blue-200" />
+            <div className="flex h-full w-full items-center justify-center">
+              <Calendar className="h-16 w-16 text-sky-200" />
             </div>
           )}
         </div>
 
         <div className="p-6 sm:p-8">
-          <div className="flex flex-wrap gap-2 mb-4">
-            <StatusBadge status={event.status || "upcoming"} />
-            {event.is_free ? <StatusBadge status="free" /> : <StatusBadge status="paid" label={`$${event.price}`} />}
+          <div className="mb-4 flex flex-wrap gap-2">
+            <StatusBadge status={event.status} />
+            {currentRsvpStatus ? (
+              <StatusBadge status={currentRsvpStatus} />
+            ) : null}
           </div>
 
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <h1 className="font-heading font-bold text-2xl sm:text-3xl">{event.title}</h1>
-            <BookmarkButton itemType="event" itemId={event.id} itemTitle={event.title} itemSubtitle={event.is_online ? "Online Event" : event.location} itemCategory={event.category} />
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="font-heading text-2xl font-bold text-foreground sm:text-3xl">
+                {event.title}
+              </h1>
+              {event.category ? (
+                <p className="mt-2 text-sm text-muted-foreground">{event.category}</p>
+              ) : null}
+            </div>
+            <BookmarkButton
+              itemType="event"
+              itemId={event.id}
+              itemTitle={event.title}
+              itemSubtitle={event.is_online ? "Online Event" : event.location}
+              itemCategory={event.category}
+            />
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4 mb-6">
-            <div className="flex items-center gap-3 text-sm">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                <Clock className="w-5 h-5 text-blue-600" />
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="flex items-center gap-3 rounded-2xl bg-secondary/20 p-4 text-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50">
+                <Clock3 className="h-5 w-5 text-sky-600" />
               </div>
               <div>
-                <div className="font-medium">{moment(event.event_date).format("MMMM D, YYYY")}</div>
-                <div className="text-muted-foreground">{moment(event.event_date).format("h:mm A")}
-                  {event.end_date && ` – ${moment(event.end_date).format("h:mm A")}`}
+                <div className="font-medium">
+                  {moment(event.starts_at).format("MMMM D, YYYY")}
+                </div>
+                <div className="text-muted-foreground">
+                  {moment(event.starts_at).format("h:mm A")}
+                  {event.ends_at ? ` - ${moment(event.ends_at).format("h:mm A")}` : ""}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-                {event.is_online ? <Globe className="w-5 h-5 text-teal-600" /> : <MapPin className="w-5 h-5 text-teal-600" />}
+
+            <div className="flex items-center gap-3 rounded-2xl bg-secondary/20 p-4 text-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50">
+                {event.is_online ? (
+                  <Globe className="h-5 w-5 text-teal-600" />
+                ) : (
+                  <MapPin className="h-5 w-5 text-teal-600" />
+                )}
               </div>
               <div>
-                <div className="font-medium">{event.is_online ? "Online Event" : event.location || "Location TBA"}</div>
-                {event.is_online && <div className="text-muted-foreground">Link provided after RSVP</div>}
+                <div className="font-medium">{eventLocationLabel}</div>
+                <div className="text-muted-foreground">
+                  {meetingAccessMessage || "Event format and access details."}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-2xl bg-secondary/20 p-4 text-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50">
+                <Users className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <div className="font-medium">
+                  {event.max_attendees
+                    ? `${event.current_attendees}/${event.max_attendees} spots taken`
+                    : `${event.current_attendees} RSVPs`}
+                </div>
+                <div className="text-muted-foreground">
+                  {spotsLeft !== null ? `${spotsLeft} spots remaining` : "Open attendance"}
+                </div>
               </div>
             </div>
           </div>
 
-          {event.organization_name && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary/50 mb-6 text-sm">
+          {event.organization ? (
+            <div className="mb-6 flex items-center gap-2 rounded-2xl bg-secondary/40 p-4 text-sm">
               <span>
                 Hosted by{" "}
-                {event.organization_id ? (
-                  <Link
-                    to={`/organizations/${event.organization_id}`}
-                    className="font-medium text-foreground hover:text-teal-700 hover:underline"
-                  >
-                    {event.organization_name}
-                  </Link>
-                ) : (
-                  <span className="font-medium">{event.organization_name}</span>
-                )}
+                <Link
+                  to={`/organizations/${event.organization_id}`}
+                  className="font-medium text-foreground hover:text-teal-700 hover:underline"
+                >
+                  {event.organization_name}
+                </Link>
               </span>
-              <StatusBadge organization={organization} />
+              <StatusBadge organization={event.organization} />
             </div>
-          )}
+          ) : null}
 
-          <div className="prose prose-sm max-w-none mb-8">
-            <p className="text-foreground leading-relaxed whitespace-pre-wrap">{event.description}</p>
+          <div className="mb-8 prose prose-sm max-w-none">
+            <p className="whitespace-pre-wrap leading-relaxed text-foreground">
+              {event.description}
+            </p>
           </div>
 
-          {/* RSVP Section */}
-          <div className="bg-secondary/30 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              {spotsLeft !== null && (
-                <p className="text-sm text-muted-foreground flex items-center gap-1.5 mb-1">
-                  <Users className="w-4 h-4" /> {spotsLeft} spots remaining
-                </p>
+          <div className="rounded-3xl border border-border/60 bg-secondary/20 p-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-2xl">
+                <h2 className="font-heading text-lg font-semibold text-foreground">
+                  RSVP
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground">{actionSummary}</p>
+                {event.is_online && event.meeting_url ? (
+                  <a
+                    href={event.meeting_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 inline-flex text-sm font-medium text-teal-700 hover:text-teal-800"
+                  >
+                    Open event link
+                  </a>
+                ) : null}
+              </div>
+
+              {canShowRsvpActions ? (
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    onClick={() => handleRsvp(rsvpStatuses.going)}
+                    className="gap-2 bg-teal-600 hover:bg-teal-700"
+                    disabled={submitting || currentRsvpStatus === rsvpStatuses.going}
+                  >
+                    <Calendar className="h-4 w-4" />
+                    {currentRsvpStatus === rsvpStatuses.going ? "You're going" : "RSVP going"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleRsvp(rsvpStatuses.interested)}
+                    disabled={submitting || currentRsvpStatus === rsvpStatuses.interested}
+                  >
+                    Interested
+                  </Button>
+                  {isAuthenticated && currentRsvpStatus ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => handleRsvp(rsvpStatuses.cancelled)}
+                      disabled={submitting || currentRsvpStatus === rsvpStatuses.cancelled}
+                    >
+                      Cancel RSVP
+                    </Button>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-white px-4 py-3 text-sm text-muted-foreground">
+                  Regular users can RSVP from this page.
+                </div>
               )}
-              <p className="text-sm text-muted-foreground">
-                {event.is_free ? "This event is free to attend." : `Registration fee: $${event.price}`}
-              </p>
             </div>
-            {rsvpd ? (
-              <Button disabled className="gap-2">
-                <CheckCircle className="w-4 h-4" /> You're going!
-              </Button>
-            ) : (
-              <Button onClick={handleRSVP} className="bg-teal-600 hover:bg-teal-700 gap-2">
-                <Calendar className="w-4 h-4" /> RSVP Now
-              </Button>
-            )}
           </div>
         </div>
       </div>

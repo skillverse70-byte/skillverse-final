@@ -20,6 +20,7 @@ const emptyOrganizationForm = {
 
 export function useOrganizationProfile() {
   const [organization, setOrganization] = useState(null);
+  const [financialAccount, setFinancialAccount] = useState(null);
   const [form, setForm] = useState(emptyOrganizationForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,6 +35,7 @@ export function useOrganizationProfile() {
           return;
         }
         setOrganization(data.organization);
+        setFinancialAccount(data.financialAccount || null);
         if (data.organization) {
           setForm({
             name: data.organization.name || "",
@@ -85,6 +87,8 @@ export function useOrganizationProfile() {
 
   return {
     organization,
+    financialAccount,
+    setFinancialAccount,
     form,
     setField,
     loading,

@@ -1,6 +1,8 @@
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -8,6 +10,7 @@ from rest_framework.test import APITestCase
 from apps.common.enums import CourseProgramStatus, OrganizationType, Role
 from apps.courses.models import CourseModule, CourseProgram, Enrollment, LessonItem
 from apps.organizations.models import Organization
+from apps.payments.models import FinancialAccount
 
 User = get_user_model()
 
@@ -52,6 +55,7 @@ class CourseApiTests(APITestCase):
         )
 
     def authenticate(self, email, password):
+        cache.clear()
         response = self.client.post(
             reverse("token_obtain_pair"),
             {"email": email, "password": password},
@@ -149,29 +153,23 @@ class CourseApiTests(APITestCase):
         )
         course_id = create_response.data["id"]
 
+        resource_file = SimpleUploadedFile(
+            "updated-resource.pdf",
+            b"%PDF-1.4 updated document",
+            content_type="application/pdf",
+        )
+
         update_response = self.client.patch(
             reverse("course-manage-detail", args=[course_id]),
             {
-                "title": "Updated Analytics Bootcamp",
-                "is_free": False,
-                "price_amount": "1499.00",
-                "price_currency": "ETB",
-                "modules": [
-                    {
-                        "title": "Updated Module",
-                        "description": "Replacement module",
-                        "lessons": [
-                            {
-                                "title": "Updated resource pack",
-                                "type": "resource",
-                                "content_url": "https://example.com/resource-pack",
-                                "description": "Downloadable resource",
-                            }
-                        ],
-                    }
-                ],
+                "payload": (
+                    '{"title":"Updated Analytics Bootcamp","is_free":false,"price_amount":"1499.00",'
+                    '"price_currency":"ETB","modules":[{"title":"Updated Module","description":"Replacement module",'
+                    '"lessons":[{"client_key":"updated-resource","title":"Updated resource pack","type":"resource",'
+                    '"description":"Downloadable resource","upload_key":"lesson_upload_updated-resource"}]}]}'
+                ),
+                "lesson_upload_updated-resource": resource_file,
             },
-            format="json",
         )
 
         self.assertEqual(update_response.status_code, status.HTTP_200_OK)
@@ -260,6 +258,116 @@ class CourseApiTests(APITestCase):
         self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
         self.assertEqual(detail_response.data["modules"][0]["lessons"][0]["title"], "Public Lesson")
         self.assertEqual(draft_detail_response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_public_course_payload_includes_safe_financial_account_state(self):
+        FinancialAccount.objects.create(
+            organization=self.organization,
+            provider="chapa",
+            status="ready",
+        )
+        published_course = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Paid Ready Course",
+            status=CourseProgramStatus.PUBLISHED,
+            is_free=False,
+            price_amount="99.00",
+        )
+
+        response = self.client.get(reverse("course-detail", args=[published_course.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["financial_account"]["provider"], "chapa")
+        self.assertEqual(response.data["financial_account"]["status"], "ready")
+
+    def test_organization_can_create_document_resource_lesson_with_uploaded_file(self):
+        self.authenticate("org-courses@example.com", "StrongPass123!")
+        document = SimpleUploadedFile(
+            "resource-guide.pdf",
+            b"%PDF-1.4 test document",
+            content_type="application/pdf",
+        )
+
+        response = self.client.post(
+            reverse("course-manage-list-create"),
+            {
+                "payload": (
+                    '{"title":"Document Course","description":"Docs","status":"draft","modules":'
+                    '[{"title":"Resources","lessons":[{"client_key":"doc-1","title":"Starter PDF",'
+                    '"type":"resource","description":"Downloadable guide","upload_key":"lesson_upload_doc-1"}]}]}'
+                ),
+                "lesson_upload_doc-1": document,
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        lesson = LessonItem.objects.get(title="Starter PDF")
+        self.assertTrue(bool(lesson.content_file))
+        self.assertTrue(lesson.content_file.name.endswith(".pdf"))
+
+    def test_non_enrolled_users_only_see_course_structure(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Protected Course",
+            status=CourseProgramStatus.PUBLISHED,
+            is_free=False,
+            price_amount="99.00",
+        )
+        module = CourseModule.objects.create(
+            course_program=course_program,
+            title="Protected Module",
+            sort_order=0,
+        )
+        LessonItem.objects.create(
+            module=module,
+            title="Secret Video",
+            item_type="video",
+            description="Protected lesson notes",
+            content_url="https://youtu.be/example",
+            sort_order=0,
+        )
+
+        response = self.client.get(reverse("course-detail", args=[course_program.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["modules"][0]["lessons"][0]["title"], "Secret Video")
+        self.assertEqual(response.data["modules"][0]["lessons"][0]["description"], "")
+        self.assertEqual(response.data["modules"][0]["lessons"][0]["content_url"], "")
+
+    def test_enrolled_user_can_view_full_lesson_content_in_progress_endpoint(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Open Content Course",
+            status=CourseProgramStatus.PUBLISHED,
+            is_free=True,
+            enrollment_open=True,
+        )
+        module = CourseModule.objects.create(
+            course_program=course_program,
+            title="Module",
+            sort_order=0,
+        )
+        lesson = LessonItem.objects.create(
+            module=module,
+            title="Checklist Lesson",
+            item_type="checklist",
+            description="Finish these steps",
+            checklist_items=["Read the brief", "Upload your reflection"],
+            sort_order=0,
+        )
+        Enrollment.objects.create(
+            user=self.regular_user,
+            course_program=course_program,
+            status="active",
+        )
+
+        self.authenticate("learner@example.com", "StrongPass123!")
+        response = self.client.get(reverse("course-progress-detail", args=[course_program.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        payload_lesson = response.data["modules"][0]["lessons"][0]
+        self.assertEqual(payload_lesson["title"], lesson.title)
+        self.assertEqual(payload_lesson["description"], "Finish these steps")
+        self.assertEqual(payload_lesson["checklist_items"], ["Read the brief", "Upload your reflection"])
 
     def test_regular_user_cannot_access_organization_manage_endpoints(self):
         self.authenticate("learner@example.com", "StrongPass123!")
@@ -453,6 +561,46 @@ class CourseApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["course_program"]["title"], "Dashboard Program")
+
+    def test_organization_can_list_participants_and_progress_for_owned_courses(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Participant Program",
+            status=CourseProgramStatus.PUBLISHED,
+        )
+        Enrollment.objects.create(
+            user=self.regular_user,
+            course_program=course_program,
+            status="active",
+            progress_percent=55,
+        )
+
+        self.authenticate("org-courses@example.com", "StrongPass123!")
+        response = self.client.get(reverse("course-manage-enrollment-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["course_program"]["title"], "Participant Program")
+        self.assertEqual(response.data[0]["learner"]["email"], "learner@example.com")
+
+    def test_organization_enrollment_list_hides_other_organizations_participants(self):
+        other_course_program = CourseProgram.objects.create(
+            organization=self.other_organization,
+            title="Other Participant Program",
+            status=CourseProgramStatus.PUBLISHED,
+        )
+        Enrollment.objects.create(
+            user=self.regular_user,
+            course_program=other_course_program,
+            status="active",
+            progress_percent=25,
+        )
+
+        self.authenticate("org-courses@example.com", "StrongPass123!")
+        response = self.client.get(reverse("course-manage-enrollment-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
 
     def test_organization_cannot_use_learner_enrollment_endpoints(self):
         course_program = CourseProgram.objects.create(
