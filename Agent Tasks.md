@@ -946,125 +946,125 @@ At the end of this phase, organizations can publish events and opportunities, an
 ## Phase 9: Dashboards, Notifications, Moderation, and Governance
 
 Goal:
-At the end of this phase, each actor has a relevant dashboard, notifications support core flows, and admins can moderate users, content, and taxonomy.
+At the end of this phase, the existing role-specific workspaces at `/dashboard`, `/org`, and `/admin` are upgraded into live operational dashboards, notifications are unified across in-app, realtime, and email delivery, and admin governance extends the current review surfaces instead of introducing a parallel system.
 
 ### TASK-901: Implement Dashboard Aggregation Backend
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Backend
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/dashboard`, `/org`, `/admin`
-- **Files touched:** `backend/apps/dashboards/`, `backend/apps/common/`, `backend/config/urls.py`, `schema.yaml`
-- **Depends on:** `TASK-505`, `TASK-705`, `TASK-805`
-- **Spec:** `PRD.md` Sections `4.1`, `6.11`
-- **Setup reference:** N/A
+- **Files touched:** `backend/apps/dashboards/`, `backend/apps/courses/`, `backend/apps/events/`, `backend/apps/opportunities/`, `backend/apps/learning_sessions/`, `backend/apps/organizations/`, `backend/config/urls.py`, `schema.yaml`
+- **Depends on:** `TASK-505`, `TASK-705`, `TASK-805`, `TASK-809`, `TASK-810`
+- **Spec:** `PRD.md` Sections `4.1`, `6.11`; `ROLE_ACCESS_MATRIX.md`; `schema.yaml` dashboard endpoints when added
+- **Setup reference:** Reuse the existing role-separated workspace contract and keep aggregate payloads aligned with current course, event, application, session, and moderation records
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Live dashboard aggregates exist for regular users, organizations, and admins
 - **Blockers:** None
-- **Description:** Build the backend aggregate layer that turns live records into actor-specific dashboard data.
+- **Description:** Build the backend aggregate layer that turns live records into actor-specific dashboard data without replacing the current workspace model. Regular-user payloads should cover activity, progress, sessions, swaps, events, and recommendation-ready signals. Organization payloads should cover enrollments, learner progress, managed offerings, applicant pipeline, event participation, and course performance summaries. Admin payloads should cover oversight queues, moderation counts, trust/finance review state, and platform reporting summaries.
 
-### TASK-902: Build Actor Dashboard Frontend
+### TASK-902: Upgrade Existing Actor Dashboard Frontends
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Frontend
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/dashboard`, `/org`, `/admin`
-- **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/dashboard/`, `frontend/src/hooks/dashboard/`
-- **Depends on:** `TASK-901`
+- **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/dashboard/`, `frontend/src/hooks/dashboard/`, `frontend/src/components/shared/`
+- **Depends on:** `TASK-901`, `TASK-808`, `TASK-809`, `TASK-810`
 - **Spec:** `PRD.md` Sections `4.1`, `6.11`; `schema.yaml` dashboard endpoints when added
-- **Setup reference:** `recharts` and query foundations already documented in `frontend/FRONTEND_PRD_READY.md`
+- **Setup reference:** Reuse the existing `WorkspaceShell`, query stack, and dashboard route separation already established in the frontend; charting/query rationale remains in `frontend/FRONTEND_PRD_READY.md`
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Each primary actor has a meaningful dashboard backed by live records
 - **Blockers:** None
-- **Description:** Deliver the user, organization, and admin dashboard experiences using backend aggregate data.
+- **Description:** Upgrade the current role-specific workspaces instead of rebuilding them from scratch. The regular-user dashboard should stay focused on learning, swaps, sessions, opportunities, and events. The organization dashboard should present enrollments, student progress, managed courses, applicant pipeline, events, and performance highlights in a scalable layout. The admin dashboard should build on the existing review tabs and add live oversight summaries without exposing unrelated regular-user or organization flows.
 
-### TASK-903: Implement Notification Backend
+### TASK-903: Implement Unified Notification Backend
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Backend
 - **Actor(s):** Guest, Regular User, Organization, Admin
 - **Route(s):** `/verify-email`, `/login`, `/dashboard`, `/org`, `/admin`, `/messages`, `/skill-swap`, `/courses/:id`, `/events/:id`, `/jobs/:id`
-- **Files touched:** `backend/apps/notifications/`, `backend/apps/accounts/`, `backend/apps/messaging/`, `backend/config/urls.py`, `schema.yaml`
-- **Depends on:** `TASK-202`, `TASK-503`, `TASK-705`
+- **Files touched:** `backend/apps/notifications/`, `backend/apps/accounts/`, `backend/apps/messaging/`, `backend/apps/courses/`, `backend/apps/events/`, `backend/apps/opportunities/`, `backend/apps/swaps/`, `backend/apps/organizations/`, `backend/config/routing.py`, `backend/config/urls.py`, `schema.yaml`
+- **Depends on:** `TASK-202`, `TASK-404`, `TASK-405`, `TASK-503`, `TASK-705`, `TASK-810`
 - **Spec:** `PRD.md` Sections `4.1`, `6.4`, `6.11`
-- **Setup reference:** Celery/email rationale in `backend/BACKEND_SETUP.md`
+- **Setup reference:** Use the existing Resend email helper path for email delivery and the current websocket/realtime foundation for live in-app notification updates; see `backend/BACKEND_SETUP.md`
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Essential notification records and delivery triggers exist for core workflow events
 - **Blockers:** None
-- **Description:** Build the backend notification and alert layer for verification, messaging, session, enrollment, and system events.
+- **Description:** Build a real notification record layer instead of relying on isolated badges or one-off emails. Core flows should create stored notifications and, where appropriate, fan out through realtime and email using the existing Resend helper. Scope includes verification, swap actions, messaging/unread events, learning-session changes, enrollment/payment state changes, event RSVP/attendance changes, application pipeline changes, and admin-governance actions that users need to see.
 
-### TASK-904: Build Notification Frontend
+### TASK-904: Build Notification Frontend and App-Shell Surfaces
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Frontend
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/dashboard`, `/org`, `/admin`, `/messages`
-- **Files touched:** `frontend/src/stores/`, `frontend/src/components/shared/`, `frontend/src/features/dashboard/`, `frontend/src/services/`
+- **Files touched:** `frontend/src/stores/`, `frontend/src/components/layout/`, `frontend/src/components/shared/`, `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/`, `frontend/src/lib/realtime/`
 - **Depends on:** `TASK-903`, `TASK-902`
 - **Spec:** `PRD.md` Sections `4.1`, `6.11`; `schema.yaml` notification endpoints when added
-- **Setup reference:** `zustand` rationale in `frontend/FRONTEND_PRD_READY.md`
+- **Setup reference:** Reuse the existing `zustand` app-shell store and websocket client foundations instead of creating a second notification state system; see `frontend/FRONTEND_PRD_READY.md`
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Users can see essential notifications and status changes through app-visible surfaces
 - **Blockers:** None
-- **Description:** Implement notification visibility and client-side notification state handling using the shared store foundation.
+- **Description:** Surface notifications through the existing app shell and actor workspaces. This should extend the current unread badge model into a proper notification experience with counts, read state, deep links into the relevant workflow, and actor-relevant visibility in `/dashboard`, `/org`, and `/admin` without inventing disconnected UI patterns.
 
-### TASK-905: Implement Admin Moderation and Taxonomy Backend
+### TASK-905: Implement Admin Moderation, Taxonomy, and Suggestion Backend
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Backend
-- **Actor(s):** Admin
-- **Route(s):** `/admin`
-- **Files touched:** `backend/apps/taxonomy/`, `backend/apps/accounts/`, `backend/apps/organizations/`, `backend/apps/audit/`, `backend/config/urls.py`, `schema.yaml`
-- **Depends on:** `TASK-206`, `TASK-601`
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/profile`, `/skill-portfolio`, `/organization-profile`, `/course-builder`, `/org`, `/admin`
+- **Files touched:** `backend/apps/taxonomy/`, `backend/apps/accounts/`, `backend/apps/organizations/`, `backend/apps/skills/`, `backend/apps/events/`, `backend/apps/opportunities/`, `backend/apps/audit/`, `backend/config/urls.py`, `schema.yaml`
+- **Depends on:** `TASK-206`, `TASK-601`, `TASK-810`
 - **Spec:** `PRD.md` Sections `5.4`, `6.12`
-- **Setup reference:** N/A
+- **Setup reference:** Extend the current admin review model already used for verification, finance, and event oversight so governance remains centralized in `/admin`
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Admin moderation, category suggestion review, and category activation controls exist server-side
 - **Blockers:** None
-- **Description:** Build the backend admin governance tools for accounts, content, and controlled category lists.
+- **Description:** Build the backend governance layer for admin review of accounts, organizations, publishable content, and controlled category lists. This phase should also add user- and organization-submitted category suggestion flows that remain inactive until approved, plus server-side controls for disabling or reviewing problematic records without breaking actor separation.
 
 ### TASK-906: Build Admin Moderation and Category Governance UI
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Frontend
 - **Actor(s):** Admin
 - **Route(s):** `/admin`
-- **Files touched:** `frontend/src/features/organizations/`, `frontend/src/features/dashboard/`, `frontend/src/services/organizations/`, `frontend/src/services/dashboard/`
+- **Files touched:** `frontend/src/features/organizations/`, `frontend/src/features/dashboard/`, `frontend/src/services/organizations/`, `frontend/src/services/dashboard/`, `frontend/src/services/`, `frontend/src/components/shared/`
 - **Depends on:** `TASK-905`, `TASK-902`
 - **Spec:** `PRD.md` Sections `5.4`, `6.12`; `schema.yaml` moderation/category endpoints when added
-- **Setup reference:** N/A
+- **Setup reference:** Build inside the existing admin workspace and tab system rather than creating a second admin surface
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Admins can review, approve, reject, disable, and manage the governance surfaces required by V1
 - **Blockers:** None
-- **Description:** Deliver the frontend moderation and category-approval experience for admin operators.
+- **Description:** Extend `/admin` with moderation and taxonomy governance surfaces that fit the existing review workspace. This includes admin handling for category suggestions, problematic content/account review, and status-management actions while preserving the strict separation between admin tools and organization/regular-user workflows.
 
-### TASK-907: Implement Audit-Friendly Logging Backend
+### TASK-907: Expand Audit Logging and Review APIs
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Backend
 - **Actor(s):** Admin
 - **Route(s):** `/admin`
-- **Files touched:** `backend/apps/audit/`, `backend/apps/common/`, `backend/config/urls.py`, `schema.yaml`
+- **Files touched:** `backend/apps/audit/`, `backend/apps/accounts/`, `backend/apps/organizations/`, `backend/apps/events/`, `backend/apps/opportunities/`, `backend/apps/payments/`, `backend/apps/common/`, `backend/config/urls.py`, `schema.yaml`
 - **Depends on:** `TASK-905`
 - **Spec:** `PRD.md` Sections `6.12`, `7.4`
-- **Setup reference:** N/A
+- **Setup reference:** Build on the existing `apps.audit` model and current audit hooks already used for verification and event oversight
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Key administrative and security-sensitive actions are logged with reviewable records
 - **Blockers:** None
-- **Description:** Build the audit layer required for admin oversight and trustworthy operational records.
+- **Description:** Expand the existing audit foundation into a reviewable backend audit system with filterable endpoints and broader coverage of sensitive actions. At minimum, moderation decisions, verification/finance actions, event oversight, payment-sensitive admin actions, and taxonomy approvals should be logged consistently and queryable from the admin workspace.
 
 ### TASK-908: Expose Audit and Oversight UI
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Frontend
 - **Actor(s):** Admin
 - **Route(s):** `/admin`
-- **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/services/dashboard/`, `frontend/src/components/shared/`
+- **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/dashboard/`, `frontend/src/components/shared/`
 - **Depends on:** `TASK-907`, `TASK-906`
 - **Spec:** `PRD.md` Sections `5.4`, `6.12`; `schema.yaml` audit endpoints when added
-- **Setup reference:** N/A
+- **Setup reference:** Extend the existing admin dashboard rather than creating a detached audit screen
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Admin-facing oversight views expose the audit and moderation information needed by V1
 - **Blockers:** None
-- **Description:** Finish Phase 9 by surfacing operational records and moderation history in the admin-facing frontend.
+- **Description:** Finish Phase 9 by surfacing audit history, moderation outcomes, and governance activity inside `/admin`. The result should let admins inspect what happened, who acted, and what changed without leaving the existing oversight workspace.
 
 ### Phase 9 Definition of Done
 
-- Actor dashboards are live-data driven.
-- Essential notifications exist.
-- Admin moderation, taxonomy governance, and audit logging are operational.
+- The existing actor workspaces at `/dashboard`, `/org`, and `/admin` are live-data driven rather than stitched together from isolated fetches.
+- Essential notifications exist as stored in-app records, integrate with the existing realtime shell behavior, and use the Resend helper for email delivery where the workflow requires email.
+- Admin moderation, taxonomy governance, and audit logging are operational inside the existing admin workspace.
 
 ### Phase 9 Known Blockers / Risks
 
