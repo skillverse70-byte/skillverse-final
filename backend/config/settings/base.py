@@ -112,6 +112,7 @@ INSTALLED_APPS = [
     "apps.skills",
     "apps.swaps",
     "apps.messaging",
+    "apps.notifications",
     "apps.sessions",
     "apps.dashboards",
     "apps.courses",
@@ -287,6 +288,7 @@ SPECTACULAR_SETTINGS = {
         "OpportunityTypeEnum": "apps.common.enums.OpportunityType",
         "OpportunityStatusEnum": "apps.common.enums.OpportunityStatus",
         "JobApplicationStatusEnum": "apps.common.enums.JobApplicationStatus",
+        "NotificationTypeEnum": "apps.common.enums.NotificationType",
     },
 }
 

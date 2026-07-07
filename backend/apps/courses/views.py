@@ -404,6 +404,11 @@ class RegularUserCourseEnrollmentCreateView(GenericAPIView):
             defaults={"status": "active"},
         )
         sync_enrollment_state(enrollment)
+        if created:
+            from django.db import transaction
+            from apps.notifications.services import notify_enrollment_activated
+
+            transaction.on_commit(lambda: notify_enrollment_activated(enrollment))
         with_absolute_enrollment_content(request, enrollment)
         serializer = self.get_serializer(enrollment)
         return Response(

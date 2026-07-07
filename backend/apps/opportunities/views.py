@@ -271,6 +271,9 @@ class RegularUserApplicationCreateView(GenericAPIView):
         if not created:
             raise ValidationError({"detail": "You have already applied to this opportunity."})
 
+        from apps.notifications.services import notify_job_application_created
+
+        transaction.on_commit(lambda: notify_job_application_created(application))
         response_serializer = JobApplicationSummarySerializer(application)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -328,5 +331,8 @@ class OrganizationApplicationDetailView(GenericAPIView):
         application.reviewed_at = timezone.now()
         application.save(update_fields=["status", "reviewer_notes", "reviewed_at", "updated_at"])
 
+        from apps.notifications.services import notify_job_application_updated
+
+        transaction.on_commit(lambda: notify_job_application_updated(application))
         response_serializer = ApplicantSummarySerializer(application)
         return Response(response_serializer.data, status=status.HTTP_200_OK)

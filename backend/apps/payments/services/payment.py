@@ -122,6 +122,7 @@ class ChapaPaymentService:
         )
 
     def reconcile_transaction(self, payment_transaction):
+        previous_status = payment_transaction.status
         response = self.verify_payment(payment_transaction.tx_ref)
         data = response.get("data") or {}
         payment_transaction.last_verified_at = timezone.now()
@@ -156,7 +157,10 @@ class ChapaPaymentService:
         if payment_transaction.status == PaymentTransactionStatus.SUCCEEDED:
             payment_transaction.verified_at = payment_transaction.verified_at or timezone.now()
         payment_transaction.save()
-        if payment_transaction.status == PaymentTransactionStatus.SUCCEEDED:
+        if (
+            payment_transaction.status == PaymentTransactionStatus.SUCCEEDED
+            and previous_status != PaymentTransactionStatus.SUCCEEDED
+        ):
             self._activate_paid_enrollment(payment_transaction)
         return payment_transaction
 

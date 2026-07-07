@@ -137,6 +137,7 @@ def create_thread_message(
     )
     thread.save(update_fields=["updated_at"])
     transaction.on_commit(lambda: broadcast_thread_message_created(message.id))
+    transaction.on_commit(lambda: notify_thread_message_created(message.id))
     return message
 
 
@@ -205,3 +206,23 @@ def broadcast_unread_summary_for_user(user, *, channel_layer=None):
             "summary": payload,
         },
     )
+
+
+def notify_thread_message_created(message_id):
+    try:
+        message = (
+            ThreadMessage.objects.select_related(
+                "thread",
+                "thread__swap_request",
+                "thread__swap_request__requester",
+                "thread__swap_request__recipient",
+                "sender",
+            )
+            .get(id=message_id)
+        )
+    except ThreadMessage.DoesNotExist:
+        return
+
+    from apps.notifications.services import notify_thread_message_created as create_message_notification
+
+    create_message_notification(message)

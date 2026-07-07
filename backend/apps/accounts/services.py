@@ -62,6 +62,9 @@ def send_password_reset_email(user, action_token):
 def issue_verification_token(user):
     action_token = AccountActionToken.issue_email_verification(user)
     send_verification_email(user, action_token)
+    from apps.notifications.services import notify_email_verification_issued
+
+    notify_email_verification_issued(user)
     return action_token
 
 

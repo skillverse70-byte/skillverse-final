@@ -93,6 +93,7 @@ def calculate_progression_state(enrollment):
 
 
 def sync_enrollment_state(enrollment):
+    previous_status = enrollment.status
     state = calculate_progression_state(enrollment)
     enrollment.progress_percent = state["progress_percent"]
 
@@ -105,6 +106,11 @@ def sync_enrollment_state(enrollment):
         enrollment.completed_at = None
 
     enrollment.save(update_fields=["progress_percent", "status", "completed_at", "updated_at"])
+    if (
+        previous_status != EnrollmentStatus.COMPLETED
+        and enrollment.status == EnrollmentStatus.COMPLETED
+    ):
+        transaction.on_commit(lambda: notify_course_completed(enrollment.id))
     return state
 
 
@@ -126,6 +132,9 @@ def activate_paid_enrollment(payment_transaction):
         )
 
     sync_enrollment_state(enrollment)
+    transaction.on_commit(
+        lambda: notify_paid_enrollment_activated(enrollment.id, payment_transaction.id)
+    )
     return enrollment
 
 
@@ -157,3 +166,38 @@ def complete_lesson_for_enrollment(enrollment, lesson_item):
     )
 
     return sync_enrollment_state(enrollment)
+
+
+def notify_paid_enrollment_activated(enrollment_id, payment_transaction_id):
+    enrollment = (
+        Enrollment.objects.select_related(
+            "user",
+            "course_program",
+            "course_program__organization",
+            "course_program__organization__owner",
+        )
+        .filter(id=enrollment_id)
+        .first()
+    )
+    if enrollment is None:
+        return
+
+    from apps.notifications.services import notify_enrollment_activated
+    from apps.payments.models import PaymentTransaction
+
+    payment_transaction = PaymentTransaction.objects.filter(id=payment_transaction_id).first()
+    notify_enrollment_activated(enrollment, payment_transaction=payment_transaction)
+
+
+def notify_course_completed(enrollment_id):
+    enrollment = (
+        Enrollment.objects.select_related("user", "course_program")
+        .filter(id=enrollment_id)
+        .first()
+    )
+    if enrollment is None:
+        return
+
+    from apps.notifications.services import notify_course_completed as create_completion_notification
+
+    create_completion_notification(enrollment)

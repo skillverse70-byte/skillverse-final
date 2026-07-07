@@ -1,0 +1,16 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<p style="margin:0 0 16px;">Hello {{ greeting_name }},</p>
+<p style="margin:0 0 16px;">{{ headline }}</p>
+{% for body_line in body_lines %}
+<p style="margin:0 0 16px;color:#475569;">{{ body_line }}</p>
+{% endfor %}
+{% if action_url %}
+<p style="margin:0 0 16px;">
+    <a href="{{ action_url }}" style="display:inline-block;padding:12px 18px;background-color:#0f172a;border-radius:8px;color:#ffffff;text-decoration:none;font-weight:700;">
+        {{ action_label }}
+    </a>
+</p>
+{% endif %}
+{% endblock %}

@@ -144,6 +144,9 @@ class AdminFinancialAccountDecisionView(GenericAPIView):
             else None
         )
         financial_account.save()
+        from apps.notifications.services import notify_financial_account_reviewed
+
+        notify_financial_account_reviewed(financial_account)
         return Response(
             AdminFinancialAccountSerializer(financial_account).data,
             status=status.HTTP_200_OK,

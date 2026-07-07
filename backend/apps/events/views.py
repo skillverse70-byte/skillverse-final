@@ -301,6 +301,9 @@ class OrganizationEventAttendeeDetailView(GenericAPIView):
             attendee.attended_at = None
 
         attendee.save(update_fields=["status", "attended_at", "updated_at"])
+        from apps.notifications.services import notify_event_attendance_updated
+
+        transaction.on_commit(lambda: notify_event_attendance_updated(attendee))
         response_serializer = EventAttendeeSummarySerializer(attendee)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
@@ -383,6 +386,9 @@ class AdminEventOversightDecisionView(GenericAPIView):
         )
 
         refreshed = admin_event_queryset().filter(pk=event.pk).first() or event
+        from apps.notifications.services import notify_event_admin_review
+
+        transaction.on_commit(lambda: notify_event_admin_review(event))
         return Response(
             AdminEventOversightSerializer(refreshed).data,
             status=status.HTTP_200_OK,
@@ -459,5 +465,8 @@ class RegularUserRSVPView(GenericAPIView):
                 rsvp.attended_at = None
             rsvp.save(update_fields=["status", "attended_at", "updated_at"])
 
+        from apps.notifications.services import notify_event_rsvp_changed
+
+        transaction.on_commit(lambda: notify_event_rsvp_changed(rsvp, created=created))
         response_serializer = EventRSVPSummarySerializer(rsvp)
         return Response(response_serializer.data, status=status.HTTP_200_OK)

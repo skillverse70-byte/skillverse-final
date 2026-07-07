@@ -67,4 +67,9 @@ def review_organization_verification_request(
         },
     )
 
+    from apps.notifications.services import notify_organization_verification_reviewed
+
+    transaction.on_commit(
+        lambda: notify_organization_verification_reviewed(verification_request)
+    )
     return verification_request

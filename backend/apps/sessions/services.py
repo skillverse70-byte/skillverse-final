@@ -44,7 +44,7 @@ def create_learning_session(
     if swap_request.status != SkillSwapStatus.ACCEPTED:
         raise ValueError("Learning sessions can only be created for accepted swap requests.")
 
-    return LearningSession.objects.create(
+    session = LearningSession.objects.create(
         swap_request=swap_request,
         created_by=created_by,
         title=title.strip(),
@@ -57,12 +57,12 @@ def create_learning_session(
         location_note=location_note,
         metadata=metadata or {},
     )
+    transaction.on_commit(lambda: notify_learning_session_created(session.id))
+    return session
 
 
 @transaction.atomic
 def update_learning_session(session, updated_by, **changes):
-    del updated_by
-
     for field_name, value in changes.items():
         setattr(session, field_name, value)
 
@@ -88,5 +88,48 @@ def update_learning_session(session, updated_by, **changes):
 
     update_fields.add("updated_at")
     session.save(update_fields=list(update_fields))
+    transaction.on_commit(lambda: notify_learning_session_updated(session.id, updated_by.id))
     return session
 
+
+def notify_learning_session_created(session_id):
+    session = (
+        LearningSession.objects.select_related(
+            "created_by",
+            "swap_request",
+            "swap_request__requester",
+            "swap_request__recipient",
+            "swap_request__message_thread",
+        )
+        .filter(id=session_id)
+        .first()
+    )
+    if session is None:
+        return
+
+    from apps.notifications.services import notify_learning_session_created as create_session_notification
+
+    create_session_notification(session)
+
+
+def notify_learning_session_updated(session_id, updated_by_id):
+    session = (
+        LearningSession.objects.select_related(
+            "swap_request",
+            "swap_request__requester",
+            "swap_request__recipient",
+            "swap_request__message_thread",
+        )
+        .filter(id=session_id)
+        .first()
+    )
+    if session is None:
+        return
+
+    updated_by = session.swap_request.requester
+    if updated_by.id != updated_by_id:
+        updated_by = session.swap_request.recipient
+
+    from apps.notifications.services import notify_learning_session_updated as create_session_update_notification
+
+    create_session_update_notification(session, updated_by=updated_by)

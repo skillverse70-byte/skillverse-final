@@ -369,6 +369,9 @@ def notify_swap_request_created(swap_request_id):
             SkillSwapRequest.objects.select_related("requester", "recipient")
             .get(id=swap_request_id)
         )
+        from apps.notifications.services import notify_swap_request_created as create_swap_notification
+
+        create_swap_notification(swap_request)
         send_swap_request_notification_email(swap_request)
     except Exception:
         logger.exception(
@@ -383,7 +386,11 @@ def notify_swap_request_transition(swap_request_id):
             SkillSwapRequest.objects.select_related("requester", "recipient")
             .get(id=swap_request_id)
         )
-        send_swap_response_notification_email(swap_request)
+        from apps.notifications.services import notify_swap_request_transition as create_swap_transition_notification
+
+        create_swap_transition_notification(swap_request)
+        if swap_request.status in (SkillSwapStatus.ACCEPTED, SkillSwapStatus.REJECTED):
+            send_swap_response_notification_email(swap_request)
     except Exception:
         logger.exception(
             "Failed to send swap response notification email for swap_request_id=%s",
@@ -470,6 +477,5 @@ def transition_swap_request(*, swap_request, changed_by, to_status, note=""):
         to_status=to_status,
         note=note,
     )
-    if to_status in (SkillSwapStatus.ACCEPTED, SkillSwapStatus.REJECTED):
-        transaction.on_commit(lambda: notify_swap_request_transition(swap_request.id))
+    transaction.on_commit(lambda: notify_swap_request_transition(swap_request.id))
     return swap_request
