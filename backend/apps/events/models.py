@@ -21,6 +21,19 @@ class Event(models.Model):
     max_attendees = models.PositiveIntegerField(null=True, blank=True)
     rsvp_open = models.BooleanField(default=True)
     tags = models.JSONField(default=list, blank=True)
+    field_signals = models.JSONField(default=list, blank=True)
+    related_skills = models.JSONField(default=list, blank=True)
+    related_course_ids = models.JSONField(default=list, blank=True)
+    participation_signals = models.JSONField(default=list, blank=True)
+    admin_review_notes = models.TextField(blank=True)
+    admin_reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_events",
+    )
+    admin_reviewed_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(
         max_length=16,
         choices=EventStatus.choices,

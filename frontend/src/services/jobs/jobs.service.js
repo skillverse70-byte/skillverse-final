@@ -1,4 +1,5 @@
 import { apiRequest, ApiError } from "@/lib/http-client";
+import { normalizeRelevanceSignals } from "@/lib/relevance-signals";
 import { authenticatedApiRequest } from "@/services/auth/backend-auth-client";
 
 function normalizeOrganization(organization) {
@@ -41,8 +42,21 @@ function normalizeOpportunity(opportunity) {
     field_signals: Array.isArray(opportunity.field_signals)
       ? opportunity.field_signals
       : [],
+    related_course_ids: Array.isArray(opportunity.related_course_ids)
+      ? opportunity.related_course_ids
+      : [],
+    verified_activity_signals: Array.isArray(opportunity.verified_activity_signals)
+      ? opportunity.verified_activity_signals
+      : [],
     application_count: opportunity.application_count ?? 0,
     viewer_application_status: opportunity.viewer_application_status || null,
+    relevance_signals: normalizeRelevanceSignals(opportunity.relevance_signals, {
+      fields: opportunity.field_signals,
+      skills: opportunity.required_skills,
+      courses: opportunity.related_course_ids,
+      participationSignals: opportunity.verified_activity_signals,
+      organizationVerificationStatus: organization?.verification_status,
+    }),
   };
 }
 
@@ -57,6 +71,7 @@ function normalizeApplication(application) {
     cover_letter: application.cover_letter || "",
     reviewer_notes: application.reviewer_notes || "",
     deadline: application.deadline || null,
+    relevance_signals: normalizeRelevanceSignals(application.relevance_signals),
   };
 }
 
@@ -76,6 +91,7 @@ function normalizeApplicant(application) {
       title: application.opportunity?.title || "",
       type: application.opportunity?.type || "job",
     },
+    relevance_signals: normalizeRelevanceSignals(application.relevance_signals),
   };
 }
 

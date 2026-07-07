@@ -1,14 +1,20 @@
 from django.db import transaction
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import permissions, status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 
+from apps.audit.services import record_audit_log
 from apps.common.enums import EventStatus, RSVPStatus
-from apps.common.permissions import IsOrganizationActor, IsRegularUser
+from apps.common.permissions import IsAdminActor, IsOrganizationActor, IsRegularUser
 from apps.events.models import Event, EventRSVP
 from apps.events.serializers import (
+    AdminEventOversightDecisionSerializer,
+    AdminEventOversightSerializer,
+    EventAttendeeSummarySerializer,
+    EventAttendeeUpdateSerializer,
     EventDetailSerializer,
     EventRSVPSummarySerializer,
     EventRSVPWriteSerializer,
@@ -27,6 +33,12 @@ def organization_event_queryset(user):
     return annotate_event_queryset(Event.objects.filter(organization__owner=user))
 
 
+def admin_event_queryset():
+    return annotate_event_queryset(
+        Event.objects.select_related("organization", "organization__owner", "admin_reviewed_by")
+    )
+
+
 def with_viewer_rsvp(event, user):
     if getattr(user, "is_authenticated", False):
         event._viewer_rsvp = EventRSVP.objects.filter(event=event, user=user).first()
@@ -39,6 +51,21 @@ def rsvp_queryset_for_user(user):
         .select_related("event", "event__organization")
         .order_by("event__starts_at", "-updated_at", "-id")
     )
+
+
+def organization_attendee_queryset(user):
+    return (
+        EventRSVP.objects.filter(event__organization__owner=user)
+        .select_related("user", "event", "event__organization")
+        .order_by("event__starts_at", "-updated_at", "-id")
+    )
+
+
+def organization_event_for_user(user, event_id):
+    event = organization_event_queryset(user).filter(pk=event_id).first()
+    if event is None:
+        raise NotFound("Event was not found.")
+    return event
 
 
 @extend_schema_view(
@@ -107,6 +134,8 @@ class OrganizationEventListCreateView(GenericAPIView):
         return Organization.objects.get(owner=self.request.user)
 
     def serialize_event(self, instance, many=False):
+        if not many:
+            instance = organization_event_queryset(self.request.user).filter(pk=instance.pk).first() or instance
         return EventDetailSerializer(
             instance,
             many=many,
@@ -183,11 +212,181 @@ class OrganizationEventDetailView(RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         event = serializer.save()
+        event = organization_event_queryset(request.user).filter(pk=event.pk).first() or event
         response_serializer = EventDetailSerializer(
             event,
             context={"request": request, "include_meeting_url": True},
         )
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+    def perform_destroy(self, instance):
+        if instance.rsvps.exists():
+            raise ValidationError(
+                {
+                    "detail": (
+                        "This event already has attendee records. Cancel or complete the event "
+                        "instead of deleting it."
+                    )
+                }
+            )
+        instance.delete()
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["events"],
+        operation_id="events_manage_attendees_list",
+        responses={200: EventAttendeeSummarySerializer(many=True)},
+    )
+)
+class OrganizationEventAttendeeListView(ListAPIView):
+    serializer_class = EventAttendeeSummarySerializer
+    permission_classes = [permissions.IsAuthenticated, IsOrganizationActor]
+
+    def get_queryset(self):
+        event = organization_event_for_user(self.request.user, self.kwargs["pk"])
+        queryset = organization_attendee_queryset(self.request.user).filter(event=event)
+        status_value = self.request.query_params.get("status")
+        attended = self.request.query_params.get("attended")
+
+        if status_value:
+            queryset = queryset.filter(status=status_value)
+        if attended is not None:
+            normalized = attended.strip().lower()
+            if normalized in {"true", "1", "yes"}:
+                queryset = queryset.filter(attended_at__isnull=False)
+            elif normalized in {"false", "0", "no"}:
+                queryset = queryset.filter(attended_at__isnull=True)
+        return queryset
+
+
+@extend_schema_view(
+    patch=extend_schema(
+        tags=["events"],
+        operation_id="events_manage_attendees_update",
+        request=EventAttendeeUpdateSerializer,
+        responses={200: EventAttendeeSummarySerializer},
+    )
+)
+class OrganizationEventAttendeeDetailView(GenericAPIView):
+    serializer_class = EventAttendeeUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOrganizationActor]
+
+    def get_object(self):
+        event = organization_event_for_user(self.request.user, self.kwargs["pk"])
+        attendee = organization_attendee_queryset(self.request.user).filter(
+            event=event,
+            id=self.kwargs["attendee_pk"],
+        ).first()
+        if attendee is None:
+            raise NotFound("Attendee record was not found.")
+        return attendee
+
+    @transaction.atomic
+    def patch(self, request, pk, attendee_pk):
+        attendee = self.get_object()
+        serializer = self.get_serializer(data=request.data or {})
+        serializer.is_valid(raise_exception=True)
+
+        next_status = serializer.validated_data.get("status", attendee.status)
+        mark_attended = serializer.validated_data.get("attended", None)
+
+        if mark_attended is True and next_status != RSVPStatus.GOING:
+            raise ValidationError({"attended": "Only attendees with Going status can be marked as attended."})
+
+        attendee.status = next_status
+        if mark_attended is True:
+            attendee.attended_at = attendee.attended_at or timezone.now()
+        elif mark_attended is False or next_status != RSVPStatus.GOING:
+            attendee.attended_at = None
+
+        attendee.save(update_fields=["status", "attended_at", "updated_at"])
+        response_serializer = EventAttendeeSummarySerializer(attendee)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["events", "admin"],
+        operation_id="events_admin_list",
+        responses={200: AdminEventOversightSerializer(many=True)},
+    )
+)
+class AdminEventOversightListView(ListAPIView):
+    serializer_class = AdminEventOversightSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminActor]
+
+    def get_queryset(self):
+        queryset = admin_event_queryset()
+        status_value = self.request.query_params.get("status")
+        organization_id = self.request.query_params.get("organization_id")
+        verification_status = self.request.query_params.get("verification_status")
+        if status_value:
+            queryset = queryset.filter(status=status_value)
+        if organization_id:
+            queryset = queryset.filter(organization_id=organization_id)
+        if verification_status:
+            queryset = queryset.filter(organization__verification_status=verification_status)
+        return queryset
+
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=["events", "admin"],
+        operation_id="events_admin_decision",
+        request=AdminEventOversightDecisionSerializer,
+        responses={200: AdminEventOversightSerializer},
+    )
+)
+class AdminEventOversightDecisionView(GenericAPIView):
+    serializer_class = AdminEventOversightDecisionSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminActor]
+
+    def post(self, request, pk):
+        event = admin_event_queryset().filter(pk=pk).first()
+        if event is None:
+            raise NotFound("Event was not found.")
+
+        serializer = self.get_serializer(data=request.data or {})
+        serializer.is_valid(raise_exception=True)
+
+        if "status" in serializer.validated_data:
+            event.status = serializer.validated_data["status"]
+        if "rsvp_open" in serializer.validated_data:
+            event.rsvp_open = serializer.validated_data["rsvp_open"]
+        if "review_notes" in serializer.validated_data:
+            event.admin_review_notes = serializer.validated_data.get("review_notes", "")
+        event.admin_reviewed_by = request.user
+        event.admin_reviewed_at = timezone.now()
+        event.save(
+            update_fields=[
+                "status",
+                "rsvp_open",
+                "admin_review_notes",
+                "admin_reviewed_by",
+                "admin_reviewed_at",
+                "updated_at",
+            ]
+        )
+
+        record_audit_log(
+            actor=request.user,
+            action="event.admin.reviewed",
+            target_type="event",
+            target_id=event.id,
+            summary=f"Admin reviewed event {event.title}.",
+            metadata={
+                "status": event.status,
+                "rsvp_open": event.rsvp_open,
+                "review_notes": event.admin_review_notes,
+            },
+        )
+
+        refreshed = admin_event_queryset().filter(pk=event.pk).first() or event
+        return Response(
+            AdminEventOversightSerializer(refreshed).data,
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema_view(

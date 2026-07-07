@@ -20,8 +20,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FinancialAccountSetupCard from "@/features/organizations/components/FinancialAccountSetupCard";
 import OrganizationApplicantPipelinePanel from "@/features/organizations/components/OrganizationApplicantPipelinePanel";
+import OrganizationEventManagementPanel from "@/features/organizations/components/OrganizationEventManagementPanel";
 import OrganizationEnrollmentPanel from "@/features/organizations/components/OrganizationEnrollmentPanel";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  createOrganizationEvent,
+  deleteOrganizationEvent,
+  fetchOrganizationEvents,
+  updateOrganizationEvent,
+} from "@/services/events/events.service";
 import {
   createOrganizationOpportunity,
   fetchOrganizationApplications,
@@ -40,6 +47,7 @@ export default function OrgManagementPage() {
   const [financialAccount, setFinancialAccount] = useState(null);
   const [courses, setCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
+  const [events, setEvents] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,8 +60,9 @@ export default function OrgManagementPage() {
 
     const load = async () => {
       try {
-        const [data, nextOpportunities, nextApplications] = await Promise.all([
+        const [data, nextEvents, nextOpportunities, nextApplications] = await Promise.all([
           fetchOrganizationManagementData(),
+          fetchOrganizationEvents(),
           fetchOrganizationOpportunities(),
           fetchOrganizationApplications(),
         ]);
@@ -63,6 +72,7 @@ export default function OrgManagementPage() {
           setFinancialAccount(data.financialAccount);
           setCourses(data.courses || []);
           setEnrollments(data.enrollments || []);
+          setEvents(nextEvents || []);
           setOpportunities(nextOpportunities || []);
           setApplications(nextApplications || []);
         }
@@ -126,8 +136,29 @@ export default function OrgManagementPage() {
   const verified = organization.verification_status === "verified";
   const financeReady = financialAccount?.status === "ready";
   const completedLearners = enrollments.filter((item) => item.status === "completed").length;
+  const totalEventRsvps = events.reduce((sum, item) => sum + Number(item.total_rsvp_count || 0), 0);
   const totalApplicants = applications.length;
   const hiredApplicants = applications.filter((item) => item.status === "hired").length;
+
+  const upsertEvent = (nextEvent) => {
+    setEvents((current) => {
+      const exists = current.some((item) => item.id === nextEvent.id);
+      if (!exists) {
+        return [nextEvent, ...current];
+      }
+      return current.map((item) => (item.id === nextEvent.id ? nextEvent : item));
+    });
+  };
+
+  const removeEvent = (eventId) => {
+    setEvents((current) => current.filter((item) => item.id !== eventId));
+  };
+
+  const refreshEvents = async () => {
+    const nextEvents = await fetchOrganizationEvents();
+    setEvents(nextEvents || []);
+    return nextEvents || [];
+  };
 
   const upsertOpportunity = (nextOpportunity) => {
     setOpportunities((current) => {
@@ -199,6 +230,65 @@ export default function OrgManagementPage() {
       toast({
         title: "Unable to update applicant",
         description: error?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleCreateEvent = async (payload) => {
+    try {
+      const nextEvent = await createOrganizationEvent(payload);
+      upsertEvent(nextEvent);
+      toast({
+        title: "Event created",
+        description: "The event is now available in your organization workspace.",
+      });
+      return nextEvent;
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Unable to create event",
+        description: error?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleUpdateEvent = async (eventId, payload) => {
+    try {
+      const nextEvent = await updateOrganizationEvent(eventId, payload);
+      upsertEvent(nextEvent);
+      toast({
+        title: "Event updated",
+        description: "Your event changes were saved.",
+      });
+      return nextEvent;
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Unable to update event",
+        description: error?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    try {
+      await deleteOrganizationEvent(eventId);
+      removeEvent(eventId);
+      toast({
+        title: "Event deleted",
+        description: "The event was removed from your workspace.",
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Unable to delete event",
+        description: error?.message || "This event may already have attendee records.",
         variant: "destructive",
       });
       throw error;
@@ -319,9 +409,11 @@ export default function OrgManagementPage() {
             <div className="grid grid-cols-3 gap-3 text-center">
               <QuickMetric label="Learners" value={enrollments.length} />
               <QuickMetric label="Courses" value={courses.length} />
-              <QuickMetric label="Completed" value={completedLearners} />
+              <QuickMetric label="Events" value={events.length} />
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-3 text-center">
+            <div className="mt-3 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
+              <QuickMetric label="Completed" value={completedLearners} />
+              <QuickMetric label="Event RSVPs" value={totalEventRsvps} />
               <QuickMetric label="Applicants" value={totalApplicants} />
               <QuickMetric label="Hired" value={hiredApplicants} />
             </div>
@@ -407,10 +499,12 @@ export default function OrgManagementPage() {
           </TabsContent>
 
           <TabsContent value="events">
-            <EmptyState
-              icon={Calendar}
-              title="Event management is coming next"
-              description="Organization events will appear here when the event publishing phase is active."
+            <OrganizationEventManagementPanel
+              events={events}
+              onCreateEvent={handleCreateEvent}
+              onUpdateEvent={handleUpdateEvent}
+              onDeleteEvent={handleDeleteEvent}
+              onRefreshEvents={refreshEvents}
             />
           </TabsContent>
 

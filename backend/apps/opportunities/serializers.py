@@ -10,6 +10,59 @@ from apps.opportunities.models import JobApplication, Opportunity
 from apps.organizations.models import Organization
 
 
+def _clean_string_list(values):
+    if not isinstance(values, list):
+        return []
+
+    cleaned = []
+    seen = set()
+    for value in values:
+        text = str(value).strip()
+        if not text:
+            continue
+        key = text.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(text)
+    return cleaned
+
+
+def _clean_int_list(values):
+    if not isinstance(values, list):
+        return []
+
+    cleaned = []
+    seen = set()
+    for value in values:
+        try:
+            normalized = int(value)
+        except (TypeError, ValueError):
+            continue
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        cleaned.append(normalized)
+    return cleaned
+
+
+def build_opportunity_relevance_signals(opportunity):
+    return {
+        "fields": _clean_string_list(getattr(opportunity, "field_signals", [])),
+        "skills": _clean_string_list(getattr(opportunity, "required_skills", [])),
+        "courses": _clean_int_list(getattr(opportunity, "related_course_ids", [])),
+        "participation": {
+            "signals": _clean_string_list(getattr(opportunity, "verified_activity_signals", [])),
+            "application_count": int(getattr(opportunity, "application_count", 0) or 0),
+        },
+        "organization_verification_status": getattr(
+            getattr(opportunity, "organization", None),
+            "verification_status",
+            "unverified",
+        ),
+    }
+
+
 class OpportunityOrganizationSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
@@ -21,6 +74,7 @@ class OpportunitySummarySerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source="organization.name", read_only=True)
     application_count = serializers.IntegerField(read_only=True)
     viewer_application_status = serializers.SerializerMethodField()
+    relevance_signals = serializers.SerializerMethodField()
 
     class Meta:
         model = Opportunity
@@ -40,8 +94,11 @@ class OpportunitySummarySerializer(serializers.ModelSerializer):
             "deadline",
             "required_skills",
             "field_signals",
+            "related_course_ids",
+            "verified_activity_signals",
             "application_count",
             "viewer_application_status",
+            "relevance_signals",
             "created_at",
             "updated_at",
         ]
@@ -60,6 +117,10 @@ class OpportunitySummarySerializer(serializers.ModelSerializer):
                 user=request.user,
             ).first()
         return viewer_application.status if viewer_application else None
+
+    @extend_schema_field(serializers.JSONField())
+    def get_relevance_signals(self, obj):
+        return build_opportunity_relevance_signals(obj)
 
 
 class OpportunityDetailSerializer(OpportunitySummarySerializer):
@@ -83,6 +144,8 @@ class OpportunityWriteSerializer(serializers.ModelSerializer):
             "deadline",
             "required_skills",
             "field_signals",
+            "related_course_ids",
+            "verified_activity_signals",
         ]
         read_only_fields = ["id"]
 
@@ -95,6 +158,12 @@ class OpportunityWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"deadline": "Deadline cannot be in the past."})
         if not is_remote and not location:
             raise serializers.ValidationError({"location": "Location is required unless the role is remote."})
+
+        for list_field in ["required_skills", "field_signals", "verified_activity_signals"]:
+            if list_field in attrs:
+                attrs[list_field] = _clean_string_list(attrs.get(list_field))
+        if "related_course_ids" in attrs:
+            attrs["related_course_ids"] = _clean_int_list(attrs.get("related_course_ids"))
         return attrs
 
     def create(self, validated_data):
@@ -112,6 +181,7 @@ class JobApplicationSummarySerializer(serializers.ModelSerializer):
     )
     company_name = serializers.CharField(source="opportunity.organization.name", read_only=True)
     deadline = serializers.DateField(source="opportunity.deadline", read_only=True)
+    relevance_signals = serializers.SerializerMethodField()
 
     class Meta:
         model = JobApplication
@@ -125,12 +195,17 @@ class JobApplicationSummarySerializer(serializers.ModelSerializer):
             "cover_letter",
             "reviewer_notes",
             "deadline",
+            "relevance_signals",
             "applied_at",
             "reviewed_at",
             "created_at",
             "updated_at",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(serializers.JSONField())
+    def get_relevance_signals(self, obj):
+        return build_opportunity_relevance_signals(obj.opportunity)
 
 
 class JobApplicationCreateSerializer(serializers.Serializer):
@@ -152,6 +227,7 @@ class ApplicantOpportunitySerializer(serializers.Serializer):
 class ApplicantSummarySerializer(serializers.ModelSerializer):
     applicant = serializers.SerializerMethodField()
     opportunity = serializers.SerializerMethodField()
+    relevance_signals = serializers.SerializerMethodField()
 
     class Meta:
         model = JobApplication
@@ -164,6 +240,7 @@ class ApplicantSummarySerializer(serializers.ModelSerializer):
             "reviewed_at",
             "applicant",
             "opportunity",
+            "relevance_signals",
         ]
         read_only_fields = fields
 
@@ -182,6 +259,10 @@ class ApplicantSummarySerializer(serializers.ModelSerializer):
             "title": obj.opportunity.title,
             "type": obj.opportunity.type,
         }
+
+    @extend_schema_field(serializers.JSONField())
+    def get_relevance_signals(self, obj):
+        return build_opportunity_relevance_signals(obj.opportunity)
 
 
 class ApplicantStatusUpdateSerializer(serializers.Serializer):

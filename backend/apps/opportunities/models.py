@@ -35,6 +35,8 @@ class Opportunity(models.Model):
     deadline = models.DateField(null=True, blank=True)
     required_skills = models.JSONField(default=list, blank=True)
     field_signals = models.JSONField(default=list, blank=True)
+    related_course_ids = models.JSONField(default=list, blank=True)
+    verified_activity_signals = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

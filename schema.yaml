@@ -4,6 +4,57 @@ info:
   version: 0.1.0
   description: Backend API for the SkillVerse platform.
 paths:
+  /api/admin/events/:
+    get:
+      operationId: events_admin_list
+      tags:
+      - events
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminEventOversight'
+          description: ''
+  /api/admin/events/{id}/decision/:
+    post:
+      operationId: events_admin_decision
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - events
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminEventOversightDecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminEventOversightDecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminEventOversightDecisionRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEventOversight'
+          description: ''
   /api/admin/organizations/verification-requests/:
     get:
       operationId: admin_organizations_verification_requests_list
@@ -914,6 +965,66 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/events/manage/{id}/attendees/:
+    get:
+      operationId: events_manage_attendees_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - events
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventAttendeeSummary'
+          description: ''
+  /api/events/manage/{id}/attendees/{attendee_pk}/:
+    patch:
+      operationId: events_manage_attendees_update
+      parameters:
+      - in: path
+        name: attendee_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEventAttendeeUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEventAttendeeUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEventAttendeeUpdateRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventAttendeeSummary'
+          description: ''
   /api/events/rsvps/:
     get:
       operationId: events_rsvp_list
@@ -2346,6 +2457,155 @@ paths:
           description: ''
 components:
   schemas:
+    AdminEventOversight:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization:
+          allOf:
+          - $ref: '#/components/schemas/EventOrganizationSummary'
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+        location:
+          type: string
+          readOnly: true
+        is_online:
+          type: boolean
+          readOnly: true
+        cover_image_url:
+          type: string
+          format: uri
+          readOnly: true
+        max_attendees:
+          type: integer
+          readOnly: true
+          nullable: true
+        current_attendees:
+          type: integer
+          readOnly: true
+        total_rsvp_count:
+          type: integer
+          readOnly: true
+        interested_count:
+          type: integer
+          readOnly: true
+        cancelled_count:
+          type: integer
+          readOnly: true
+        attended_count:
+          type: integer
+          readOnly: true
+        spots_remaining:
+          type: integer
+          nullable: true
+          readOnly: true
+        rsvp_open:
+          type: boolean
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/EventStatusEnum'
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        viewer_rsvp_status:
+          type: string
+          nullable: true
+          readOnly: true
+        tags:
+          readOnly: true
+        field_signals:
+          readOnly: true
+        related_skills:
+          readOnly: true
+        related_course_ids:
+          readOnly: true
+        participation_signals:
+          readOnly: true
+        relevance_signals:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        meeting_url:
+          type: string
+          readOnly: true
+        admin_review_notes:
+          type: string
+          readOnly: true
+        reviewed_by_email:
+          type: string
+          format: email
+          readOnly: true
+        admin_reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - admin_review_notes
+      - admin_reviewed_at
+      - attended_count
+      - cancelled_count
+      - category
+      - cover_image_url
+      - created_at
+      - current_attendees
+      - description
+      - ends_at
+      - field_signals
+      - id
+      - interested_count
+      - is_online
+      - location
+      - max_attendees
+      - meeting_url
+      - organization
+      - participation_signals
+      - related_course_ids
+      - related_skills
+      - relevance_signals
+      - reviewed_by_email
+      - rsvp_open
+      - spots_remaining
+      - starts_at
+      - status
+      - tags
+      - title
+      - total_rsvp_count
+      - updated_at
+      - viewer_rsvp_status
+    AdminEventOversightDecisionRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/EventStatusEnum'
+        rsvp_open:
+          type: boolean
+        review_notes:
+          type: string
     AdminFinancialAccount:
       type: object
       properties:
@@ -2564,12 +2824,15 @@ components:
           allOf:
           - $ref: '#/components/schemas/ApplicantOpportunity'
           readOnly: true
+        relevance_signals:
+          readOnly: true
       required:
       - applicant
       - applied_at
       - cover_letter
       - id
       - opportunity
+      - relevance_signals
       - reviewed_at
       - reviewer_notes
       - status
@@ -2677,7 +2940,7 @@ components:
           type: string
         sort_order:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
         lessons:
@@ -2701,7 +2964,7 @@ components:
           type: string
         sort_order:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
         lessons:
@@ -3049,7 +3312,7 @@ components:
           $ref: '#/components/schemas/EnrollmentStatusEnum'
         progress_percent:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
         enrolled_at:
@@ -3098,7 +3361,7 @@ components:
           $ref: '#/components/schemas/EnrollmentStatusEnum'
         progress_percent:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
         completed_at:
@@ -3127,7 +3390,7 @@ components:
           $ref: '#/components/schemas/EnrollmentStatusEnum'
         progress_percent:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
         enrolled_at:
@@ -3164,6 +3427,68 @@ components:
       - id
       - next_lesson_id
       - total_lessons
+    EventAttendeeSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/RSVPStatusEnum'
+          readOnly: true
+        attended_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        attendance_recorded:
+          type: boolean
+          readOnly: true
+        review_unlock_ready:
+          type: boolean
+          readOnly: true
+        attendee:
+          allOf:
+          - $ref: '#/components/schemas/EventAttendeeUser'
+          readOnly: true
+        relevance_signals:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - attendance_recorded
+      - attended_at
+      - attendee
+      - created_at
+      - id
+      - relevance_signals
+      - review_unlock_ready
+      - status
+      - updated_at
+    EventAttendeeUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+      required:
+      - email
+      - full_name
+      - id
     EventDetail:
       type: object
       properties:
@@ -3200,6 +3525,18 @@ components:
         current_attendees:
           type: integer
           readOnly: true
+        total_rsvp_count:
+          type: integer
+          readOnly: true
+        interested_count:
+          type: integer
+          readOnly: true
+        cancelled_count:
+          type: integer
+          readOnly: true
+        attended_count:
+          type: integer
+          readOnly: true
         spots_remaining:
           type: integer
           nullable: true
@@ -3226,6 +3563,16 @@ components:
           readOnly: true
         tags:
           readOnly: true
+        field_signals:
+          readOnly: true
+        related_skills:
+          readOnly: true
+        related_course_ids:
+          readOnly: true
+        participation_signals:
+          readOnly: true
+        relevance_signals:
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -3238,24 +3585,33 @@ components:
           type: string
           readOnly: true
       required:
+      - attended_count
+      - cancelled_count
       - category
       - cover_image_url
       - created_at
       - current_attendees
       - description
       - ends_at
+      - field_signals
       - id
+      - interested_count
       - is_online
       - location
       - max_attendees
       - meeting_url
       - organization
+      - participation_signals
+      - related_course_ids
+      - related_skills
+      - relevance_signals
       - rsvp_open
       - spots_remaining
       - starts_at
       - status
       - tags
       - title
+      - total_rsvp_count
       - updated_at
       - viewer_rsvp_status
     EventOrganizationSummary:
@@ -3310,6 +3666,8 @@ components:
           type: string
           format: date-time
           readOnly: true
+        relevance_signals:
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -3327,6 +3685,7 @@ components:
       - id
       - organization_id
       - organization_name
+      - relevance_signals
       - starts_at
       - status
       - updated_at
@@ -3385,6 +3744,18 @@ components:
         current_attendees:
           type: integer
           readOnly: true
+        total_rsvp_count:
+          type: integer
+          readOnly: true
+        interested_count:
+          type: integer
+          readOnly: true
+        cancelled_count:
+          type: integer
+          readOnly: true
+        attended_count:
+          type: integer
+          readOnly: true
         spots_remaining:
           type: integer
           nullable: true
@@ -3411,6 +3782,16 @@ components:
           readOnly: true
         tags:
           readOnly: true
+        field_signals:
+          readOnly: true
+        related_skills:
+          readOnly: true
+        related_course_ids:
+          readOnly: true
+        participation_signals:
+          readOnly: true
+        relevance_signals:
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -3420,23 +3801,32 @@ components:
           format: date-time
           readOnly: true
       required:
+      - attended_count
+      - cancelled_count
       - category
       - cover_image_url
       - created_at
       - current_attendees
       - description
       - ends_at
+      - field_signals
       - id
+      - interested_count
       - is_online
       - location
       - max_attendees
       - organization
+      - participation_signals
+      - related_course_ids
+      - related_skills
+      - relevance_signals
       - rsvp_open
       - spots_remaining
       - starts_at
       - status
       - tags
       - title
+      - total_rsvp_count
       - updated_at
       - viewer_rsvp_status
     EventWriteRequest:
@@ -3466,7 +3856,7 @@ components:
           maxLength: 200
         max_attendees:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
           nullable: true
@@ -3482,6 +3872,10 @@ components:
           format: date-time
           nullable: true
         tags: {}
+        field_signals: {}
+        related_skills: {}
+        related_course_ids: {}
+        participation_signals: {}
       required:
       - starts_at
       - title
@@ -3754,6 +4148,8 @@ components:
           type: string
           format: date
           readOnly: true
+        relevance_signals:
+          readOnly: true
         applied_at:
           type: string
           format: date-time
@@ -3781,6 +4177,7 @@ components:
       - opportunity_id
       - opportunity_title
       - opportunity_type
+      - relevance_signals
       - reviewed_at
       - reviewer_notes
       - status
@@ -3956,13 +4353,13 @@ components:
           readOnly: true
         duration_minutes:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
           nullable: true
         sort_order:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
         is_required:
@@ -4022,13 +4419,13 @@ components:
             minLength: 1
         duration_minutes:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
           nullable: true
         sort_order:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
         is_required:
@@ -4323,12 +4720,18 @@ components:
           readOnly: true
         field_signals:
           readOnly: true
+        related_course_ids:
+          readOnly: true
+        verified_activity_signals:
+          readOnly: true
         application_count:
           type: integer
           readOnly: true
         viewer_application_status:
           type: string
           nullable: true
+          readOnly: true
+        relevance_signals:
           readOnly: true
         created_at:
           type: string
@@ -4351,12 +4754,15 @@ components:
       - is_remote
       - location
       - organization
+      - related_course_ids
+      - relevance_signals
       - required_skills
       - salary_range
       - status
       - title
       - type
       - updated_at
+      - verified_activity_signals
       - viewer_application_status
     OpportunityOrganizationSummary:
       type: object
@@ -4439,12 +4845,18 @@ components:
           readOnly: true
         field_signals:
           readOnly: true
+        related_course_ids:
+          readOnly: true
+        verified_activity_signals:
+          readOnly: true
         application_count:
           type: integer
           readOnly: true
         viewer_application_status:
           type: string
           nullable: true
+          readOnly: true
+        relevance_signals:
           readOnly: true
         created_at:
           type: string
@@ -4467,12 +4879,15 @@ components:
       - is_remote
       - location
       - organization
+      - related_course_ids
+      - relevance_signals
       - required_skills
       - salary_range
       - status
       - title
       - type
       - updated_at
+      - verified_activity_signals
       - viewer_application_status
     OpportunityTypeEnum:
       enum:
@@ -4521,6 +4936,8 @@ components:
           nullable: true
         required_skills: {}
         field_signals: {}
+        related_course_ids: {}
+        verified_activity_signals: {}
       required:
       - description
       - title
@@ -4534,7 +4951,7 @@ components:
           $ref: '#/components/schemas/EnrollmentStatusEnum'
         progress_percent:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
         enrolled_at:
@@ -5055,6 +5472,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CourseModuleWriteRequest'
+    PatchedEventAttendeeUpdateRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/RSVPStatusEnum'
+        attended:
+          type: boolean
     PatchedEventWriteRequest:
       type: object
       properties:
@@ -5082,7 +5506,7 @@ components:
           maxLength: 200
         max_attendees:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 4294967295
           minimum: 0
           format: int64
           nullable: true
@@ -5098,6 +5522,10 @@ components:
           format: date-time
           nullable: true
         tags: {}
+        field_signals: {}
+        related_skills: {}
+        related_course_ids: {}
+        participation_signals: {}
     PatchedFinancialAccountRequest:
       type: object
       properties:
@@ -5189,6 +5617,8 @@ components:
           nullable: true
         required_skills: {}
         field_signals: {}
+        related_course_ids: {}
+        verified_activity_signals: {}
     PatchedOrganizationProfileUpdateRequest:
       type: object
       properties:

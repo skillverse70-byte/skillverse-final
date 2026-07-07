@@ -70,6 +70,8 @@ function createEmptyOpportunityForm() {
     deadline: "",
     required_skills: "",
     field_signals: "",
+    related_course_ids: "",
+    verified_activity_signals: "",
   };
 }
 
@@ -94,6 +96,10 @@ function serializeOpportunityForm(form) {
     deadline: form.deadline || null,
     required_skills: parseCommaSeparated(form.required_skills),
     field_signals: parseCommaSeparated(form.field_signals),
+    related_course_ids: parseCommaSeparated(form.related_course_ids)
+      .map((value) => Number.parseInt(value, 10))
+      .filter((value) => Number.isInteger(value)),
+    verified_activity_signals: parseCommaSeparated(form.verified_activity_signals),
   };
 }
 
@@ -111,6 +117,8 @@ function toEditableOpportunityForm(opportunity) {
     deadline: opportunity.deadline || "",
     required_skills: (opportunity.required_skills || []).join(", "),
     field_signals: (opportunity.field_signals || []).join(", "),
+    related_course_ids: (opportunity.related_course_ids || []).join(", "),
+    verified_activity_signals: (opportunity.verified_activity_signals || []).join(", "),
   };
 }
 
@@ -442,6 +450,30 @@ export default function OrganizationApplicantPipelinePanel({
                           }))
                         }
                         placeholder="software, design, community"
+                      />
+                    </Field>
+                    <Field label="Related course IDs">
+                      <Input
+                        value={opportunityForm.related_course_ids}
+                        onChange={(event) =>
+                          setOpportunityForm((current) => ({
+                            ...current,
+                            related_course_ids: event.target.value,
+                          }))
+                        }
+                        placeholder="12, 18, 24"
+                      />
+                    </Field>
+                    <Field label="Verified activity signals">
+                      <Input
+                        value={opportunityForm.verified_activity_signals}
+                        onChange={(event) =>
+                          setOpportunityForm((current) => ({
+                            ...current,
+                            verified_activity_signals: event.target.value,
+                          }))
+                        }
+                        placeholder="course_completion, volunteer_service"
                       />
                     </Field>
                   </div>

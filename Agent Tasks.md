@@ -856,6 +856,7 @@ At the end of this phase, organizations can publish events and opportunities, an
 
 ### TASK-806: Preserve Relevance Signals for Events and Opportunities
 - **Phase:** Phase 8: Events, Opportunities, and Applications
+- **Status:** Complete
 - **Owner:** Both
 - **Actor(s):** Regular User, Organization
 - **Route(s):** `/discover`, `/events`, `/events/:id`, `/jobs`, `/jobs/:id`, `/dashboard`, `/org`
@@ -868,11 +869,75 @@ At the end of this phase, organizations can publish events and opportunities, an
 - **Blockers:** None
 - **Description:** Ensure the data model and API outputs do not lose the signals needed for future discovery and recommendation features.
 
+### TASK-807: Expand Event Management and Attendee Backend
+- **Phase:** Phase 8: Events, Opportunities, and Applications
+- **Status:** Complete
+- **Owner:** Backend
+- **Actor(s):** Organization
+- **Route(s):** `/org`, `/events`, `/events/:id`
+- **Files touched:** `backend/apps/events/`, `backend/apps/reviews/`, `backend/config/urls.py`, `schema.yaml`
+- **Depends on:** `TASK-801`, `TASK-806`
+- **Spec:** `PRD.md` Sections `6.8`, `6.10`, `6.11`; `schema.yaml` organization event management and attendee endpoints
+- **Setup reference:** N/A
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Organizations can list their events, create/update/delete them safely, control lifecycle state and RSVP availability, inspect attendee/RSVP records, mark attendance, and expose event analytics and participation-verification-ready fields through the API
+- **Blockers:** None
+- **Description:** Extend the event backend beyond public browsing and self-RSVP so organizations have operational event-management APIs. This includes organization-scoped event listing, edit/delete safeguards, attendee list endpoints, RSVP-status filtering, attendance marking, event-level totals such as RSVP count and attendance count, and participation fields that later trust/review workflows can rely on without redefining event records.
+
+### TASK-808: Build Organization Event Management Workspace
+- **Phase:** Phase 8: Events, Opportunities, and Applications
+- **Status:** Complete
+- **Owner:** Frontend
+- **Actor(s):** Organization
+- **Route(s):** `/org`
+- **Files touched:** `frontend/src/features/organizations/`, `frontend/src/features/events/`, `frontend/src/services/events/`, `frontend/src/components/shared/`
+- **Depends on:** `TASK-807`
+- **Spec:** `PRD.md` Sections `4.1`, `6.8`, `6.11`; `schema.yaml` organization event management endpoints
+- **Setup reference:** Existing workspace-shell and query/form foundations in `frontend/FRONTEND_PRD_READY.md`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** `/org` contains a real event-management surface where organizations can create events, edit them, control status and RSVP settings, review summary metrics, and safely remove or archive events from the same workspace
+- **Blockers:** None
+- **Description:** Deliver the organization event workspace inside `/org`, covering event creation, edit/update, status controls such as `upcoming`, `live`, `completed`, and `cancelled`, RSVP-open toggles, capacity controls, online/in-person fields, relevance signals, and event analytics such as total RSVPs, remaining spots, and attended counts.
+
+### TASK-809: Build Organization Attendee and Attendance Operations
+- **Phase:** Phase 8: Events, Opportunities, and Applications
+- **Status:** Complete
+- **Owner:** Both
+- **Actor(s):** Organization
+- **Route(s):** `/org`
+- **Files touched:** `backend/apps/events/`, `backend/apps/reviews/`, `frontend/src/features/organizations/`, `frontend/src/services/events/`, `schema.yaml`
+- **Depends on:** `TASK-807`, `TASK-808`
+- **Spec:** `PRD.md` Sections `6.4`, `6.8`, `6.10`, `6.11`; `schema.yaml` attendee-management endpoints
+- **Setup reference:** Participation review foundation already present from `TASK-507` and `TASK-508`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Organizations can manage attendee records from `/org`, filter RSVP states, mark participation/attendance, and expose the event participation data needed by later review and trust workflows
+- **Blockers:** None
+- **Description:** Finish the organization-side event operations by adding attendee-management flows: RSVP list views, per-event filtering, attendance confirmation, participation-ready metadata for later verification/review unlocks, and operator-friendly attendee actions that do not require leaving the organization workspace.
+
+### TASK-810: Add Admin Event Oversight and Moderation Hooks
+- **Phase:** Phase 8: Events, Opportunities, and Applications
+- **Status:** Complete
+- **Owner:** Both
+- **Actor(s):** Admin
+- **Route(s):** `/admin`, `/events`, `/events/:id`
+- **Files touched:** `backend/apps/events/`, `backend/apps/audit/`, `frontend/src/features/organizations/`, `frontend/src/features/dashboard/`, `frontend/src/services/events/`, `schema.yaml`
+- **Depends on:** `TASK-807`, `TASK-808`
+- **Spec:** `PRD.md` Sections `4.1`, `6.8`, `6.11`; `ROLE_ACCESS_MATRIX.md`; `schema.yaml` admin event oversight endpoints
+- **Setup reference:** Admin workspace and moderation conventions already established in later admin tasks; this task adds only event-specific oversight needed to close Phase 8
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Admins can inspect organization-created events and take basic oversight actions without inheriting organization-only operational controls
+- **Blockers:** None
+- **Description:** Add minimal but explicit admin event oversight so events are not the only publishable content type without an admin path. Scope this to moderation/oversight actions such as reviewing event records, trust visibility, and intervention-ready status changes where policy requires it, while keeping daily attendee operations owned by organizations.
+
 ### Phase 8 Definition of Done
 
 - Events and opportunities work end to end.
 - Regular users can RSVP and apply.
 - Organization-side applicant management exists.
+- Organization-side event management exists in `/org`.
+- Event attendee and attendance operations exist for organizations.
+- Event participation records preserve later review and trust hooks.
+- Admin event oversight exists where platform intervention is needed.
 
 ### Phase 8 Known Blockers / Risks
 
@@ -1126,7 +1191,7 @@ Every PRD feature or rule below maps to at least one task ID.
 
 - Post-participation ratings for skill swaps: `TASK-507`, `TASK-508`
 - Post-participation ratings for courses: `TASK-507`, `TASK-508`, `TASK-706`
-- Post-participation ratings for events: `TASK-507`, `TASK-508`, `TASK-802`
+- Post-participation ratings for events: `TASK-507`, `TASK-508`, `TASK-809`
 
 ### Messaging, coordination, and sessions
 
@@ -1172,10 +1237,14 @@ Every PRD feature or rule below maps to at least one task ID.
 - Volunteer/social-impact/community-service initiatives preserved for later: `TASK-1002`
 - Field-based communities preserved for later: `TASK-1002`
 - Only verified organizations create communities initially: `TASK-1002`
-- Events can be created by organizations regardless of verification state: `TASK-801`, `TASK-802`
+- Events can be created by organizations regardless of verification state: `TASK-801`, `TASK-807`, `TASK-808`
+- Organizations can manage events after publishing: `TASK-807`, `TASK-808`
+- Organizations can manage attendees and attendance records: `TASK-807`, `TASK-809`
+- Event lifecycle state and RSVP-open control exist: `TASK-807`, `TASK-808`
+- Event analytics and attendance totals exist for operators: `TASK-807`, `TASK-808`, `TASK-902`
 - Regular users cannot create communities/events in V1: `TASK-206`, `TASK-801`
 - Regular users RSVP/register for events in V1: `TASK-801`, `TASK-802`
-- Service-credit tracking and verified participation foundations: `TASK-1002`
+- Service-credit tracking and verified participation foundations: `TASK-809`, `TASK-1002`
 - Forums/projects/collaboration spaces progression: `TASK-1002`
 
 ### Career and opportunity hub
@@ -1198,12 +1267,14 @@ Every PRD feature or rule below maps to at least one task ID.
 - Regular-user dashboard: `TASK-901`, `TASK-902`
 - Organization dashboard: `TASK-901`, `TASK-902`
 - Applicant pipeline visibility in org dashboards: `TASK-805`, `TASK-902`
+- Event management visibility and event analytics in org surfaces: `TASK-808`, `TASK-809`, `TASK-902`
 - Admin dashboard: `TASK-901`, `TASK-902`, `TASK-908`
 - Advanced analytics and reporting preserved for later: `TASK-1003`
 
 ### Administration and moderation
 
 - Admin management of users, organizations, content, roles, reports, moderation: `TASK-905`, `TASK-906`
+- Admin oversight of published events: `TASK-810`
 - Admin management of fixed category lists: `TASK-905`, `TASK-906`
 - User/org category suggestions with approval before activation: `TASK-905`, `TASK-906`
 - Audit-friendly important action records: `TASK-907`, `TASK-908`

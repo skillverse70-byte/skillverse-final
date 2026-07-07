@@ -17,6 +17,7 @@ urlpatterns = [
     path("api/organizations/", include("apps.organizations.api_urls")),
     path("api/admin/organizations/", include("apps.organizations.admin_urls")),
     path("api/admin/payments/", include("apps.payments.admin_urls")),
+    path("api/admin/", include("apps.events.admin_urls")),
     path("api/payments/", include("apps.payments.urls")),
     path("api/v1/payment/webhook/", ChapaWebhookView.as_view(), name="chapa-webhook"),
     path("api/", include("apps.skills.urls")),

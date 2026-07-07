@@ -1,4 +1,5 @@
 import { ApiError, apiRequest } from "@/lib/http-client";
+import { normalizeRelevanceSignals } from "@/lib/relevance-signals";
 import { authenticatedApiRequest } from "@/services/auth/backend-auth-client";
 
 function normalizeOrganization(organization) {
@@ -33,6 +34,10 @@ function normalizeEvent(event) {
     meeting_url: event.meeting_url || "",
     max_attendees: event.max_attendees ?? null,
     current_attendees: event.current_attendees ?? 0,
+    total_rsvp_count: event.total_rsvp_count ?? 0,
+    interested_count: event.interested_count ?? 0,
+    cancelled_count: event.cancelled_count ?? 0,
+    attended_count: event.attended_count ?? 0,
     spots_remaining: event.spots_remaining ?? null,
     rsvp_open: event.rsvp_open ?? true,
     status: event.status || "upcoming",
@@ -40,6 +45,19 @@ function normalizeEvent(event) {
     ends_at: event.ends_at || null,
     viewer_rsvp_status: event.viewer_rsvp_status || null,
     tags: Array.isArray(event.tags) ? event.tags : [],
+    field_signals: Array.isArray(event.field_signals) ? event.field_signals : [],
+    related_skills: Array.isArray(event.related_skills) ? event.related_skills : [],
+    related_course_ids: Array.isArray(event.related_course_ids) ? event.related_course_ids : [],
+    participation_signals: Array.isArray(event.participation_signals)
+      ? event.participation_signals
+      : [],
+    relevance_signals: normalizeRelevanceSignals(event.relevance_signals, {
+      fields: event.field_signals,
+      skills: event.related_skills,
+      courses: event.related_course_ids,
+      participationSignals: event.participation_signals,
+      organizationVerificationStatus: organization?.verification_status,
+    }),
   };
 }
 
@@ -53,6 +71,23 @@ function normalizeRsvp(rsvp) {
     organization_name: rsvp.organization_name || "",
     starts_at: rsvp.starts_at || null,
     ends_at: rsvp.ends_at || null,
+    relevance_signals: normalizeRelevanceSignals(rsvp.relevance_signals),
+  };
+}
+
+function normalizeAttendee(attendee) {
+  return {
+    ...attendee,
+    status: attendee.status || "going",
+    attended_at: attendee.attended_at || null,
+    attendance_recorded: Boolean(attendee.attendance_recorded),
+    review_unlock_ready: Boolean(attendee.review_unlock_ready),
+    attendee: {
+      id: attendee.attendee?.id ?? null,
+      full_name: attendee.attendee?.full_name || "",
+      email: attendee.attendee?.email || "",
+    },
+    relevance_signals: normalizeRelevanceSignals(attendee.relevance_signals),
   };
 }
 
@@ -95,6 +130,134 @@ export async function fetchMyEventRsvps() {
     method: "GET",
   });
   return rsvps.map(normalizeRsvp);
+}
+
+export async function fetchOrganizationEvents() {
+  const events = await authenticatedApiRequest("/events/manage/", {
+    method: "GET",
+  });
+  return events.map(normalizeEvent);
+}
+
+export async function createOrganizationEvent(payload) {
+  const event = await authenticatedApiRequest("/events/manage/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  return normalizeEvent(event);
+}
+
+export async function updateOrganizationEvent(eventId, payload) {
+  const event = await authenticatedApiRequest(`/events/manage/${eventId}/`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  return normalizeEvent(event);
+}
+
+export async function deleteOrganizationEvent(eventId) {
+  return authenticatedApiRequest(`/events/manage/${eventId}/`, {
+    method: "DELETE",
+  });
+}
+
+export async function fetchOrganizationEventAttendees(eventId, params = {}) {
+  const searchParams = new URLSearchParams();
+  if (params.status) {
+    searchParams.set("status", params.status);
+  }
+  if (typeof params.attended === "boolean") {
+    searchParams.set("attended", String(params.attended));
+  }
+
+  const attendees = await authenticatedApiRequest(
+    `/events/manage/${eventId}/attendees/${searchParams.toString() ? `?${searchParams.toString()}` : ""}`,
+    {
+      method: "GET",
+    },
+  );
+  return attendees.map(normalizeAttendee);
+}
+
+export async function updateOrganizationEventAttendee(
+  eventId,
+  attendeeId,
+  { status, attended } = {},
+) {
+  const payload = {};
+  if (status) {
+    payload.status = status;
+  }
+  if (typeof attended === "boolean") {
+    payload.attended = attended;
+  }
+
+  const attendee = await authenticatedApiRequest(
+    `/events/manage/${eventId}/attendees/${attendeeId}/`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+  return normalizeAttendee(attendee);
+}
+
+export async function fetchAdminEvents(params = {}) {
+  const searchParams = new URLSearchParams();
+  if (params.status) {
+    searchParams.set("status", params.status);
+  }
+  if (params.organizationId) {
+    searchParams.set("organization_id", String(params.organizationId));
+  }
+  if (params.verificationStatus) {
+    searchParams.set("verification_status", params.verificationStatus);
+  }
+
+  const events = await authenticatedApiRequest(
+    `/admin/events/${searchParams.toString() ? `?${searchParams.toString()}` : ""}`,
+    { method: "GET" },
+  );
+  return events.map(normalizeEvent).map((event) => ({
+    ...event,
+    admin_review_notes: event.admin_review_notes || "",
+    reviewed_by_email: event.reviewed_by_email || "",
+    admin_reviewed_at: event.admin_reviewed_at || null,
+  }));
+}
+
+export async function decideAdminEvent(
+  eventId,
+  { status, rsvpOpen, reviewNotes = "" } = {},
+) {
+  const payload = {};
+  if (status) {
+    payload.status = status;
+  }
+  if (typeof rsvpOpen === "boolean") {
+    payload.rsvp_open = rsvpOpen;
+  }
+  if (reviewNotes !== undefined) {
+    payload.review_notes = reviewNotes;
+  }
+
+  const event = await authenticatedApiRequest(`/admin/events/${eventId}/decision/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  return normalizeEvent(event);
 }
 
 export { ApiError };

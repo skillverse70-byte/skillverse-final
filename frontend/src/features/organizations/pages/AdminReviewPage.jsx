@@ -1,24 +1,29 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { TabsContent } from "@/components/ui/tabs";
 import {
-  Shield,
   Building,
   Tag,
   CheckCircle,
   XCircle,
   CreditCard,
   LayoutDashboard,
+  Calendar,
+  ExternalLink,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import StatusBadge from "@/components/shared/StatusBadge";
 import EmptyState from "@/components/shared/EmptyState";
 import PageLoader from "@/components/shared/PageLoader";
 import WorkspaceShell from "@/components/shared/WorkspaceShell";
 import { useToast } from "@/components/ui/use-toast";
+import { decideAdminEvent, fetchAdminEvents } from "@/services/events/events.service";
 import { useAdminOrganizationVerification } from "@/hooks/organizations/useAdminOrganizationVerification";
 import { useAdminFinancialAccounts } from "@/hooks/organizations/useAdminFinancialAccounts";
+import moment from "moment";
 
 export default function AdminReview() {
   const [skills, setSkills] = useState([]);
@@ -27,6 +32,16 @@ export default function AdminReview() {
   const [overrideFlags, setOverrideFlags] = useState({});
   const [financialNotes, setFinancialNotes] = useState({});
   const [restrictionReasons, setRestrictionReasons] = useState({});
+  const [events, setEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [eventsError, setEventsError] = useState("");
+  const [eventActingId, setEventActingId] = useState(null);
+  const [eventNotes, setEventNotes] = useState({});
+  const [eventFilters, setEventFilters] = useState({
+    status: "all",
+    verificationStatus: "all",
+    search: "",
+  });
   const { toast } = useToast();
   const {
     requests,
@@ -43,6 +58,35 @@ export default function AdminReview() {
     decide: decideFinancialAccount,
   } = useAdminFinancialAccounts();
 
+  useEffect(() => {
+    let active = true;
+
+    const loadEvents = async () => {
+      setEventsLoading(true);
+      setEventsError("");
+      try {
+        const data = await fetchAdminEvents();
+        if (active) {
+          setEvents(data);
+        }
+      } catch (error) {
+        console.error(error);
+        if (active) {
+          setEventsError(error.message || "Failed to load event oversight queue.");
+        }
+      } finally {
+        if (active) {
+          setEventsLoading(false);
+        }
+      }
+    };
+
+    loadEvents();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const handleSkillApprove = async (skill, approved) => {
     try {
       void approved;
@@ -52,7 +96,51 @@ export default function AdminReview() {
     }
   };
 
-  if (loading || financialLoading) {
+  const filteredEvents = useMemo(() => {
+    const searchValue = eventFilters.search.trim().toLowerCase();
+    return events.filter((event) => {
+      const matchesSearch =
+        !searchValue ||
+        event.title?.toLowerCase().includes(searchValue) ||
+        event.organization_name?.toLowerCase().includes(searchValue) ||
+        event.category?.toLowerCase().includes(searchValue);
+      const matchesStatus =
+        eventFilters.status === "all" || event.status === eventFilters.status;
+      const matchesVerification =
+        eventFilters.verificationStatus === "all" ||
+        event.organization_verification_status === eventFilters.verificationStatus;
+      return matchesSearch && matchesStatus && matchesVerification;
+    });
+  }, [events, eventFilters]);
+
+  const refreshAdminEvents = async () => {
+    const data = await fetchAdminEvents();
+    setEvents(data);
+    return data;
+  };
+
+  const handleEventDecision = async (eventId, payload) => {
+    setEventActingId(eventId);
+    try {
+      const updatedEvent = await decideAdminEvent(eventId, payload);
+      setEvents((current) =>
+        current.map((event) => (event.id === updatedEvent.id ? { ...event, ...updatedEvent } : event)),
+      );
+      await refreshAdminEvents();
+      toast({ title: "Event oversight updated" });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Event review failed",
+        description: error.message || "Unable to update the event.",
+        variant: "destructive",
+      });
+    } finally {
+      setEventActingId(null);
+    }
+  };
+
+  if (loading || financialLoading || eventsLoading) {
     return <PageLoader />;
   }
 
@@ -76,6 +164,12 @@ export default function AdminReview() {
       description: "Finance queue.",
     },
     {
+      value: "events",
+      label: `Events (${events.length})`,
+      icon: Calendar,
+      description: "Event oversight lane.",
+    },
+    {
       value: "skills",
       label: `Skills (${skills.length})`,
       icon: Tag,
@@ -94,7 +188,7 @@ export default function AdminReview() {
       showTabDescriptions={false}
     >
       <TabsContent value="overview" className="mt-0 space-y-6">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <OverviewCard
             icon={Building}
             title="Organization queue"
@@ -104,6 +198,11 @@ export default function AdminReview() {
             icon={CreditCard}
             title="Financial queue"
             value={financialAccounts.length}
+          />
+          <OverviewCard
+            icon={Calendar}
+            title="Event oversight"
+            value={events.length}
           />
           <OverviewCard
             icon={Tag}
@@ -122,8 +221,13 @@ export default function AdminReview() {
             {financialError}
           </div>
         ) : null}
+        {eventsError ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {eventsError}
+          </div>
+        ) : null}
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-3">
           <QueuePreview
             title="Organization verification"
             description="Trust-sensitive public organizations waiting for review."
@@ -145,6 +249,17 @@ export default function AdminReview() {
               status: account.status,
             }))}
             emptyTitle="No financial reviews pending"
+          />
+          <QueuePreview
+            title="Event oversight"
+            description="Published events visible to admins for moderation-ready intervention."
+            items={events.slice(0, 3).map((event) => ({
+              id: event.id,
+              title: event.title,
+              subtitle: event.organization_name,
+              status: event.status,
+            }))}
+            emptyTitle="No events available for review"
           />
         </div>
       </TabsContent>
@@ -396,6 +511,165 @@ export default function AdminReview() {
                     <XCircle className="h-3.5 w-3.5" />
                     Restrict
                   </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </TabsContent>
+
+      <TabsContent value="events" className="mt-0 space-y-4">
+        <div className="grid gap-3 rounded-3xl border border-border/60 bg-white p-4 md:grid-cols-3">
+          <Input
+            placeholder="Search event or organization"
+            value={eventFilters.search}
+            onChange={(event) =>
+              setEventFilters((current) => ({ ...current, search: event.target.value }))
+            }
+          />
+          <select
+            value={eventFilters.status}
+            onChange={(event) =>
+              setEventFilters((current) => ({ ...current, status: event.target.value }))
+            }
+            className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
+          >
+            <option value="all">All statuses</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="live">Live</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <select
+            value={eventFilters.verificationStatus}
+            onChange={(event) =>
+              setEventFilters((current) => ({
+                ...current,
+                verificationStatus: event.target.value,
+              }))
+            }
+            className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
+          >
+            <option value="all">All trust states</option>
+            <option value="verified">Verified orgs</option>
+            <option value="unverified">Unverified orgs</option>
+          </select>
+        </div>
+
+        {filteredEvents.length === 0 ? (
+          <EmptyState
+            icon={Calendar}
+            title="No events match this view"
+            description="Adjust the filters or wait for new events to appear."
+          />
+        ) : (
+          <div className="space-y-4">
+            {filteredEvents.map((event) => (
+              <div key={event.id} className="rounded-xl border border-border/50 bg-white p-5">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <h3 className="font-heading text-base font-semibold">{event.title}</h3>
+                      <StatusBadge status={event.status} />
+                      <StatusBadge
+                        status={event.organization_verification_status}
+                        label={
+                          event.organization_verification_status === "verified"
+                            ? "Verified Org"
+                            : "Unverified Org"
+                        }
+                      />
+                      <StatusBadge
+                        status={event.rsvp_open ? "active" : "cancelled"}
+                        label={event.rsvp_open ? "RSVP Open" : "RSVP Closed"}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {event.organization_name} · {event.category || "General"}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Starts {moment(event.starts_at).format("MMM D, YYYY h:mm A")}
+                    </p>
+                    <div className="mt-3 grid gap-2 text-sm sm:grid-cols-4">
+                      <ReviewField label="RSVPs" value={event.total_rsvp_count} />
+                      <ReviewField label="Going" value={event.current_attendees} />
+                      <ReviewField label="Attended" value={event.attended_count} />
+                      <ReviewField
+                        label="Spots remaining"
+                        value={event.spots_remaining ?? "Unlimited"}
+                      />
+                    </div>
+                    <Textarea
+                      rows={3}
+                      value={eventNotes[event.id] ?? event.admin_review_notes ?? ""}
+                      onChange={(evt) =>
+                        setEventNotes((current) => ({
+                          ...current,
+                          [event.id]: evt.target.value,
+                        }))
+                      }
+                      className="mt-4"
+                      placeholder="Admin review notes"
+                    />
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {event.reviewed_by_email
+                        ? `Last reviewed by ${event.reviewed_by_email}${
+                            event.admin_reviewed_at
+                              ? ` on ${moment(event.admin_reviewed_at).format("MMM D, YYYY h:mm A")}`
+                              : ""
+                          }`
+                        : "No admin review recorded yet."}
+                    </div>
+                  </div>
+
+                  <div className="flex min-w-[240px] flex-col gap-2">
+                    <Link to={`/events/${event.id}`}>
+                      <Button variant="outline" className="w-full gap-2">
+                        <ExternalLink className="h-4 w-4" />
+                        Open Public Event
+                      </Button>
+                    </Link>
+                    <Button
+                      className="w-full bg-amber-600 hover:bg-amber-700"
+                      disabled={eventActingId === event.id}
+                      onClick={() =>
+                        handleEventDecision(event.id, {
+                          status: "cancelled",
+                          rsvpOpen: false,
+                          reviewNotes: eventNotes[event.id] ?? event.admin_review_notes ?? "",
+                        })
+                      }
+                    >
+                      Cancel Event
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      disabled={eventActingId === event.id}
+                      onClick={() =>
+                        handleEventDecision(event.id, {
+                          rsvpOpen: false,
+                          reviewNotes: eventNotes[event.id] ?? event.admin_review_notes ?? "",
+                        })
+                      }
+                    >
+                      Close RSVP
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      disabled={eventActingId === event.id}
+                      onClick={() =>
+                        handleEventDecision(event.id, {
+                          status: "upcoming",
+                          rsvpOpen: true,
+                          reviewNotes: eventNotes[event.id] ?? event.admin_review_notes ?? "",
+                        })
+                      }
+                    >
+                      Restore Event
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}

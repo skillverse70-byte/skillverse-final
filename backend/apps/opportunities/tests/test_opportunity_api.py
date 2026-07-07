@@ -74,6 +74,8 @@ class OpportunityApiTests(APITestCase):
             deadline=timezone.localdate() + timedelta(days=14),
             required_skills=["React", "CSS"],
             field_signals=["software", "frontend"],
+            related_course_ids=[11, 19],
+            verified_activity_signals=["course_completion", "community_participation"],
         )
 
     def authenticate(self, email, password):
@@ -95,6 +97,11 @@ class OpportunityApiTests(APITestCase):
         self.assertEqual(list_response.data[0]["title"], self.opportunity.title)
         self.assertEqual(detail_response.data["company_name"], self.organization.name)
         self.assertEqual(detail_response.data["viewer_application_status"], None)
+        self.assertEqual(detail_response.data["relevance_signals"]["courses"], [11, 19])
+        self.assertEqual(
+            detail_response.data["relevance_signals"]["participation"]["signals"],
+            ["course_completion", "community_participation"],
+        )
 
     def test_organization_can_create_and_update_opportunity(self):
         self.authenticate("jobs-org@example.com", "StrongPass123!")
@@ -113,12 +120,19 @@ class OpportunityApiTests(APITestCase):
                 "deadline": str(timezone.localdate() + timedelta(days=21)),
                 "required_skills": ["Figma"],
                 "field_signals": ["design"],
+                "related_course_ids": [7, "7", 9],
+                "verified_activity_signals": ["portfolio_review", "volunteer_service"],
             },
             format="json",
         )
 
         self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
         opportunity_id = create_response.data["id"]
+        self.assertEqual(create_response.data["related_course_ids"], [7, 9])
+        self.assertEqual(
+            create_response.data["relevance_signals"]["participation"]["signals"],
+            ["portfolio_review", "volunteer_service"],
+        )
 
         update_response = self.client.patch(
             reverse("job-manage-detail", args=[opportunity_id]),
@@ -159,6 +173,7 @@ class OpportunityApiTests(APITestCase):
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
         self.assertEqual(list_response.data[0]["opportunity_id"], self.opportunity.id)
         self.assertEqual(detail_response.data["viewer_application_status"], JobApplicationStatus.APPLIED)
+        self.assertEqual(list_response.data[0]["relevance_signals"]["fields"], ["software", "frontend"])
 
         second_apply_response = self.client.post(
             reverse("job-apply", args=[self.opportunity.id]),
