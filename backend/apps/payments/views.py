@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.audit.services import record_audit_log
 from apps.common.enums import (
     CourseProgramStatus,
     FinancialAccountStatus,
@@ -64,6 +65,15 @@ class CurrentFinancialAccountView(RetrieveUpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         financial_account = self.get_object()
+        existing_values = {
+            "business_name": financial_account.business_name,
+            "account_holder_name": financial_account.account_holder_name,
+            "bank_name": financial_account.bank_name,
+            "bank_code": financial_account.bank_code,
+            "account_number_last4": financial_account.account_number_last4,
+            "mobile_money_number": financial_account.mobile_money_number,
+            "setup_notes": financial_account.setup_notes,
+        }
         serializer = self.get_serializer(
             financial_account,
             data=request.data,
@@ -71,6 +81,32 @@ class CurrentFinancialAccountView(RetrieveUpdateAPIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        changed_fields = sorted(
+            field
+            for field, previous_value in existing_values.items()
+            if getattr(financial_account, field) != previous_value
+        )
+        if changed_fields:
+            record_audit_log(
+                actor=request.user,
+                action="financial_account.organization.updated",
+                target_type="financial_account",
+                target_id=financial_account.id,
+                summary=f"Organization updated payout details for {financial_account.organization.name}.",
+                metadata={
+                    "organization_id": financial_account.organization_id,
+                    "status": financial_account.status,
+                    "changed_fields": changed_fields,
+                    "has_submission_details": FinancialAccountSerializer._has_submission_details_from_values(
+                        business_name=financial_account.business_name,
+                        account_holder_name=financial_account.account_holder_name,
+                        bank_name=financial_account.bank_name,
+                        bank_code=financial_account.bank_code,
+                        account_number_last4=financial_account.account_number_last4,
+                        mobile_money_number=financial_account.mobile_money_number,
+                    ),
+                },
+            )
         response_serializer = self.get_serializer(financial_account)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
@@ -144,6 +180,20 @@ class AdminFinancialAccountDecisionView(GenericAPIView):
             else None
         )
         financial_account.save()
+        record_audit_log(
+            actor=request.user,
+            action="financial_account.admin.reviewed",
+            target_type="financial_account",
+            target_id=financial_account.id,
+            summary=f"Admin reviewed payout readiness for {financial_account.organization.name}.",
+            metadata={
+                "organization_id": financial_account.organization_id,
+                "decision": decision,
+                "review_notes": financial_account.review_notes,
+                "restricted_reason": financial_account.restricted_reason,
+                "status": financial_account.status,
+            },
+        )
         from apps.notifications.services import notify_financial_account_reviewed
 
         notify_financial_account_reviewed(financial_account)
@@ -277,6 +327,20 @@ class CourseCheckoutListCreateView(GenericAPIView):
             callback_url=callback_url,
             return_url=return_url,
         )
+        record_audit_log(
+            actor=request.user,
+            action="payment.checkout.created",
+            target_type="payment_transaction",
+            target_id=payment_transaction.id,
+            summary=f"User started checkout for {course_program.title}.",
+            metadata={
+                "tx_ref": payment_transaction.tx_ref,
+                "course_program_id": course_program.id,
+                "organization_id": course_program.organization_id,
+                "amount": str(payment_transaction.amount),
+                "currency": payment_transaction.currency,
+            },
+        )
 
         service = ChapaPaymentService()
         try:
@@ -300,6 +364,19 @@ class CourseCheckoutListCreateView(GenericAPIView):
             payment_transaction.failure_reason = str(exc)[:255]
             payment_transaction.save(
                 update_fields=["status", "failure_reason", "updated_at"]
+            )
+            record_audit_log(
+                actor=request.user,
+                action="payment.checkout.failed",
+                target_type="payment_transaction",
+                target_id=payment_transaction.id,
+                summary=f"Checkout initialization failed for {course_program.title}.",
+                metadata={
+                    "tx_ref": payment_transaction.tx_ref,
+                    "course_program_id": course_program.id,
+                    "organization_id": course_program.organization_id,
+                    "failure_reason": payment_transaction.failure_reason,
+                },
             )
             return Response(
                 {"detail": str(exc)},
@@ -350,7 +427,11 @@ class CourseCheckoutVerifyView(GenericAPIView):
     def post(self, request, tx_ref):
         payment_transaction = payment_transaction_for_actor(request.user, tx_ref)
         try:
-            ChapaPaymentService().reconcile_transaction(payment_transaction)
+            ChapaPaymentService().reconcile_transaction(
+                payment_transaction,
+                actor=request.user,
+                source="manual_verify",
+            )
         except ChapaVerificationError as exc:
             return Response(
                 {"detail": str(exc)},
@@ -402,7 +483,10 @@ class ChapaCallbackView(APIView):
         if payment_transaction is None:
             return Response({"received": True}, status=status.HTTP_200_OK)
         try:
-            ChapaPaymentService().reconcile_transaction(payment_transaction)
+            ChapaPaymentService().reconcile_transaction(
+                payment_transaction,
+                source="callback",
+            )
         except ChapaPaymentError:
             pass
         payment_transaction.refresh_from_db()

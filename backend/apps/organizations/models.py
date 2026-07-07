@@ -37,6 +37,16 @@ class Organization(models.Model):
         blank=True,
         null=True,
     )
+    is_suspended = models.BooleanField(default=False)
+    suspension_reason = models.TextField(blank=True)
+    moderated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="moderated_organizations",
+    )
+    moderated_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

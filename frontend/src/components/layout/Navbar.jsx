@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import NotificationCenter from "@/components/shared/NotificationCenter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessagesCount } from "@/hooks/messages/useUnreadMessagesCount";
 import { getActorHomePath, getActorProfilePath } from "@/lib/access-control";
@@ -21,6 +22,9 @@ import {
   Bookmark,
   LogIn,
   UserPlus,
+  CreditCard,
+  ShieldCheck,
+  Tags,
 } from "lucide-react";
 import { roles } from "@/lib/domain-enums";
 
@@ -49,8 +53,9 @@ const primaryNavByRole = {
   [roles.admin]: [
     { label: "Admin Dashboard", path: "/admin", icon: LayoutDashboard },
     { label: "Verification", path: "/admin?tab=orgs", icon: Building },
-    { label: "Finance", path: "/admin?tab=financial", icon: BookOpen },
-    { label: "Events", path: "/admin?tab=events", icon: Calendar },
+    { label: "Finance", path: "/admin?tab=financial", icon: CreditCard },
+    { label: "Moderation", path: "/admin?tab=users", icon: ShieldCheck },
+    { label: "Taxonomy", path: "/admin?tab=taxonomy", icon: Tags },
   ],
 };
 
@@ -91,8 +96,8 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { isAuthenticated, logout, actorRole } = useAuth();
-  const unreadNotificationCount = useAppShellStore(
-    (state) => state.unreadNotificationCount,
+  const unreadMessageCount = useAppShellStore(
+    (state) => state.unreadMessageCount,
   );
   const homePath = getActorHomePath(actorRole);
   const profilePath = getActorProfilePath(actorRole);
@@ -148,15 +153,16 @@ export default function Navbar() {
                   <Link key={link.path} to={link.path}>
                     <Button variant="ghost" size="icon" className={isMessagesLink ? "relative" : ""}>
                       <Icon className="w-5 h-5" />
-                      {isMessagesLink && unreadNotificationCount > 0 ? (
+                      {isMessagesLink && unreadMessageCount > 0 ? (
                         <span className="absolute -bottom-1 -right-1 min-w-5 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
-                          {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                          {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
                         </span>
                       ) : null}
                     </Button>
                   </Link>
                 );
               })}
+              <NotificationCenter />
               {showProfileShortcut ? (
                 <Link to={profilePath}>
                   <Button variant="ghost" size="icon">
@@ -238,15 +244,21 @@ export default function Navbar() {
                       >
                         <Button variant="outline" size="sm" className="relative w-full gap-2">
                           <Icon className="w-4 h-4" /> {link.label}
-                          {isMessagesLink && unreadNotificationCount > 0 ? (
+                          {isMessagesLink && unreadMessageCount > 0 ? (
                             <span className="absolute -right-2 -top-2 min-w-5 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
-                              {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                              {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
                             </span>
                           ) : null}
                         </Button>
                       </Link>
                     );
                   })}
+                  <NotificationCenter
+                    buttonVariant="outline"
+                    buttonSize="sm"
+                    showLabel
+                    className="relative w-full justify-start"
+                  />
                   {showProfileShortcut ? (
                     <Link
                       to={profilePath}

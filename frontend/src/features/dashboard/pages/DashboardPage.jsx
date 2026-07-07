@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import StatusBadge from "@/components/shared/StatusBadge";
 import EmptyState from "@/components/shared/EmptyState";
+import NotificationFeedPanel from "@/components/shared/NotificationFeedPanel";
 import PageLoader from "@/components/shared/PageLoader";
 import WorkspaceShell from "@/components/shared/WorkspaceShell";
 import DashboardStats from "@/features/dashboard/components/DashboardStats";
@@ -306,34 +307,44 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
-            <div className="flex items-center gap-2">
-              <BellRing className="h-5 w-5 text-amber-600" />
-              <h2 className="font-heading text-lg font-semibold text-foreground">
-                Attention queue
-              </h2>
-            </div>
-            <div className="mt-5 space-y-3">
-              <AttentionRow
-                label="Incoming swap requests"
-                value={requestGroups.incoming.length}
-                actionLabel="Open swaps"
-                onAction={() => setActiveTab("swaps")}
-              />
-              <AttentionRow
-                label="Upcoming sessions"
-                value={upcomingSessions.length}
-                actionLabel="Open sessions"
-                onAction={() => setActiveTab("sessions")}
-              />
-              <AttentionRow
-                label="Applications in progress"
-                value={applications.length}
-                actionLabel="Open applications"
-                onAction={() => setActiveTab("applications")}
-              />
-            </div>
-          </section>
+          <div className="space-y-4">
+            <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+              <div className="flex items-center gap-2">
+                <BellRing className="h-5 w-5 text-amber-600" />
+                <h2 className="font-heading text-lg font-semibold text-foreground">
+                  Attention queue
+                </h2>
+              </div>
+              <div className="mt-5 space-y-3">
+                <AttentionRow
+                  label="Incoming swap requests"
+                  value={requestGroups.incoming.length}
+                  actionLabel="Open swaps"
+                  onAction={() => setActiveTab("swaps")}
+                />
+                <AttentionRow
+                  label="Upcoming sessions"
+                  value={upcomingSessions.length}
+                  actionLabel="Open sessions"
+                  onAction={() => setActiveTab("sessions")}
+                />
+                <AttentionRow
+                  label="Applications in progress"
+                  value={applications.length}
+                  actionLabel="Open applications"
+                  onAction={() => setActiveTab("applications")}
+                />
+              </div>
+            </section>
+
+            <NotificationFeedPanel
+              title="Workspace notifications"
+              description="Recent messages, swap actions, sessions, enrollments, and application updates."
+              limit={4}
+              emptyTitle="No dashboard notifications yet"
+              emptyDescription="As messages, swaps, enrollments, and events change, they will show up here."
+            />
+          </div>
         </div>
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)]">

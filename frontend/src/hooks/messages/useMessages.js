@@ -76,8 +76,8 @@ export function useMessages(initialConversationId = "") {
   const setLiveConnectionState = useAppShellStore(
     (state) => state.setLiveConnectionState,
   );
-  const setUnreadNotificationCount = useAppShellStore(
-    (state) => state.setUnreadNotificationCount,
+  const setUnreadMessageCount = useAppShellStore(
+    (state) => state.setUnreadMessageCount,
   );
   const selectedConversationId = selected?.id ?? null;
   const accessToken = getStoredAccessToken();
@@ -105,7 +105,7 @@ export function useMessages(initialConversationId = "") {
         }
         setMe(data.user);
         setConversations(data.conversations);
-        setUnreadNotificationCount(sumUnreadCounts(data.conversations));
+        setUnreadMessageCount(sumUnreadCounts(data.conversations));
 
         if (initialConversationId) {
           const preferredConversation = data.conversations.find(
@@ -145,7 +145,7 @@ export function useMessages(initialConversationId = "") {
                     }
                   : conversation,
               );
-              setUnreadNotificationCount(sumUnreadCounts(nextConversations));
+              setUnreadMessageCount(sumUnreadCounts(nextConversations));
               return nextConversations;
             });
           }
@@ -227,7 +227,7 @@ export function useMessages(initialConversationId = "") {
                 }
               : conversation,
         );
-        setUnreadNotificationCount(sumUnreadCounts(nextConversations));
+        setUnreadMessageCount(sumUnreadCounts(nextConversations));
         return nextConversations;
       },
     );
@@ -246,7 +246,7 @@ export function useMessages(initialConversationId = "") {
                   }
                 : conversation,
             );
-            setUnreadNotificationCount(sumUnreadCounts(nextConversations));
+            setUnreadMessageCount(sumUnreadCounts(nextConversations));
             return nextConversations;
           });
           setSelected((current) =>
@@ -263,7 +263,7 @@ export function useMessages(initialConversationId = "") {
         })
         .catch(() => {});
     }
-  }, [lastJsonMessage, me?.id, selectedConversationId, setUnreadNotificationCount]);
+  }, [lastJsonMessage, me?.id, selectedConversationId, setUnreadMessageCount]);
 
   const openConversation = async (conversation) => {
     setSelected(conversation);
@@ -288,7 +288,7 @@ export function useMessages(initialConversationId = "") {
         const nextConversations = current.map((item) =>
           item.id === threadDetails.id ? hydratedThreadDetails : item,
         );
-        setUnreadNotificationCount(sumUnreadCounts(nextConversations));
+        setUnreadMessageCount(sumUnreadCounts(nextConversations));
         return nextConversations;
       });
     } catch (requestError) {
@@ -322,7 +322,7 @@ export function useMessages(initialConversationId = "") {
             (left, right) =>
               new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime(),
           );
-          setUnreadNotificationCount(sumUnreadCounts(nextConversations));
+          setUnreadMessageCount(sumUnreadCounts(nextConversations));
           return nextConversations;
         },
       );

@@ -2,7 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import permissions, status
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 
@@ -26,11 +26,21 @@ from apps.organizations.models import Organization
 
 
 def public_event_queryset():
-    return annotate_event_queryset(Event.objects.filter(status__in=[EventStatus.UPCOMING, EventStatus.LIVE]))
+    return annotate_event_queryset(
+        Event.objects.filter(
+            status__in=[EventStatus.UPCOMING, EventStatus.LIVE],
+            organization__is_suspended=False,
+        )
+    )
 
 
 def organization_event_queryset(user):
-    return annotate_event_queryset(Event.objects.filter(organization__owner=user))
+    return annotate_event_queryset(
+        Event.objects.filter(
+            organization__owner=user,
+            organization__is_suspended=False,
+        )
+    )
 
 
 def admin_event_queryset():
@@ -131,7 +141,10 @@ class OrganizationEventListCreateView(GenericAPIView):
     serializer_class = EventWriteSerializer
 
     def get_organization(self):
-        return Organization.objects.get(owner=self.request.user)
+        organization = Organization.objects.get(owner=self.request.user)
+        if organization.is_suspended:
+            raise PermissionDenied(detail="Organization access is suspended.")
+        return organization
 
     def serialize_event(self, instance, many=False):
         if not many:
@@ -143,6 +156,7 @@ class OrganizationEventListCreateView(GenericAPIView):
         )
 
     def get(self, request):
+        self.get_organization()
         queryset = organization_event_queryset(request.user)
         serializer = self.serialize_event(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

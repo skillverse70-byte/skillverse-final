@@ -110,6 +110,7 @@ INSTALLED_APPS = [
     "apps.organizations",
     "apps.payments",
     "apps.skills",
+    "apps.taxonomy",
     "apps.swaps",
     "apps.messaging",
     "apps.notifications",

@@ -14,8 +14,9 @@ import SessionPlannerPanel from "@/features/messages/components/SessionPlannerPa
 
 export default function MessagesPage() {
   const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
   const initialConversationId =
-    new URLSearchParams(location.search).get("conversation") || "";
+    searchParams.get("conversation") || searchParams.get("thread") || "";
   const {
     me,
     conversations,

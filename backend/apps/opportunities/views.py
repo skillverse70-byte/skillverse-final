@@ -2,7 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import permissions, status
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 
@@ -24,13 +24,19 @@ from apps.organizations.models import Organization
 
 def public_opportunity_queryset():
     return annotate_opportunity_queryset(
-        Opportunity.objects.filter(status__in=[OpportunityStatus.OPEN, OpportunityStatus.FILLED])
+        Opportunity.objects.filter(
+            status__in=[OpportunityStatus.OPEN, OpportunityStatus.FILLED],
+            organization__is_suspended=False,
+        )
     )
 
 
 def organization_opportunity_queryset(user):
     return annotate_opportunity_queryset(
-        Opportunity.objects.filter(organization__owner=user)
+        Opportunity.objects.filter(
+            organization__owner=user,
+            organization__is_suspended=False,
+        )
     )
 
 
@@ -98,7 +104,9 @@ class OpportunityDetailView(RetrieveAPIView):
 
     def get_queryset(self):
         return annotate_opportunity_queryset(
-            Opportunity.objects.exclude(status=OpportunityStatus.DRAFT)
+            Opportunity.objects.exclude(status=OpportunityStatus.DRAFT).filter(
+                organization__is_suspended=False
+            )
         )
 
     def retrieve(self, request, *args, **kwargs):
@@ -125,7 +133,10 @@ class OrganizationOpportunityListCreateView(GenericAPIView):
     serializer_class = OpportunityWriteSerializer
 
     def get_organization(self):
-        return Organization.objects.get(owner=self.request.user)
+        organization = Organization.objects.get(owner=self.request.user)
+        if organization.is_suspended:
+            raise PermissionDenied(detail="Organization access is suspended.")
+        return organization
 
     def serialize_opportunity(self, instance, many=False):
         return OpportunityDetailSerializer(
@@ -135,6 +146,7 @@ class OrganizationOpportunityListCreateView(GenericAPIView):
         )
 
     def get(self, request):
+        self.get_organization()
         queryset = organization_opportunity_queryset(request.user)
         serializer = self.serialize_opportunity(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -240,7 +252,7 @@ class RegularUserApplicationCreateView(GenericAPIView):
     def get_opportunity(self):
         opportunity = (
             Opportunity.objects.select_related("organization", "organization__owner")
-            .filter(pk=self.kwargs["pk"])
+            .filter(pk=self.kwargs["pk"], organization__is_suspended=False)
             .first()
         )
         if opportunity is None or opportunity.status == OpportunityStatus.DRAFT:

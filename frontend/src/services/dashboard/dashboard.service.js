@@ -1,5 +1,14 @@
 import { authenticatedApiRequest } from "@/services/auth/backend-auth-client";
 import {
+  fetchAdminAuditLogs,
+  fetchAdminCourses,
+  fetchAdminJobs,
+  fetchAdminOrganizations,
+  fetchAdminTaxonomyCatalog,
+  fetchAdminTaxonomySuggestions,
+  fetchAdminUsers,
+} from "@/services/admin/admin-governance.service";
+import {
   normalizeCourse,
   normalizeEnrollment,
 } from "@/services/courses/courses.service";
@@ -61,6 +70,19 @@ function normalizeAdminDashboard(payload = {}) {
       ? payload.financial_accounts
       : [],
     events: Array.isArray(payload.events) ? payload.events.map(normalizeEvent) : [],
+    users: Array.isArray(payload.users) ? payload.users : [],
+    moderatedOrganizations: Array.isArray(payload.moderated_organizations)
+      ? payload.moderated_organizations
+      : [],
+    courses: Array.isArray(payload.courses) ? payload.courses : [],
+    jobs: Array.isArray(payload.jobs) ? payload.jobs : [],
+    taxonomySuggestions: Array.isArray(payload.taxonomy_suggestions)
+      ? payload.taxonomy_suggestions
+      : [],
+    taxonomyCatalog: Array.isArray(payload.taxonomy_catalog)
+      ? payload.taxonomy_catalog
+      : [],
+    auditLogs: Array.isArray(payload.audit_logs) ? payload.audit_logs : [],
   };
 }
 
@@ -77,7 +99,34 @@ export async function fetchOrganizationDashboardData() {
 }
 
 export async function fetchAdminDashboardData() {
-  const payload = await authenticatedApiRequest("/dashboard/admin/", { method: "GET" });
-  return normalizeAdminDashboard(payload);
-}
+  const [
+    dashboardPayload,
+    users,
+    moderatedOrganizations,
+    courses,
+    jobs,
+    taxonomySuggestions,
+    taxonomyCatalog,
+    auditLogs,
+  ] = await Promise.all([
+    authenticatedApiRequest("/dashboard/admin/", { method: "GET" }),
+    fetchAdminUsers(),
+    fetchAdminOrganizations(),
+    fetchAdminCourses(),
+    fetchAdminJobs(),
+    fetchAdminTaxonomySuggestions(),
+    fetchAdminTaxonomyCatalog(),
+    fetchAdminAuditLogs(),
+  ]);
 
+  return normalizeAdminDashboard({
+    ...dashboardPayload,
+    users,
+    moderated_organizations: moderatedOrganizations,
+    courses,
+    jobs,
+    taxonomy_suggestions: taxonomySuggestions,
+    taxonomy_catalog: taxonomyCatalog,
+    audit_logs: auditLogs,
+  });
+}

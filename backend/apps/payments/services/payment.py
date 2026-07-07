@@ -10,6 +10,7 @@ from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from apps.audit.services import record_audit_log
 from apps.common.enums import PaymentTransactionStatus
 
 
@@ -121,7 +122,7 @@ class ChapaPaymentService:
             f"/v1/transaction/cancel/{quote(tx_ref, safe='')}",
         )
 
-    def reconcile_transaction(self, payment_transaction):
+    def reconcile_transaction(self, payment_transaction, *, actor=None, source="system"):
         previous_status = payment_transaction.status
         response = self.verify_payment(payment_transaction.tx_ref)
         data = response.get("data") or {}
@@ -136,6 +137,20 @@ class ChapaPaymentService:
             )
             payment_transaction.save(
                 update_fields=["last_verified_at", "failure_reason", "updated_at"]
+            )
+            record_audit_log(
+                actor=actor,
+                action="payment.transaction.verification_failed",
+                target_type="payment_transaction",
+                target_id=payment_transaction.id,
+                summary=f"Payment verification failed for {payment_transaction.tx_ref}.",
+                metadata={
+                    "tx_ref": payment_transaction.tx_ref,
+                    "source": source,
+                    "failure_reason": payment_transaction.failure_reason,
+                    "provider_status": str(data.get("status") or "").lower(),
+                    "had_mismatch": bool(mismatches),
+                },
             )
             if mismatches:
                 raise ChapaVerificationError(
@@ -157,6 +172,25 @@ class ChapaPaymentService:
         if payment_transaction.status == PaymentTransactionStatus.SUCCEEDED:
             payment_transaction.verified_at = payment_transaction.verified_at or timezone.now()
         payment_transaction.save()
+        if (
+            previous_status != payment_transaction.status
+            or payment_transaction.status == PaymentTransactionStatus.SUCCEEDED
+        ):
+            record_audit_log(
+                actor=actor,
+                action="payment.transaction.reconciled",
+                target_type="payment_transaction",
+                target_id=payment_transaction.id,
+                summary=f"Payment transaction {payment_transaction.tx_ref} reconciled.",
+                metadata={
+                    "tx_ref": payment_transaction.tx_ref,
+                    "source": source,
+                    "previous_status": previous_status,
+                    "status": payment_transaction.status,
+                    "provider_reference": payment_transaction.provider_reference,
+                    "provider_method": payment_transaction.provider_method,
+                },
+            )
         if (
             payment_transaction.status == PaymentTransactionStatus.SUCCEEDED
             and previous_status != PaymentTransactionStatus.SUCCEEDED
@@ -213,10 +247,22 @@ class ChapaPaymentService:
             payment_transaction = PaymentTransaction.objects.select_for_update().get(
                 pk=payment_transaction.pk
             )
-            self.reconcile_transaction(payment_transaction)
+            self.reconcile_transaction(payment_transaction, source="webhook")
             webhook_event.processed = True
             webhook_event.processed_at = timezone.now()
             webhook_event.save(update_fields=["processed", "processed_at"])
+        record_audit_log(
+            actor=None,
+            action="payment.webhook.processed",
+            target_type="payment_webhook_event",
+            target_id=webhook_event.id,
+            summary=f"Processed payment webhook {event_type} for {tx_ref}.",
+            metadata={
+                "event_type": event_type,
+                "tx_ref": tx_ref,
+                "provider_reference": provider_reference,
+            },
+        )
         return payment_transaction
 
     def _request_json(self, method, path, *, payload=None):

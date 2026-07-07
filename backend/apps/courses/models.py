@@ -21,6 +21,15 @@ class CourseProgram(models.Model):
     price_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     price_currency = models.CharField(max_length=8, default="ETB")
     enrollment_open = models.BooleanField(default=True)
+    admin_review_notes = models.TextField(blank=True)
+    admin_reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_course_programs",
+    )
+    admin_reviewed_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(
         max_length=16,
         choices=CourseProgramStatus.choices,

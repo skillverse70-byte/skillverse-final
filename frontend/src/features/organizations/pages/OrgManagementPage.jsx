@@ -16,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import EmptyState from "@/components/shared/EmptyState";
+import NotificationFeedPanel from "@/components/shared/NotificationFeedPanel";
 import PageLoader from "@/components/shared/PageLoader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import WorkspaceShell from "@/components/shared/WorkspaceShell";
@@ -424,20 +425,30 @@ export default function OrgManagementPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-amber-600" />
-              <h2 className="font-heading text-lg font-semibold text-foreground">
-                Operator pulse
-              </h2>
-            </div>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <MiniMetric label="Learners" value={enrollments.length} />
-              <MiniMetric label="Applicants" value={applications.length} />
-              <MiniMetric label="Completed" value={stats.completed_enrollments ?? 0} />
-              <MiniMetric label="Hired" value={stats.hired_applicants ?? 0} />
-            </div>
-          </section>
+          <div className="space-y-4">
+            <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-amber-600" />
+                <h2 className="font-heading text-lg font-semibold text-foreground">
+                  Operator pulse
+                </h2>
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <MiniMetric label="Learners" value={enrollments.length} />
+                <MiniMetric label="Applicants" value={applications.length} />
+                <MiniMetric label="Completed" value={stats.completed_enrollments ?? 0} />
+                <MiniMetric label="Hired" value={stats.hired_applicants ?? 0} />
+              </div>
+            </section>
+
+            <NotificationFeedPanel
+              title="Organization notifications"
+              description="Track approvals, new enrollments, applications, RSVPs, and event review actions."
+              limit={4}
+              emptyTitle="No organization notifications yet"
+              emptyDescription="When learners, applicants, finance review, or event actions change, updates will appear here."
+            />
+          </div>
         </div>
 
         <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">

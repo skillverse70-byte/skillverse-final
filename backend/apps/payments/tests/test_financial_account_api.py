@@ -4,6 +4,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from apps.audit.models import AuditLog
 from apps.common.enums import (
     FinancialAccountStatus,
     OrganizationType,
@@ -98,6 +99,22 @@ class FinancialAccountApiTests(APITestCase):
         self.assertEqual(response.data["account_number_last4"], "1234")
         self.assertTrue(response.data["can_publish_paid_courses"])
         self.assertFalse(response.data["can_accept_paid_enrollments"])
+        audit_log = AuditLog.objects.get(
+            action="financial_account.organization.updated",
+            target_id=response.data["id"],
+        )
+        self.assertEqual(audit_log.actor, self.organization_user)
+        self.assertEqual(
+            audit_log.metadata["changed_fields"],
+            [
+                "account_holder_name",
+                "account_number_last4",
+                "bank_code",
+                "bank_name",
+                "business_name",
+                "setup_notes",
+            ],
+        )
 
     def test_regular_user_cannot_access_financial_account_endpoint(self):
         self.authenticate(self.regular_user)
@@ -170,6 +187,12 @@ class FinancialAccountApiTests(APITestCase):
         self.assertEqual(financial_account.reviewed_by, self.admin_user)
         self.assertIsNotNone(financial_account.reviewed_at)
         self.assertIsNotNone(financial_account.verified_at)
+        audit_log = AuditLog.objects.get(
+            action="financial_account.admin.reviewed",
+            target_id=financial_account.id,
+        )
+        self.assertEqual(audit_log.actor, self.admin_user)
+        self.assertEqual(audit_log.metadata["decision"], FinancialAccountStatus.READY)
 
     def test_admin_restriction_requires_and_exposes_reason(self):
         financial_account = FinancialAccount.objects.create(

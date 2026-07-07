@@ -68,3 +68,7 @@ class IsRegularUserOrAdmin(HasActorRole):
 
 class IsOrganizationActorOrAdmin(HasActorRole):
     allowed_roles = (Role.ORGANIZATION, Role.ADMIN)
+
+
+class IsRegularUserOrOrganizationActor(HasActorRole):
+    allowed_roles = (Role.REGULAR_USER, Role.ORGANIZATION)

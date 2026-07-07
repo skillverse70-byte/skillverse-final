@@ -43,7 +43,7 @@ Legend:
 | `/org` | No | No | Yes | No | Structured organization workspace with overview, account setup, finance status, and publishing sections |
 | `/organization-profile` | No | No | Yes | No | Organization profile management |
 | `/course-builder` | No | No | Yes | No | Organization course authoring |
-| `/admin` | No | No | No | Yes | Admin dashboard for organization verification, financial-account review, moderation, and oversight |
+| `/admin` | No | No | No | Yes | Admin workspace for verification, financial review, user/org/course/job moderation, event oversight, and taxonomy governance |
 
 ## Actor Home Rules
 
@@ -56,12 +56,12 @@ Legend:
 
 - Regular User navigation exposes discovery plus learner/member workflows.
 - Organization navigation exposes organization workspace routes only.
-- Admin navigation exposes oversight routes only.
+- Admin navigation exposes oversight routes only, with `/admin` tabbed into verification, finance, moderation, event oversight, and taxonomy governance surfaces.
 - Public browse routes stay directly reachable because the PRD requires public trust-sensitive listings and public opportunity/course/event discovery.
 
 ## Separation Intent
 
 - Regular Users own skill swaps, messaging, personal profiles, saved items, enrollments, and learner progress.
 - Organizations own organization profile management, verification readiness, and program authoring.
-- Admins own moderation, verification review, and platform oversight.
+- Admins own moderation, verification review, taxonomy governance, and platform oversight.
 - Admin access is not treated as "show every regular-user or organization screen"; admin gets its own workspace.

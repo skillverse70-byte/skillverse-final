@@ -4,6 +4,133 @@ info:
   version: 0.1.0
   description: Backend API for the SkillVerse platform.
 paths:
+  /api/admin/audit/logs/:
+    get:
+      operationId: admin_audit_log_list
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+          minLength: 1
+      - in: query
+        name: actor_id
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: search
+        schema:
+          type: string
+          minLength: 1
+      - in: query
+        name: target_id
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: target_type
+        schema:
+          type: string
+          minLength: 1
+      tags:
+      - audit
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLog'
+          description: ''
+  /api/admin/audit/logs/{id}/:
+    get:
+      operationId: admin_audit_log_detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - audit
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+          description: ''
+  /api/admin/courses/:
+    get:
+      operationId: admin_courses_list
+      tags:
+      - courses
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminCourseModeration'
+          description: ''
+  /api/admin/courses/{id}/decision/:
+    post:
+      operationId: admin_courses_decision
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCourseModerationDecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminCourseModerationDecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminCourseModerationDecisionRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourseModeration'
+          description: ''
   /api/admin/events/:
     get:
       operationId: events_admin_list
@@ -54,6 +181,109 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminEventOversight'
+          description: ''
+  /api/admin/jobs/:
+    get:
+      operationId: admin_jobs_list
+      tags:
+      - opportunities
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminOpportunityModeration'
+          description: ''
+  /api/admin/jobs/{id}/decision/:
+    post:
+      operationId: admin_jobs_decision
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - opportunities
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminOpportunityModerationDecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminOpportunityModerationDecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminOpportunityModerationDecisionRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOpportunityModeration'
+          description: ''
+  /api/admin/organizations/moderation/:
+    get:
+      operationId: admin_organizations_list
+      tags:
+      - organizations
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminOrganizationModeration'
+          description: ''
+  /api/admin/organizations/moderation/{id}/decision/:
+    post:
+      operationId: admin_organizations_decision
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - organizations
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminOrganizationModerationDecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminOrganizationModerationDecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminOrganizationModerationDecisionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOrganizationModeration'
           description: ''
   /api/admin/organizations/verification-requests/:
     get:
@@ -156,6 +386,193 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminFinancialAccount'
+          description: ''
+  /api/admin/taxonomy/catalog/:
+    get:
+      operationId: taxonomy_admin_catalog_list
+      tags:
+      - taxonomy
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaxonomyCatalogEntry'
+          description: ''
+    post:
+      operationId: taxonomy_admin_catalog_create
+      tags:
+      - taxonomy
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaxonomyCatalogEntryCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TaxonomyCatalogEntryCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TaxonomyCatalogEntryCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxonomyCatalogEntry'
+          description: ''
+  /api/admin/taxonomy/catalog/{domain}/{id}/:
+    patch:
+      operationId: taxonomy_admin_catalog_update
+      parameters:
+      - in: path
+        name: domain
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - taxonomy
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTaxonomyCatalogEntryUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTaxonomyCatalogEntryUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTaxonomyCatalogEntryUpdateRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxonomyCatalogEntry'
+          description: ''
+  /api/admin/taxonomy/suggestions/:
+    get:
+      operationId: taxonomy_admin_suggestions_list
+      tags:
+      - taxonomy
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaxonomySuggestion'
+          description: ''
+  /api/admin/taxonomy/suggestions/{id}/decision/:
+    post:
+      operationId: taxonomy_admin_suggestions_decision
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - taxonomy
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaxonomySuggestionDecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TaxonomySuggestionDecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TaxonomySuggestionDecisionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxonomySuggestion'
+          description: ''
+  /api/admin/users/:
+    get:
+      operationId: admin_users_list
+      tags:
+      - auth
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminUserModeration'
+          description: ''
+  /api/admin/users/{id}/decision/:
+    post:
+      operationId: admin_users_decision
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - auth
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUserModerationDecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminUserModerationDecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminUserModerationDecisionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserModeration'
           description: ''
   /api/auth/jwt/refresh/:
     post:
@@ -1569,6 +1986,86 @@ paths:
               schema:
                 $ref: '#/components/schemas/MessageThreadReadReceipt'
           description: ''
+  /api/notifications/:
+    get:
+      operationId: notifications_list
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/notifications/{id}/read/:
+    post:
+      operationId: notifications_mark_read
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/notifications/read-all/:
+    post:
+      operationId: notifications_mark_all_read
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationReadAllRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NotificationReadAllRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NotificationReadAllRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationReadAll'
+          description: ''
+  /api/notifications/summary/:
+    get:
+      operationId: notifications_summary
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSummary'
+          description: ''
   /api/organizations/{id}/public/:
     get:
       operationId: organizations_public_retrieve
@@ -2473,6 +2970,67 @@ paths:
               schema:
                 $ref: '#/components/schemas/SkillSwapRequest'
           description: ''
+  /api/taxonomy/catalog/:
+    get:
+      operationId: taxonomy_catalog_list
+      tags:
+      - taxonomy
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaxonomyCatalogEntry'
+          description: ''
+  /api/taxonomy/suggestions/:
+    get:
+      operationId: taxonomy_suggestions_mine_list
+      tags:
+      - taxonomy
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaxonomySuggestion'
+          description: ''
+    post:
+      operationId: taxonomy_suggestions_create
+      tags:
+      - taxonomy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaxonomySuggestionCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TaxonomySuggestionCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TaxonomySuggestionCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxonomySuggestion'
+          description: ''
   /api/v1/payment/webhook/:
     post:
       operationId: payments_chapa_webhook
@@ -2503,6 +3061,99 @@ paths:
           description: ''
 components:
   schemas:
+    ActorSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+      required:
+      - email
+      - full_name
+      - id
+    AdminCourseModeration:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization:
+          type: integer
+          readOnly: true
+        organization_name:
+          type: string
+          readOnly: true
+        organization_verification_status:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/CourseProgramStatusEnum'
+          readOnly: true
+        is_free:
+          type: boolean
+          readOnly: true
+        price_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        enrollment_open:
+          type: boolean
+          readOnly: true
+        admin_review_notes:
+          type: string
+          readOnly: true
+        admin_reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - admin_review_notes
+      - admin_reviewed_at
+      - category
+      - created_at
+      - enrollment_open
+      - id
+      - is_free
+      - organization
+      - organization_name
+      - organization_verification_status
+      - price_amount
+      - status
+      - title
+      - updated_at
+    AdminCourseModerationDecisionRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/CourseProgramStatusEnum'
+        enrollment_open:
+          type: boolean
+        review_notes:
+          type: string
     AdminDashboard:
       type: object
       properties:
@@ -2821,6 +3472,153 @@ components:
       - submitted_at
       - updated_at
       - verified_at
+    AdminOpportunityModeration:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        organization:
+          type: integer
+          readOnly: true
+        organization_name:
+          type: string
+          readOnly: true
+        organization_verification_status:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/OpportunityTypeEnum'
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OpportunityStatusEnum'
+          readOnly: true
+        deadline:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        application_count:
+          type: integer
+          readOnly: true
+        admin_review_notes:
+          type: string
+          readOnly: true
+        admin_reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - admin_review_notes
+      - admin_reviewed_at
+      - application_count
+      - category
+      - created_at
+      - deadline
+      - id
+      - organization
+      - organization_name
+      - organization_verification_status
+      - status
+      - title
+      - type
+      - updated_at
+    AdminOpportunityModerationDecisionRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/OpportunityStatusEnum'
+        review_notes:
+          type: string
+    AdminOrganizationModeration:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationTypeEnum'
+          readOnly: true
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationVerificationStatusEnum'
+          readOnly: true
+        contact_email:
+          type: string
+          format: email
+          readOnly: true
+        country:
+          type: string
+          readOnly: true
+        location:
+          type: string
+          readOnly: true
+        owner_email:
+          type: string
+          format: email
+          readOnly: true
+        owner_full_name:
+          type: string
+          readOnly: true
+        is_suspended:
+          type: boolean
+          readOnly: true
+        suspension_reason:
+          type: string
+          readOnly: true
+        moderated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - contact_email
+      - country
+      - id
+      - is_suspended
+      - location
+      - moderated_at
+      - name
+      - owner_email
+      - owner_full_name
+      - suspension_reason
+      - type
+      - updated_at
+      - verification_status
+    AdminOrganizationModerationDecisionRequest:
+      type: object
+      properties:
+        is_suspended:
+          type: boolean
+        suspension_reason:
+          type: string
+      required:
+      - is_suspended
     AdminOversightCounts:
       type: object
       properties:
@@ -2881,6 +3679,72 @@ components:
       - regular_users
       - total_users
       - verified_organizations
+    AdminUserModeration:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+        is_staff:
+          type: boolean
+          readOnly: true
+          title: Staff status
+          description: Designates whether the user can log into this admin site.
+        is_superuser:
+          type: boolean
+          readOnly: true
+          title: Superuser status
+          description: Designates that this user has all permissions without explicitly
+            assigning them.
+        is_email_verified:
+          type: boolean
+          readOnly: true
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - date_joined
+      - email
+      - full_name
+      - id
+      - is_active
+      - is_email_verified
+      - is_staff
+      - is_superuser
+      - last_login
+      - role
+    AdminUserModerationDecisionRequest:
+      type: object
+      properties:
+        is_active:
+          type: boolean
+        reason:
+          type: string
+      required:
+      - is_active
     ApplicantInfo:
       type: object
       properties:
@@ -2974,6 +3838,59 @@ components:
       - reviewed_at
       - reviewer_notes
       - status
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        actor:
+          type: integer
+          readOnly: true
+          nullable: true
+        actor_email:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+        actor_full_name:
+          type: string
+          readOnly: true
+          nullable: true
+        actor_role:
+          type: string
+          readOnly: true
+          nullable: true
+        action:
+          type: string
+          readOnly: true
+        target_type:
+          type: string
+          readOnly: true
+        target_id:
+          type: integer
+          readOnly: true
+        summary:
+          type: string
+          readOnly: true
+        metadata:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - actor
+      - actor_email
+      - actor_full_name
+      - actor_role
+      - created_at
+      - id
+      - metadata
+      - summary
+      - target_id
+      - target_type
     AuthUser:
       type: object
       properties:
@@ -3381,6 +4298,20 @@ components:
         * `offering` - Offering
         * `requesting` - Requesting
         * `both` - Both
+    DomainEnum:
+      enum:
+      - field_interest
+      - skill
+      - course_category
+      - event_category
+      - opportunity_category
+      type: string
+      description: |-
+        * `field_interest` - Field Interest
+        * `skill` - Skill
+        * `course_category` - Course Category
+        * `event_category` - Event Category
+        * `opportunity_category` - Opportunity Category
     EmailTokenObtainPairRequest:
       type: object
       properties:
@@ -4868,6 +5799,106 @@ components:
       - full_name
       - id
       - interests_summary
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/NotificationTypeEnum'
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        message:
+          type: string
+          readOnly: true
+        action_url:
+          type: string
+          readOnly: true
+        metadata:
+          readOnly: true
+        is_read:
+          type: boolean
+          readOnly: true
+        read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        emailed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action_url
+      - created_at
+      - emailed_at
+      - id
+      - is_read
+      - message
+      - metadata
+      - read_at
+      - title
+      - type
+    NotificationReadAll:
+      type: object
+      properties:
+        updated_count:
+          type: integer
+        unread_count:
+          type: integer
+      required:
+      - unread_count
+      - updated_count
+    NotificationReadAllRequest:
+      type: object
+      properties:
+        updated_count:
+          type: integer
+        unread_count:
+          type: integer
+      required:
+      - unread_count
+      - updated_count
+    NotificationSummary:
+      type: object
+      properties:
+        unread_count:
+          type: integer
+      required:
+      - unread_count
+    NotificationTypeEnum:
+      enum:
+      - auth
+      - verification
+      - swap
+      - message
+      - session
+      - course
+      - enrollment
+      - event
+      - opportunity
+      - admin
+      type: string
+      description: |-
+        * `auth` - Authentication
+        * `verification` - Verification
+        * `swap` - Swap
+        * `message` - Message
+        * `session` - Session
+        * `course` - Course
+        * `enrollment` - Enrollment
+        * `event` - Event
+        * `opportunity` - Opportunity
+        * `admin` - Admin
     OpportunityDetail:
       type: object
       properties:
@@ -5970,6 +7001,17 @@ components:
           oneOf:
           - $ref: '#/components/schemas/ExperienceLevelEnum'
           - $ref: '#/components/schemas/BlankEnum'
+    PatchedTaxonomyCatalogEntryUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+        is_active:
+          type: boolean
     PatchedUserSkillUpdateRequest:
       type: object
       properties:
@@ -6705,6 +7747,178 @@ components:
       - full_name
       - id
       - interests_summary
+    TaxonomyCatalogEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        domain:
+          allOf:
+          - $ref: '#/components/schemas/DomainEnum'
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - description
+      - domain
+      - id
+      - is_active
+      - name
+      - slug
+      - updated_at
+    TaxonomyCatalogEntryCreateRequest:
+      type: object
+      properties:
+        domain:
+          $ref: '#/components/schemas/DomainEnum'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - domain
+      - name
+    TaxonomySuggestion:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        domain:
+          allOf:
+          - $ref: '#/components/schemas/DomainEnum'
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        normalized_slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationVerificationReviewStatusEnum'
+          readOnly: true
+        suggested_by:
+          allOf:
+          - $ref: '#/components/schemas/ActorSummary'
+          nullable: true
+          readOnly: true
+        organization:
+          allOf:
+          - $ref: '#/components/schemas/TaxonomySuggestionOrganization'
+          nullable: true
+          readOnly: true
+        reviewer_notes:
+          type: string
+          readOnly: true
+        resolved_entry_name:
+          type: string
+          readOnly: true
+        resolved_entry_slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - description
+      - domain
+      - id
+      - name
+      - normalized_slug
+      - organization
+      - resolved_entry_name
+      - resolved_entry_slug
+      - reviewed_at
+      - reviewer_notes
+      - status
+      - suggested_by
+    TaxonomySuggestionCreateRequest:
+      type: object
+      properties:
+        domain:
+          $ref: '#/components/schemas/DomainEnum'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+      required:
+      - domain
+      - name
+    TaxonomySuggestionDecisionDecisionEnum:
+      enum:
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `approved` - approved
+        * `rejected` - rejected
+    TaxonomySuggestionDecisionRequest:
+      type: object
+      properties:
+        decision:
+          $ref: '#/components/schemas/TaxonomySuggestionDecisionDecisionEnum'
+        reviewer_notes:
+          type: string
+      required:
+      - decision
+    TaxonomySuggestionOrganization:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        type:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - name
+      - type
     TestEmailRequestRequest:
       type: object
       properties:

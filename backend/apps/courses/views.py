@@ -30,6 +30,7 @@ def course_program_queryset():
             "organization",
             "organization__owner",
             "organization__financial_account",
+            "admin_reviewed_by",
         )
         .prefetch_related(
             Prefetch("modules", queryset=CourseModule.objects.prefetch_related("lesson_items"))
@@ -138,7 +139,10 @@ class PublishedCourseProgramListView(ListAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return course_program_queryset().filter(status=CourseProgramStatus.PUBLISHED)
+        return course_program_queryset().filter(
+            status=CourseProgramStatus.PUBLISHED,
+            organization__is_suspended=False,
+        )
 
 
 @extend_schema_view(
@@ -153,7 +157,10 @@ class CourseProgramDetailView(RetrieveAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return course_program_queryset().filter(status=CourseProgramStatus.PUBLISHED)
+        return course_program_queryset().filter(
+            status=CourseProgramStatus.PUBLISHED,
+            organization__is_suspended=False,
+        )
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -189,7 +196,10 @@ class OrganizationCourseProgramListCreateView(GenericAPIView):
     serializer_class = CourseProgramWriteSerializer
 
     def get_organization(self):
-        return Organization.objects.get(owner=self.request.user)
+        organization = Organization.objects.get(owner=self.request.user)
+        if organization.is_suspended:
+            raise PermissionDenied(detail="Organization access is suspended.")
+        return organization
 
     def serialize_detail(self, course_program, many=False):
         return CourseProgramDetailSerializer(
@@ -250,7 +260,10 @@ class OrganizationCourseProgramDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = CourseProgramWriteSerializer
 
     def get_queryset(self):
-        return course_program_queryset().filter(organization__owner=self.request.user)
+        return course_program_queryset().filter(
+            organization__owner=self.request.user,
+            organization__is_suspended=False,
+        )
 
     def get_serializer_class(self):
         if self.request.method in permissions.SAFE_METHODS:
@@ -371,6 +384,7 @@ class RegularUserCourseEnrollmentCreateView(GenericAPIView):
         course_program = course_program_queryset().filter(
             pk=pk,
             status=CourseProgramStatus.PUBLISHED,
+            organization__is_suspended=False,
         ).first()
         if course_program is None:
             return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)

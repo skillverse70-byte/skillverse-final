@@ -10,6 +10,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from apps.audit.models import AuditLog
 from apps.common.enums import (
     CourseProgramStatus,
     FinancialAccountStatus,
@@ -182,6 +183,12 @@ class PaymentFlowApiTests(APITestCase):
         self.assertEqual(call_kwargs["amount"], Decimal("1250.00"))
         self.assertEqual(call_kwargs["currency"], "ETB")
         self.assertEqual(call_kwargs["tx_ref"], payment.tx_ref)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="payment.checkout.created",
+                target_id=payment.id,
+            ).exists()
+        )
 
     @patch("apps.payments.views.ChapaPaymentService.initiate_payment")
     def test_organization_cannot_start_learner_checkout(self, mock_initiate_payment):
@@ -254,6 +261,12 @@ class PaymentFlowApiTests(APITestCase):
         payment.refresh_from_db()
         self.assertEqual(payment.status, PaymentTransactionStatus.PENDING)
         self.assertEqual(payment.failure_reason, "verification_mismatch")
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="payment.transaction.verification_failed",
+                target_id=payment.id,
+            ).exists()
+        )
 
     @patch("apps.payments.views.ChapaPaymentService.verify_payment")
     def test_invalid_webhook_signature_is_silently_ignored(self, mock_verify_payment):
@@ -314,6 +327,12 @@ class PaymentFlowApiTests(APITestCase):
         self.assertEqual(mock_verify_payment.call_count, 1)
         self.assertEqual(PaymentWebhookEvent.objects.count(), 1)
         self.assertTrue(PaymentWebhookEvent.objects.get().processed)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="payment.webhook.processed",
+                metadata__tx_ref=payment.tx_ref,
+            ).exists()
+        )
         self.assertTrue(
             Enrollment.objects.filter(
                 user=self.learner,

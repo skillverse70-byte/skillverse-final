@@ -133,3 +133,17 @@ export const notificationTypes = Object.freeze({
   opportunity: "opportunity",
   admin: "admin",
 });
+
+export const taxonomyDomains = Object.freeze({
+  fieldInterest: "field_interest",
+  skill: "skill",
+  courseCategory: "course_category",
+  eventCategory: "event_category",
+  opportunityCategory: "opportunity_category",
+});
+
+export const taxonomySuggestionStatuses = Object.freeze({
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+});

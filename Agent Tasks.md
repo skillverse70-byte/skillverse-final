@@ -981,6 +981,7 @@ At the end of this phase, the existing role-specific workspaces at `/dashboard`,
 ### TASK-903: Implement Unified Notification Backend
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
 - **Owner:** Backend
+- **Status:** Complete
 - **Actor(s):** Guest, Regular User, Organization, Admin
 - **Route(s):** `/verify-email`, `/login`, `/dashboard`, `/org`, `/admin`, `/messages`, `/skill-swap`, `/courses/:id`, `/events/:id`, `/jobs/:id`
 - **Files touched:** `backend/apps/notifications/`, `backend/apps/accounts/`, `backend/apps/messaging/`, `backend/apps/courses/`, `backend/apps/events/`, `backend/apps/opportunities/`, `backend/apps/swaps/`, `backend/apps/organizations/`, `backend/config/routing.py`, `backend/config/urls.py`, `schema.yaml`
@@ -1007,8 +1008,9 @@ At the end of this phase, the existing role-specific workspaces at `/dashboard`,
 - **Description:** Surface notifications through the existing app shell and actor workspaces. This should extend the current unread badge model into a proper notification experience with counts, read state, deep links into the relevant workflow, and actor-relevant visibility in `/dashboard`, `/org`, and `/admin` without inventing disconnected UI patterns.
 
 ### TASK-905: Implement Admin Moderation, Taxonomy, and Suggestion Backend
-- **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
-- **Owner:** Backend
+  - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
+  - **Status:** Complete
+  - **Owner:** Backend
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/profile`, `/skill-portfolio`, `/organization-profile`, `/course-builder`, `/org`, `/admin`
 - **Files touched:** `backend/apps/taxonomy/`, `backend/apps/accounts/`, `backend/apps/organizations/`, `backend/apps/skills/`, `backend/apps/events/`, `backend/apps/opportunities/`, `backend/apps/audit/`, `backend/config/urls.py`, `schema.yaml`
@@ -1021,8 +1023,9 @@ At the end of this phase, the existing role-specific workspaces at `/dashboard`,
 - **Description:** Build the backend governance layer for admin review of accounts, organizations, publishable content, and controlled category lists. This phase should also add user- and organization-submitted category suggestion flows that remain inactive until approved, plus server-side controls for disabling or reviewing problematic records without breaking actor separation.
 
 ### TASK-906: Build Admin Moderation and Category Governance UI
-- **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
-- **Owner:** Frontend
+  - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
+  - **Status:** Complete
+  - **Owner:** Frontend
 - **Actor(s):** Admin
 - **Route(s):** `/admin`
 - **Files touched:** `frontend/src/features/organizations/`, `frontend/src/features/dashboard/`, `frontend/src/services/organizations/`, `frontend/src/services/dashboard/`, `frontend/src/services/`, `frontend/src/components/shared/`
@@ -1036,6 +1039,7 @@ At the end of this phase, the existing role-specific workspaces at `/dashboard`,
 
 ### TASK-907: Expand Audit Logging and Review APIs
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
+- **Status:** Complete
 - **Owner:** Backend
 - **Actor(s):** Admin
 - **Route(s):** `/admin`
@@ -1050,6 +1054,7 @@ At the end of this phase, the existing role-specific workspaces at `/dashboard`,
 
 ### TASK-908: Expose Audit and Oversight UI
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
+- **Status:** Complete
 - **Owner:** Frontend
 - **Actor(s):** Admin
 - **Route(s):** `/admin`

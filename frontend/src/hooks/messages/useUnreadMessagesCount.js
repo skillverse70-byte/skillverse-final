@@ -8,8 +8,8 @@ import { roles } from "@/lib/domain-enums";
 
 export function useUnreadMessagesCount() {
   const { isAuthenticated, user, actorRole } = useAuth();
-  const setUnreadNotificationCount = useAppShellStore(
-    (state) => state.setUnreadNotificationCount,
+  const setUnreadMessageCount = useAppShellStore(
+    (state) => state.setUnreadMessageCount,
   );
   const isRegularUser = actorRole === roles.regularUser;
   const accessToken = getStoredAccessToken();
@@ -22,7 +22,7 @@ export function useUnreadMessagesCount() {
 
   useEffect(() => {
     if (!isRegularUser || !isAuthenticated || !user?.id) {
-      setUnreadNotificationCount(0);
+      setUnreadMessageCount(0);
       return undefined;
     }
 
@@ -35,7 +35,7 @@ export function useUnreadMessagesCount() {
           return;
         }
 
-        setUnreadNotificationCount(
+        setUnreadMessageCount(
           conversations.reduce(
             (count, conversation) => count + (Number(conversation.unread_count) || 0),
             0,
@@ -43,7 +43,7 @@ export function useUnreadMessagesCount() {
         );
       } catch {
         if (active) {
-          setUnreadNotificationCount(0);
+          setUnreadMessageCount(0);
         }
       }
     };
@@ -53,7 +53,7 @@ export function useUnreadMessagesCount() {
     return () => {
       active = false;
     };
-  }, [actorRole, isAuthenticated, isRegularUser, setUnreadNotificationCount, user?.id]);
+  }, [actorRole, isAuthenticated, isRegularUser, setUnreadMessageCount, user?.id]);
 
   useEffect(() => {
     if (!lastJsonMessage) {
@@ -64,7 +64,7 @@ export function useUnreadMessagesCount() {
       lastJsonMessage.type === "connection.ready" ||
       lastJsonMessage.type === "messages.unread.updated"
     ) {
-      setUnreadNotificationCount(lastJsonMessage.summary?.total_unread_count || 0);
+      setUnreadMessageCount(lastJsonMessage.summary?.total_unread_count || 0);
     }
-  }, [lastJsonMessage, setUnreadNotificationCount]);
+  }, [lastJsonMessage, setUnreadMessageCount]);
 }

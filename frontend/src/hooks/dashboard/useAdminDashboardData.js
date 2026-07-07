@@ -8,6 +8,13 @@ export function useAdminDashboardData() {
     organizationVerificationRequests: [],
     financialAccounts: [],
     events: [],
+    users: [],
+    moderatedOrganizations: [],
+    courses: [],
+    jobs: [],
+    taxonomySuggestions: [],
+    taxonomyCatalog: [],
+    auditLogs: [],
     loading: true,
     error: "",
   });

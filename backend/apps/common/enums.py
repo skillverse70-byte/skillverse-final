@@ -154,3 +154,17 @@ class NotificationType(models.TextChoices):
     EVENT = "event", "Event"
     OPPORTUNITY = "opportunity", "Opportunity"
     ADMIN = "admin", "Admin"
+
+
+class TaxonomyDomain(models.TextChoices):
+    FIELD_INTEREST = "field_interest", "Field Interest"
+    SKILL = "skill", "Skill"
+    COURSE_CATEGORY = "course_category", "Course Category"
+    EVENT_CATEGORY = "event_category", "Event Category"
+    OPPORTUNITY_CATEGORY = "opportunity_category", "Opportunity Category"
+
+
+class TaxonomySuggestionStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    APPROVED = "approved", "Approved"
+    REJECTED = "rejected", "Rejected"
