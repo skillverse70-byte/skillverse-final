@@ -950,6 +950,7 @@ At the end of this phase, the existing role-specific workspaces at `/dashboard`,
 
 ### TASK-901: Implement Dashboard Aggregation Backend
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance
+- **Status:** Complete
 - **Owner:** Backend
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/dashboard`, `/org`, `/admin`
@@ -974,7 +975,7 @@ At the end of this phase, the existing role-specific workspaces at `/dashboard`,
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Each primary actor has a meaningful dashboard backed by live records
 - **Blockers:** None
-- **Description:** Upgrade the current role-specific workspaces instead of rebuilding them from scratch. The regular-user dashboard should stay focused on learning, swaps, sessions, opportunities, and events. The organization dashboard should present enrollments, student progress, managed courses, applicant pipeline, events, and performance highlights in a scalable layout. The admin dashboard should build on the existing review tabs and add live oversight summaries without exposing unrelated regular-user or organization flows.
+- **Description:** Upgrade the current role-specific workspaces instead of rebuilding them from scratch. The regular-user dashboard should stay focused on learning, swaps, sessions, opportunities, and events. The organization dashboard should present enrollments, student progress, managed courses, events,attendees, attendee management (RSVP management), jobs,applicant pipeline and performance highlights in a scalable layout. The admin dashboard should build on the existing review tabs and add live oversight summaries without exposing unrelated regular-user or organization flows.Make sure the header links corresponds to the actors and they are enough. On organization header links are Dashboard, Org profile and Course builder in which those needs to be updated to the current flow and functionality Organizations have. I should be able to find links in Dashboard to manage my work and responsability for each Actor. like Organization dashboard should at least show Active courses, Active Events, Open Jobs, Applicants cards which are clickable and redirect to there respective data when clicked. 
 
 ### TASK-903: Implement Unified Notification Backend
 - **Phase:** Phase 9: Dashboards, Notifications, Moderation, and Governance

@@ -750,6 +750,52 @@ paths:
                 items:
                   $ref: '#/components/schemas/OrganizationEnrollment'
           description: ''
+  /api/dashboard/admin/:
+    get:
+      operationId: dashboard_admin_overview
+      tags:
+      - dashboards
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDashboard'
+          description: ''
+  /api/dashboard/me/:
+    get:
+      operationId: dashboard_regular_overview
+      tags:
+      - dashboards
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegularUserDashboard'
+          description: ''
+  /api/dashboard/organization/:
+    get:
+      operationId: dashboard_organization_overview
+      tags:
+      - dashboards
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationDashboard'
+          description: ''
   /api/events/:
     get:
       operationId: events_public_list
@@ -2457,6 +2503,38 @@ paths:
           description: ''
 components:
   schemas:
+    AdminDashboard:
+      type: object
+      properties:
+        summary:
+          allOf:
+          - $ref: '#/components/schemas/AdminPlatformSummary'
+          readOnly: true
+        oversight:
+          allOf:
+          - $ref: '#/components/schemas/AdminOversightCounts'
+          readOnly: true
+        organization_verification_requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationVerificationRequest'
+          readOnly: true
+        financial_accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminFinancialAccount'
+          readOnly: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminEventOversight'
+          readOnly: true
+      required:
+      - events
+      - financial_accounts
+      - organization_verification_requests
+      - oversight
+      - summary
     AdminEventOversight:
       type: object
       properties:
@@ -2743,6 +2821,66 @@ components:
       - submitted_at
       - updated_at
       - verified_at
+    AdminOversightCounts:
+      type: object
+      properties:
+        pending_verification_requests:
+          type: integer
+          readOnly: true
+        pending_financial_accounts:
+          type: integer
+          readOnly: true
+        restricted_financial_accounts:
+          type: integer
+          readOnly: true
+        events_from_unverified_organizations:
+          type: integer
+          readOnly: true
+        reviewed_events:
+          type: integer
+          readOnly: true
+      required:
+      - events_from_unverified_organizations
+      - pending_financial_accounts
+      - pending_verification_requests
+      - restricted_financial_accounts
+      - reviewed_events
+    AdminPlatformSummary:
+      type: object
+      properties:
+        total_users:
+          type: integer
+          readOnly: true
+        regular_users:
+          type: integer
+          readOnly: true
+        organizations:
+          type: integer
+          readOnly: true
+        verified_organizations:
+          type: integer
+          readOnly: true
+        published_courses:
+          type: integer
+          readOnly: true
+        active_enrollments:
+          type: integer
+          readOnly: true
+        open_opportunities:
+          type: integer
+          readOnly: true
+        active_events:
+          type: integer
+          readOnly: true
+      required:
+      - active_enrollments
+      - active_events
+      - open_opportunities
+      - organizations
+      - published_courses
+      - regular_users
+      - total_users
+      - verified_organizations
     ApplicantInfo:
       type: object
       properties:
@@ -2974,6 +3112,42 @@ components:
       required:
       - lessons
       - title
+    CoursePerformanceSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        is_free:
+          type: boolean
+          readOnly: true
+        enrollment_count:
+          type: integer
+          readOnly: true
+        active_enrollment_count:
+          type: integer
+          readOnly: true
+        completed_enrollment_count:
+          type: integer
+          readOnly: true
+        average_progress_percent:
+          type: integer
+          readOnly: true
+      required:
+      - active_enrollment_count
+      - average_progress_percent
+      - completed_enrollment_count
+      - enrollment_count
+      - id
+      - is_free
+      - status
+      - title
     CourseProgramDetail:
       type: object
       properties:
@@ -3171,6 +3345,32 @@ components:
             $ref: '#/components/schemas/CourseModuleWriteRequest'
       required:
       - title
+    DashboardUserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        is_email_verified:
+          type: boolean
+          readOnly: true
+      required:
+      - email
+      - full_name
+      - id
+      - is_email_verified
+      - role
     DirectionEnum:
       enum:
       - offering
@@ -4941,6 +5141,107 @@ components:
       required:
       - description
       - title
+    OrganizationDashboard:
+      type: object
+      properties:
+        organization:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationProfile'
+          readOnly: true
+        verification:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationVerificationOverview'
+          readOnly: true
+        financial_account:
+          allOf:
+          - $ref: '#/components/schemas/FinancialAccount'
+          readOnly: true
+          nullable: true
+        stats:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationDashboardStats'
+          readOnly: true
+        course_performance:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoursePerformanceSummary'
+          readOnly: true
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseProgramSummary'
+          readOnly: true
+        enrollments:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationEnrollment'
+          readOnly: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventSummary'
+          readOnly: true
+        opportunities:
+          type: array
+          items:
+            $ref: '#/components/schemas/OpportunitySummary'
+          readOnly: true
+        applications:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApplicantSummary'
+          readOnly: true
+      required:
+      - applications
+      - course_performance
+      - courses
+      - enrollments
+      - events
+      - financial_account
+      - opportunities
+      - organization
+      - stats
+      - verification
+    OrganizationDashboardStats:
+      type: object
+      properties:
+        total_courses:
+          type: integer
+          readOnly: true
+        published_courses:
+          type: integer
+          readOnly: true
+        active_enrollments:
+          type: integer
+          readOnly: true
+        completed_enrollments:
+          type: integer
+          readOnly: true
+        open_opportunities:
+          type: integer
+          readOnly: true
+        total_applications:
+          type: integer
+          readOnly: true
+        hired_applicants:
+          type: integer
+          readOnly: true
+        active_events:
+          type: integer
+          readOnly: true
+        total_event_rsvps:
+          type: integer
+          readOnly: true
+      required:
+      - active_enrollments
+      - active_events
+      - completed_enrollments
+      - hired_applicants
+      - open_opportunities
+      - published_courses
+      - total_applications
+      - total_courses
+      - total_event_rsvps
     OrganizationEnrollment:
       type: object
       properties:
@@ -5911,6 +6212,52 @@ components:
       - context
       - rating
       - source_id
+    RecommendationSignals:
+      type: object
+      properties:
+        profile_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        offered_skills:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        learning_skills:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        course_categories:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        event_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        application_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        activity_signals:
+          type: array
+          items:
+            type: string
+          readOnly: true
+      required:
+      - activity_signals
+      - application_fields
+      - course_categories
+      - event_fields
+      - learning_skills
+      - offered_skills
+      - profile_fields
     RegisterRequest:
       type: object
       properties:
@@ -5943,6 +6290,87 @@ components:
       - detail
       - email
       - verification_required
+    RegularUserDashboard:
+      type: object
+      properties:
+        user:
+          allOf:
+          - $ref: '#/components/schemas/DashboardUserSummary'
+          readOnly: true
+        stats:
+          allOf:
+          - $ref: '#/components/schemas/RegularUserDashboardStats'
+          readOnly: true
+        recommendation_signals:
+          allOf:
+          - $ref: '#/components/schemas/RecommendationSignals'
+          readOnly: true
+        enrollments:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnrollmentSummary'
+          readOnly: true
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/LearningSession'
+          readOnly: true
+        swap_requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillSwapRequest'
+          readOnly: true
+        applications:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobApplicationSummary'
+          readOnly: true
+        rsvps:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventRSVPSummary'
+          readOnly: true
+      required:
+      - applications
+      - enrollments
+      - recommendation_signals
+      - rsvps
+      - sessions
+      - stats
+      - swap_requests
+      - user
+    RegularUserDashboardStats:
+      type: object
+      properties:
+        active_courses:
+          type: integer
+          readOnly: true
+        completed_courses:
+          type: integer
+          readOnly: true
+        pending_swap_requests:
+          type: integer
+          readOnly: true
+        active_swaps:
+          type: integer
+          readOnly: true
+        upcoming_sessions:
+          type: integer
+          readOnly: true
+        applications:
+          type: integer
+          readOnly: true
+        active_rsvps:
+          type: integer
+          readOnly: true
+      required:
+      - active_courses
+      - active_rsvps
+      - active_swaps
+      - applications
+      - completed_courses
+      - pending_swap_requests
+      - upcoming_sessions
     RegularUserProfile:
       type: object
       properties:

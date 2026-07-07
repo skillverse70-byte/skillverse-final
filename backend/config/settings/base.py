@@ -113,6 +113,7 @@ INSTALLED_APPS = [
     "apps.swaps",
     "apps.messaging",
     "apps.sessions",
+    "apps.dashboards",
     "apps.courses",
     "apps.events",
     "apps.opportunities",
