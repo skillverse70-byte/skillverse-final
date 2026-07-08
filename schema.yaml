@@ -4,6 +4,37 @@ info:
   version: 0.1.0
   description: Backend API for the SkillVerse platform.
 paths:
+  /api/admin/ai/provider-health/:
+    get:
+      operationId: admin_ai_provider_health
+      parameters:
+      - in: query
+        name: mode
+        schema:
+          enum:
+          - config
+          - live
+          - completion
+          type: string
+          default: config
+          minLength: 1
+        description: |-
+          * `config` - config
+          * `live` - live
+          * `completion` - completion
+      tags:
+      - ai
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIProviderHealthResponse'
+          description: ''
   /api/admin/audit/logs/:
     get:
       operationId: admin_audit_log_list
@@ -3061,6 +3092,41 @@ paths:
           description: ''
 components:
   schemas:
+    AIProviderHealthResponse:
+      type: object
+      properties:
+        provider:
+          type: string
+        configured:
+          type: boolean
+        healthy:
+          type: boolean
+        mode:
+          type: string
+        default_model:
+          type: string
+        base_url:
+          type: string
+        timeout_seconds:
+          type: integer
+        has_api_key:
+          type: boolean
+        using_legacy_env_key:
+          type: boolean
+        feature_flags: {}
+        details: {}
+      required:
+      - base_url
+      - configured
+      - default_model
+      - details
+      - feature_flags
+      - has_api_key
+      - healthy
+      - mode
+      - provider
+      - timeout_seconds
+      - using_legacy_env_key
     ActorSummary:
       type: object
       properties:

@@ -57,6 +57,20 @@ except ModuleNotFoundError:
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
+
+def _env_file_has_key(env_file_path, key):
+    try:
+        with open(env_file_path, encoding="utf-8") as env_file:
+            for line in env_file:
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                if stripped.split("=", 1)[0].strip() == key:
+                    return True
+    except OSError:
+        return False
+    return False
+
 env = environ.Env(
     DEBUG=(bool, False),
     DJANGO_SECRET_KEY=(str, "change-me"),
@@ -79,6 +93,18 @@ env = environ.Env(
     CHAPA_HTTP_TIMEOUT_SECONDS=(int, 15),
     FRONTEND_APP_URL=(str, "http://localhost:5173"),
     ENABLE_AUTH_THROTTLING=(bool, False),
+    AI_DEFAULT_PROVIDER=(str, "openrouter"),
+    AI_FEATURES_ENABLED=(bool, False),
+    AI_RECOMMENDATIONS_ENABLED=(bool, False),
+    AI_ASSIGNMENT_FEEDBACK_ENABLED=(bool, False),
+    AI_COGNITIVE_MONITORING_ENABLED=(bool, False),
+    OPENROUTER_API_KEY=(str, ""),
+    Openrouter_api_key=(str, ""),
+    OPENROUTER_BASE_URL=(str, "https://openrouter.ai"),
+    OPENROUTER_DEFAULT_MODEL=(str, "google/gemma-3n-e4b-it:free"),
+    OPENROUTER_HTTP_TIMEOUT_SECONDS=(int, 20),
+    OPENROUTER_APP_TITLE=(str, "SkillVerse"),
+    OPENROUTER_APP_REFERER=(str, "http://localhost:5173"),
     PAYMENT_RATE_THROTTLE=(str, "20/hour"),
     AUTH_RATE_THROTTLE=(str, "20/hour"),
     AUTH_LOGIN_RATE_THROTTLE=(str, "10/hour"),
@@ -104,6 +130,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "anymail",
     "rest_framework_simplejwt.token_blacklist",
+    "apps.ai",
     "apps.accounts",
     "apps.audit",
     "apps.common",
@@ -205,6 +232,41 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
 FRONTEND_APP_URL = env("FRONTEND_APP_URL")
 ENABLE_AUTH_THROTTLING = env.bool("ENABLE_AUTH_THROTTLING", default=False)
+AI_DEFAULT_PROVIDER = env("AI_DEFAULT_PROVIDER", default="openrouter")
+AI_FEATURES_ENABLED = env.bool("AI_FEATURES_ENABLED", default=False)
+AI_RECOMMENDATIONS_ENABLED = env.bool("AI_RECOMMENDATIONS_ENABLED", default=False)
+AI_ASSIGNMENT_FEEDBACK_ENABLED = env.bool(
+    "AI_ASSIGNMENT_FEEDBACK_ENABLED",
+    default=False,
+)
+AI_COGNITIVE_MONITORING_ENABLED = env.bool(
+    "AI_COGNITIVE_MONITORING_ENABLED",
+    default=False,
+)
+OPENROUTER_API_KEY = env(
+    "OPENROUTER_API_KEY",
+    default=env("Openrouter_api_key", default=""),
+)
+_openrouter_primary_env_key = _env_file_has_key(BASE_DIR / ".env", "OPENROUTER_API_KEY")
+_openrouter_legacy_env_key = _env_file_has_key(BASE_DIR / ".env", "Openrouter_api_key")
+OPENROUTER_API_KEY_SOURCE = (
+    "primary"
+    if _openrouter_primary_env_key
+    else "legacy"
+    if _openrouter_legacy_env_key
+    else ""
+)
+OPENROUTER_BASE_URL = env("OPENROUTER_BASE_URL", default="https://openrouter.ai")
+OPENROUTER_DEFAULT_MODEL = env(
+    "OPENROUTER_DEFAULT_MODEL",
+    default="google/gemma-3n-e4b-it:free",
+)
+OPENROUTER_HTTP_TIMEOUT_SECONDS = env.int(
+    "OPENROUTER_HTTP_TIMEOUT_SECONDS",
+    default=20,
+)
+OPENROUTER_APP_TITLE = env("OPENROUTER_APP_TITLE", default="SkillVerse")
+OPENROUTER_APP_REFERER = env("OPENROUTER_APP_REFERER", default=FRONTEND_APP_URL)
 CHAPA_ENV = env("CHAPA_ENV", default="test")
 CHAPA_BASE_URL = "https://api.chapa.co"
 CHAPA_SECRET_KEY = env("CHAPA_SECRET_KEY", default="")

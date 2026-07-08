@@ -1077,76 +1077,192 @@ At the end of this phase, the existing role-specific workspaces at `/dashboard`,
 
 - None yet.
 
-## Phase 10: Deferred Feature Continuity and Expansion Safety
+## Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
 
 Goal:
-At the end of this phase, all deferred V2/V3 PRD features remain intentionally mapped and the V1 architecture preserves extension paths instead of blocking them.
+At the end of this phase, the remaining deferred PRD features are no longer treated only as extension points. The platform has an explicit execution path for AI provider setup, AI-assisted recommendations and guidance, richer creator workflows, community and certificate systems, cognitive monitoring, advanced analytics, and a final PRD coverage closure.
 
-### TASK-1001: Preserve V2 Course and Recommendation Extension Points
-- **Phase:** Phase 10: Deferred Feature Continuity and Expansion Safety
+### TASK-1000: Scaffold AI Provider Foundation and Verification Tools
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
+- **Owner:** Backend
+- **Actor(s):** Admin
+- **Route(s):** `/admin`
+- **Files touched:** `backend/apps/ai/`, `backend/config/settings/`, `backend/config/urls.py`, `backend/.env.example`, `backend/.env`, `schema.yaml`, `Agent Tasks.md`
+- **Depends on:** `TASK-101`, `TASK-104`
+- **Spec:** `PRD.md` Sections `6.6`, `6.11`; OpenRouter provider behavior should follow the official API docs
+- **Setup reference:** Use `Agents/future improvements.md` sections `AI Provider Foundation` and `Recommendation and Matching Expansion`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** The backend has a dedicated `apps.ai` provider abstraction, Django settings read OpenRouter config and feature flags cleanly, and developers/admins have a lightweight way to verify provider readiness without exposing secrets client-side
+- **Blockers:** None
+- **Description:** Create the backend AI foundation required before recommendation or adaptive features are implemented. This task should add the reusable provider layer, OpenRouter environment settings and defaults, a protected health/test surface or management command for future provider checks, and enough structure that later AI tasks can build on a stable contract instead of embedding direct API calls.
+
+### TASK-1001: Establish AI Provider Foundation with OpenRouter
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
 - **Owner:** Both
-- **Actor(s):** Guest, Regular User, Organization, Admin
-- **Route(s):** `/courses`, `/courses/:id`, `/discover`, `/dashboard`, `/org`, `/admin`
-- **Files touched:** `backend/apps/common/`, `backend/apps/courses/`, `backend/apps/skills/`, `frontend/src/lib/`, `frontend/src/services/`, `Agent Tasks.md`
-- **Depends on:** `TASK-606`, `TASK-706`
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/dashboard`, `/discover`, `/skill-swap`, `/courses/:id`, `/org`, `/admin`
+- **Files touched:** `backend/apps/ai/`, `backend/apps/common/`, `backend/config/settings/`, `backend/.env.example`, `frontend/src/lib/`, `frontend/src/services/`, `backend/BACKEND_SETUP.md`, `Agents/future improvements.md`, `schema.yaml`
+- **Depends on:** `TASK-1000`, `TASK-102`, `TASK-103`
+- **Spec:** `PRD.md` Sections `4.2`, `6.6`, `6.11`
+- **Setup reference:** Use `Agents/future improvements.md` section `AI Provider Foundation`; preserve existing backend/frontend setup documents rather than redefining package rationale elsewhere
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** The provider foundation from `TASK-1000` is extended into feature-ready AI rollout controls, fallback contracts, and shared frontend/backend integration rules
+- **Blockers:** None
+- **Description:** Build on the initial backend provider setup so AI capabilities can be turned on per feature safely. This task should define shared AI contracts, fallback handling expectations, rollout controls, and frontend/backend integration rules that later recommendation and adaptive tasks can consume without rewriting the provider layer.
+
+### TASK-1002: Build AI-Assisted Recommendation and Matching Backend
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Backend
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/discover`, `/dashboard`, `/skill-swap`, `/courses/:id`, `/jobs/:id`, `/events/:id`, `/admin`
+- **Files touched:** `backend/apps/ai/`, `backend/apps/skills/`, `backend/apps/swaps/`, `backend/apps/courses/`, `backend/apps/opportunities/`, `backend/apps/events/`, `backend/apps/dashboards/`, `backend/apps/common/`, `schema.yaml`
+- **Depends on:** `TASK-401`, `TASK-901`, `TASK-1001`
+- **Spec:** `PRD.md` Sections `4.2`, `6.3`, `6.6`
+- **Setup reference:** Use `Agents/future improvements.md` sections `Recommendation and Matching Expansion` and `AI Provider Foundation`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** The backend can generate AI-assisted peer, skill, course, event, and opportunity recommendations with at least one explainable rationale and graceful fallback to non-AI logic
+- **Blockers:** None
+- **Description:** Extend the current deterministic matching foundation into an AI-assisted recommendation service that uses structured platform signals across profiles, skills, enrollments, swaps, events, and opportunities. Recommendations must remain explainable, must not bypass existing trust/access rules, and must degrade cleanly to heuristic or cached recommendations when AI is unavailable.
+
+### TASK-1003: Surface AI Recommendations and Cross-Module Discovery in Frontend
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Frontend
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/discover`, `/dashboard`, `/skill-swap`, `/courses/:id`, `/jobs`, `/events`, `/admin`
+- **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/features/skills/`, `frontend/src/features/courses/`, `frontend/src/features/jobs/`, `frontend/src/features/events/`, `frontend/src/services/`, `frontend/src/hooks/`, `frontend/src/components/shared/`
+- **Depends on:** `TASK-1002`
+- **Spec:** `PRD.md` Sections `4.2`, `6.6`
+- **Setup reference:** Use `Agents/future improvements.md` sections `Recommendation and Matching Expansion` and `AI Provider Foundation`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Users can see AI-assisted recommendations and field-aware discovery feeds across relevant surfaces, with visible rationale and no blocking dependence on AI availability
+- **Blockers:** None
+- **Description:** Bring the recommendation layer into the product experience. This includes discover feeds, dashboard recommendation sections, skill-swap and peer-suggestion entry points, and recommendation rationale UI that explains why a course, peer, event, or opportunity was suggested.
+
+### TASK-1004: Add AI Learning Guidance, Skill-Gap Analysis, and Assignment Feedback
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Both
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/courses/:id`, `/dashboard`, `/org`, `/admin`
+- **Files touched:** `backend/apps/ai/`, `backend/apps/courses/`, `backend/apps/reviews/`, `backend/apps/dashboards/`, `frontend/src/features/courses/`, `frontend/src/features/dashboard/`, `frontend/src/services/`, `schema.yaml`
+- **Depends on:** `TASK-706`, `TASK-1001`, `TASK-1002`
 - **Spec:** `PRD.md` Sections `4.2`, `6.5`, `6.6`
-- **Setup reference:** Existing package decisions in `backend/BACKEND_SETUP.md` and `frontend/FRONTEND_PRD_READY.md`
+- **Setup reference:** Use `Agents/future improvements.md` section `Learning Guidance and Feedback`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** V2 features like regular-user course creation, richer content operations, and AI-assisted recommendations remain structurally supported
+- **Definition of Done:** The platform can provide AI-assisted learning guidance, future-ready assignment feedback, and skill-gap insights that fit inside the existing course and dashboard workflows
 - **Blockers:** None
-- **Description:** Review and preserve the foundations needed for near-term expansion features so V1 work does not paint the product into a corner.
+- **Description:** Implement the learning-intelligence side of the PRD. This task should connect course participation, profile data, and structured skill data into learner guidance that helps users understand what to improve, what to study next, and how current activity relates to future goals.
 
-### TASK-1002: Preserve Community, Service, and Certificate Extension Points
-- **Phase:** Phase 10: Deferred Feature Continuity and Expansion Safety
+### TASK-1005: Expand Course Creation for Regular Users and Richer Creator Operations
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
 - **Owner:** Both
 - **Actor(s):** Regular User, Organization, Admin
-- **Route(s):** `/org`, `/organization-profile`, `/events`, `/events/:id`, `/courses/:id`, `/admin`
-- **Files touched:** `backend/apps/common/`, `backend/apps/events/`, `backend/apps/organizations/`, `backend/apps/notifications/`, `frontend/src/lib/`, `frontend/src/features/`, `Agent Tasks.md`
-- **Depends on:** `TASK-801`, `TASK-906`
-- **Spec:** `PRD.md` Sections `4.2`, `6.8`, `6.10`
-- **Setup reference:** N/A
+- **Route(s):** `/course-builder`, `/dashboard`, `/org`, `/admin`, `/courses/:id`
+- **Files touched:** `backend/apps/courses/`, `backend/apps/common/`, `frontend/src/features/courses/`, `frontend/src/features/dashboard/`, `frontend/src/services/courses/`, `ROLE_ACCESS_MATRIX.md`, `schema.yaml`
+- **Depends on:** `TASK-706`, `TASK-104`
+- **Spec:** `PRD.md` Sections `4.2`, `6.5`
+- **Setup reference:** Use `Agents/future improvements.md` section `Remaining Deferred Product Areas`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Community groups, service-credit tracking, verified participation, and certificates remain explicitly supported as future additions
+- **Definition of Done:** Regular-user course creation, free-only creator rules, and richer content operations exist without breaking the organization monetization model or admin oversight model
 - **Blockers:** None
-- **Description:** Keep deferred collaboration and trust-signal features visible and architecturally possible.
+- **Description:** Deliver the deferred creator-side course roadmap. This task should expand course authoring so regular users can create allowed course types under the PRD rules, while keeping organization-only monetization boundaries, richer content operations, and admin governance intact.
 
-### TASK-1003: Preserve Advanced Analytics and Adaptive Feature Hooks
-- **Phase:** Phase 10: Deferred Feature Continuity and Expansion Safety
+### TASK-1006: Build Community, Service-Credit, and Certificate Systems
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
 - **Owner:** Both
 - **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/communities`, `/events`, `/events/:id`, `/courses/:id`, `/dashboard`, `/org`, `/admin`, `/certificates`, `/certificates/:id`
+- **Files touched:** `backend/apps/communities/`, `backend/apps/events/`, `backend/apps/organizations/`, `backend/apps/notifications/`, `backend/apps/certificates/`, `backend/apps/common/`, `frontend/src/features/`, `frontend/src/services/`, `ROLE_ACCESS_MATRIX.md`, `schema.yaml`
+- **Depends on:** `TASK-801`, `TASK-809`, `TASK-906`
+- **Spec:** `PRD.md` Sections `4.2`, `6.1`, `6.8`, `6.10`
+- **Setup reference:** Use `Agents/future improvements.md` section `Remaining Deferred Product Areas`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Community groups, service-credit records, organization-side trust/verification expansion, verified participation evidence, and certificate issuance/lookup flows exist with actor-safe routing and governance
+- **Blockers:** None
+- **Description:** Deliver the deferred collaboration and trust-signal areas from the PRD. This includes community spaces beyond one-to-one swaps, organization-run service or participation records, stronger organization-side verification and trust workflows where needed, and verified certificates with lookup paths and governance.
+
+### TASK-1007: Build Cognitive Monitoring Foundation, Consent, and Privacy Controls
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Both
+- **Actor(s):** Regular User, Admin
+- **Route(s):** `/dashboard`, `/courses/:id`, `/messages`, `/admin`
+- **Files touched:** `backend/apps/ai/`, `backend/apps/common/`, `backend/apps/dashboards/`, `frontend/src/features/dashboard/`, `frontend/src/features/courses/`, `frontend/src/components/shared/`, `ROLE_ACCESS_MATRIX.md`, `schema.yaml`, `DEFINITION_OF_DONE.md`
+- **Depends on:** `TASK-1001`, `TASK-503`, `TASK-506`
+- **Spec:** `PRD.md` Sections `4.3`, `6.7`, `6.11`
+- **Setup reference:** Use `Agents/future improvements.md` section `Cognitive Monitoring Guardrails`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Adaptive monitoring has an explicit, privacy-preserving foundation with consent, disclosure, signal transparency, and non-camera-dependent defaults
+- **Blockers:** None
+- **Description:** Build the governance and product foundation required before adaptive monitoring features are activated. This task should define how focus drift and mood features are disclosed, how users opt in, what signals are permitted, and how sensitive data is minimized and protected.
+
+### TASK-1008: Implement Focus Drift, Mood Mirror, and Adaptive Responses
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Both
+- **Actor(s):** Regular User, Admin
+- **Route(s):** `/dashboard`, `/courses/:id`, `/messages`, `/admin`
+- **Files touched:** `backend/apps/ai/`, `backend/apps/dashboards/`, `backend/apps/courses/`, `frontend/src/features/dashboard/`, `frontend/src/features/courses/`, `frontend/src/services/`, `frontend/src/hooks/`, `schema.yaml`
+- **Depends on:** `TASK-1007`
+- **Spec:** `PRD.md` Sections `4.3`, `6.7`
+- **Setup reference:** Use `Agents/future improvements.md` section `Cognitive Monitoring Guardrails`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Focus drift detection and the learning mood mirror are implemented as opt-in adaptive tools with understandable user-facing behavior
+- **Blockers:** None
+- **Description:** Deliver the actual adaptive learning experience after the privacy foundation exists. The behavior should help users re-focus, reflect on learning state, or adjust the learning experience without making camera analysis a hidden assumption.
+
+### TASK-1009: Deliver Advanced Analytics, Matching-Quality Monitoring, and System Health Views
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Both
+- **Actor(s):** Organization, Admin
 - **Route(s):** `/dashboard`, `/org`, `/admin`, `/discover`
-- **Files touched:** `backend/apps/dashboards/`, `backend/apps/common/`, `frontend/src/features/dashboard/`, `frontend/src/lib/`, `Agent Tasks.md`
-- **Depends on:** `TASK-901`, `TASK-908`
+- **Files touched:** `backend/apps/dashboards/`, `backend/apps/ai/`, `backend/apps/common/`, `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/dashboard/`, `schema.yaml`
+- **Depends on:** `TASK-901`, `TASK-908`, `TASK-1002`, `TASK-1007`
 - **Spec:** `PRD.md` Sections `4.3`, `6.6`, `6.7`, `6.11`
-- **Setup reference:** N/A
+- **Setup reference:** Use `Agents/future improvements.md` sections `Recommendation and Matching Expansion` and `Remaining Deferred Product Areas`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** V3 analytics, adaptive learning, and advanced career intelligence remain intentionally mapped and unblocked by V1 decisions
+- **Definition of Done:** Organization and admin analytics include stronger reporting, matching-quality visibility, adaptive-signal visibility, and system-health style monitoring required by the PRD roadmap
 - **Blockers:** None
-- **Description:** Validate that the implemented platform can later grow into advanced intelligence and analytics features without destructive rewrites.
+- **Description:** Deliver the broader intelligence and oversight analytics that turn recommendations and adaptive behavior into measurable, governable system capabilities rather than opaque background logic. This task should explicitly cover social impact heatmaps, active video-session analytics where applicable, global knowledge analytics, matching-quality monitoring, and broader automation or predictive-insight surfaces required by the PRD roadmap.
 
-### TASK-1004: Run Full PRD Coverage Audit Before Future Replanning
-- **Phase:** Phase 10: Deferred Feature Continuity and Expansion Safety
+### TASK-1010: Add Community-Service Monetization and Advanced Payment Automation
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Both
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/courses/:id`, `/dashboard`, `/org`, `/admin`, `/payments`
+- **Files touched:** `backend/apps/payments/`, `backend/apps/courses/`, `backend/apps/events/`, `backend/apps/organizations/`, `frontend/src/features/courses/`, `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/payments/`, `schema.yaml`
+- **Depends on:** `TASK-703`, `TASK-704`, `TASK-1006`
+- **Spec:** `PRD.md` Sections `4.3`, `6.8`, `6.9`, `6.10`
+- **Setup reference:** Use `Agents/future improvements.md` sections `Remaining Deferred Product Areas` and `Extra Requested Ideas Outside Current PRD Core`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Paid community-service offerings and their advanced payment or monetization workflow requirements are explicitly supported instead of left implied
+- **Blockers:** None
+- **Description:** Deliver the PRD roadmap area where community-service offerings intersect with payments. This task should cover paid community-service course support, advanced monetization automation needed for those offerings, and the required operator visibility for organizations and admins.
+
+### TASK-1011: Run Final PRD Coverage Audit and Deferred-Feature Closure
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
 - **Owner:** Both
 - **Actor(s):** Guest, Regular User, Organization, Admin
 - **Route(s):** All routes in `ROLE_ACCESS_MATRIX.md` plus future additions that must be added there first
-- **Files touched:** `Agent Tasks.md`, `BLOCKERS.md`, `schema.yaml`, `DEFINITION_OF_DONE.md`
-- **Depends on:** `TASK-1001`, `TASK-1002`, `TASK-1003`
+- **Files touched:** `Agent Tasks.md`, `Agents/future improvements.md`, `BLOCKERS.md`, `ROLE_ACCESS_MATRIX.md`, `schema.yaml`, `DEFINITION_OF_DONE.md`
+- **Depends on:** `TASK-1003`, `TASK-1004`, `TASK-1005`, `TASK-1006`, `TASK-1007`, `TASK-1008`, `TASK-1009`, `TASK-1010`
 - **Spec:** `PRD.md` Sections `3` through `7`
-- **Setup reference:** N/A
+- **Setup reference:** Use `Agents/future improvements.md` as the companion source for Phase 10 deferred and advanced features
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Every PRD feature remains mapped to a task ID and no deferred feature has become invisible
+- **Definition of Done:** Every remaining PRD feature is either implemented in this phase or explicitly re-mapped with no silent omissions, and the coverage checklist stays accurate
 - **Blockers:** None
-- **Description:** Maintain the traceability system itself so future planning or reprioritization does not silently drop product requirements.
+- **Description:** Close the PRD loop after the remaining roadmap work lands. This task should update the task map, route matrix, blockers, schema, and governance docs so the project can claim complete PRD coverage without ambiguous leftovers.
 
 ### Phase 10 Definition of Done
 
-- V2/V3 features remain intentionally mapped.
-- V1 architecture does not silently block future work.
-- Full PRD-to-task coverage remains intact.
+- AI provider setup, recommendation features, and learning-guidance features are explicitly planned through implementation-ready tasks rather than vague future hooks.
+- Cognitive monitoring features are split into privacy foundation work and adaptive experience work so sensitive behavior is not implemented blindly.
+- Regular-user course creation, community/service systems, certificates, and advanced analytics all have explicit task coverage.
+- The PRD-to-task coverage checklist remains complete and no deferred PRD feature is left unmapped.
 
 ### Phase 10 Known Blockers / Risks
 
-- None yet.
+- OpenRouter free-model availability, quotas, or provider behavior may change and must not become a hard dependency for core workflows.
+- Adaptive and cognitive features require careful privacy, disclosure, and consent decisions before implementation is considered complete.
+- Community, certificate, and advanced analytics features may introduce new domain apps, routes, and schema surface area that must be reflected in `OWNERSHIP.md`, `ROLE_ACCESS_MATRIX.md`, and `schema.yaml`.
 
 ## PRD-to-Task Coverage Checklist
 
@@ -1174,7 +1290,7 @@ Every PRD feature or rule below maps to at least one task ID.
 - Access rules enforced server-side: `TASK-104`, `TASK-206`
 - Frontend protected route enforcement: `TASK-104`, `TASK-203`, `TASK-206`
 - Stronger admin security baseline: `TASK-206`
-- MFA future path: `TASK-1004`
+- MFA future path: `TASK-1011`
 
 ### Profile and skill graph
 
@@ -1208,7 +1324,7 @@ Every PRD feature or rule below maps to at least one task ID.
 - Session scheduling/planning: `TASK-505`, `TASK-506`
 - Planned and completed session records: `TASK-505`, `TASK-506`
 - Demo-ready session delivery with external link fallback: `TASK-506`
-- In-platform video left extensible but not required for V1: `TASK-503`, `TASK-506`, `TASK-1004`
+- In-platform video left extensible but not required for V1: `TASK-503`, `TASK-506`, `TASK-1009`
 
 ### Courses, programs, and learning content
 
@@ -1221,7 +1337,7 @@ Every PRD feature or rule below maps to at least one task ID.
 - Missing verification blocks paid create/edit: `TASK-606`
 - Visible paid course before finance setup but enrollment blocked: `TASK-701`, `TASK-702`, `TASK-704`
 - UI must show `Enrollment Unavailable`: `TASK-105`, `TASK-704`
-- Regular-user course creation deferred but preserved: `TASK-1001`
+- Regular-user course creation deferred but preserved: `TASK-1005`
 
 ### Payments, finance, and monetization
 
@@ -1229,21 +1345,23 @@ Every PRD feature or rule below maps to at least one task ID.
 - Currency-aware pricing: `TASK-703`, `TASK-704`
 - Chapa-oriented payment flow: `TASK-703`, `TASK-704`
 - Enrollment reconciliation and payment follow-up: `TASK-703`, `TASK-705`
+- Paid community-service courses and advanced payment automation: `TASK-1010`
 
 ### AI assistance and recommendation layer
 
-- Recommendation layer based on structured user data: `TASK-401`, `TASK-806`, `TASK-901`
-- Cross-module discovery signals: `TASK-103`, `TASK-301`, `TASK-806`, `TASK-1001`
-- Explainable rationale for matches/recommendations: `TASK-401`, `TASK-402`, `TASK-1001`
-- AI should not block core workflows: `TASK-102`, `TASK-503`, `TASK-1004`
-- Future skill-gap analysis and assignment feedback: `TASK-1001`, `TASK-1003`
+- Recommendation layer based on structured user data: `TASK-401`, `TASK-806`, `TASK-901`, `TASK-1002`
+- Cross-module discovery signals: `TASK-103`, `TASK-301`, `TASK-806`, `TASK-1002`, `TASK-1003`
+- Field-aware discovery feeds connecting courses, swaps, communities, events, and opportunities: `TASK-1002`, `TASK-1003`, `TASK-1006`
+- Explainable rationale for matches/recommendations: `TASK-401`, `TASK-402`, `TASK-1002`, `TASK-1003`
+- AI should not block core workflows: `TASK-102`, `TASK-503`, `TASK-1000`, `TASK-1001`, `TASK-1002`, `TASK-1003`
+- Future skill-gap analysis and assignment feedback: `TASK-1004`
 
 ### Community, service, and collaboration
 
-- Community interaction beyond one-to-one swaps preserved for later: `TASK-1002`
-- Volunteer/social-impact/community-service initiatives preserved for later: `TASK-1002`
-- Field-based communities preserved for later: `TASK-1002`
-- Only verified organizations create communities initially: `TASK-1002`
+- Community interaction beyond one-to-one swaps preserved for later: `TASK-1006`
+- Volunteer/social-impact/community-service initiatives preserved for later: `TASK-1006`, `TASK-1010`
+- Field-based communities preserved for later: `TASK-1006`
+- Only verified organizations create communities initially: `TASK-1006`
 - Events can be created by organizations regardless of verification state: `TASK-801`, `TASK-807`, `TASK-808`
 - Organizations can manage events after publishing: `TASK-807`, `TASK-808`
 - Organizations can manage attendees and attendance records: `TASK-807`, `TASK-809`
@@ -1251,8 +1369,8 @@ Every PRD feature or rule below maps to at least one task ID.
 - Event analytics and attendance totals exist for operators: `TASK-807`, `TASK-808`, `TASK-902`
 - Regular users cannot create communities/events in V1: `TASK-206`, `TASK-801`
 - Regular users RSVP/register for events in V1: `TASK-801`, `TASK-802`
-- Service-credit tracking and verified participation foundations: `TASK-809`, `TASK-1002`
-- Forums/projects/collaboration spaces progression: `TASK-1002`
+- Service-credit tracking and verified participation foundations: `TASK-809`, `TASK-1006`
+- Forums/projects/collaboration spaces progression: `TASK-1006`
 
 ### Career and opportunity hub
 
@@ -1264,10 +1382,10 @@ Every PRD feature or rule below maps to at least one task ID.
 
 ### Certificates, verification, and trust signals
 
-- Verified digital certificates preserved for later: `TASK-1002`
-- Verified-org-only issuance rule preserved: `TASK-1002`
-- Unique certificate ID and verification lookup path preserved: `TASK-1002`
-- Extensible verification workflows: `TASK-601`, `TASK-1002`
+- Verified digital certificates preserved for later: `TASK-1006`
+- Verified-org-only issuance rule preserved: `TASK-1006`
+- Unique certificate ID and verification lookup path preserved: `TASK-1006`
+- Extensible verification workflows: `TASK-601`, `TASK-1006`, `TASK-1011`
 
 ### Dashboards and analytics
 
@@ -1276,7 +1394,9 @@ Every PRD feature or rule below maps to at least one task ID.
 - Applicant pipeline visibility in org dashboards: `TASK-805`, `TASK-902`
 - Event management visibility and event analytics in org surfaces: `TASK-808`, `TASK-809`, `TASK-902`
 - Admin dashboard: `TASK-901`, `TASK-902`, `TASK-908`
-- Advanced analytics and reporting preserved for later: `TASK-1003`
+- Advanced analytics and reporting preserved for later: `TASK-1009`
+- Social impact heatmaps, global knowledge analytics, and broader predictive insights: `TASK-1009`
+- System health and matching-quality monitoring: `TASK-1009`
 
 ### Administration and moderation
 
@@ -1285,29 +1405,31 @@ Every PRD feature or rule below maps to at least one task ID.
 - Admin management of fixed category lists: `TASK-905`, `TASK-906`
 - User/org category suggestions with approval before activation: `TASK-905`, `TASK-906`
 - Audit-friendly important action records: `TASK-907`, `TASK-908`
-- Future identity/compliance workflows preserved: `TASK-1004`
+- Future identity/compliance workflows preserved: `TASK-1011`
 
 ### Non-functional requirements
 
 - Responsive web experience across mobile and desktop: `TASK-102`, `TASK-201`, `TASK-302`, `TASK-402`, `TASK-604`, `TASK-902`
 - Secure auth, authorization, and session management: `TASK-101`, `TASK-104`, `TASK-202`, `TASK-206`
 - Sensitive data protected in transit and trust-sensitive flows protected: `TASK-101`, `TASK-206`, `TASK-601`, `TASK-703`
-- Privacy-preserving handling and limited unnecessary exposure: `TASK-305`, `TASK-602`, `TASK-1003`
+- Privacy-preserving handling and limited unnecessary exposure: `TASK-305`, `TASK-602`, `TASK-1007`, `TASK-1008`
 - Reliability of core records despite optional service failure: `TASK-503`, `TASK-505`, `TASK-705`, `TASK-907`
-- Maintainable modular architecture for V2/V3: `TASK-103`, `TASK-1001`, `TASK-1002`, `TASK-1003`, `TASK-1004`
+- Maintainable modular architecture for V2/V3: `TASK-103`, `TASK-1000`, `TASK-1001`, `TASK-1002`, `TASK-1005`, `TASK-1006`, `TASK-1007`, `TASK-1009`, `TASK-1011`
 - Accessibility considered from V1: `TASK-102`, `TASK-201`, `TASK-302`, `TASK-604`, `TASK-902`
 
 ### Explicitly deferred but still tracked
 
-- Regular-user course creation: `TASK-1001`
-- Richer content management: `TASK-1001`
-- AI-assisted recommendations and assignment feedback: `TASK-1001`, `TASK-1003`
-- Discussion forums and community groups: `TASK-1002`
-- Verified digital certificates: `TASK-1002`
-- Organization-side verification workflow expansion: `TASK-601`, `TASK-1002`
-- Stronger analytics/reporting: `TASK-1003`
-- Focus drift detection and mood mirror: `TASK-1003`
-- Advanced career matching and ecosystem intelligence: `TASK-1003`
+- Regular-user course creation: `TASK-1005`
+- Richer content management: `TASK-1005`
+- AI-assisted recommendations and assignment feedback: `TASK-1002`, `TASK-1003`, `TASK-1004`
+- Discussion forums and community groups: `TASK-1006`
+- Verified digital certificates: `TASK-1006`
+- Organization-side verification workflow expansion: `TASK-601`, `TASK-1006`
+- Stronger analytics/reporting: `TASK-1009`
+- Focus drift detection and mood mirror: `TASK-1007`, `TASK-1008`
+- Advanced career matching and ecosystem intelligence: `TASK-1002`, `TASK-1009`
+- Social impact heatmaps, active video-session analytics, and global knowledge analytics: `TASK-1009`
+- Paid community-service courses and broader monetization automation: `TASK-1010`
 
 ## Unmapped PRD Items
 
