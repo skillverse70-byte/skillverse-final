@@ -16,6 +16,33 @@ export function useAdminDashboardData() {
     taxonomySuggestions: [],
     taxonomyCatalog: [],
     auditLogs: [],
+    analytics: {
+      summary: {},
+      matching_quality: {
+        score_distribution: [],
+      },
+      adaptive_monitoring: {
+        summary: {},
+        signal_counts: [],
+        mood_distribution: [],
+        surface_distribution: [],
+      },
+      system_health: {
+        provider: {},
+        feature_rollouts: [],
+      },
+      session_coordination_analytics: {},
+      global_knowledge_trends: {
+        top_fields: [],
+        top_offered_skills: [],
+        top_learning_skills: [],
+        top_course_categories: [],
+        top_event_categories: [],
+        top_opportunity_categories: [],
+      },
+      social_impact_heatmap: [],
+      insight_cards: [],
+    },
     loading: true,
     error: "",
   });

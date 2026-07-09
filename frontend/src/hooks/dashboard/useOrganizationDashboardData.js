@@ -13,6 +13,36 @@ export function useOrganizationDashboardData() {
     events: [],
     opportunities: [],
     applications: [],
+    analytics: {
+      summary: {},
+      course_category_distribution: [],
+      learner_progress_bands: [],
+      event_engagement: {
+        rsvp_status_distribution: [],
+        format_distribution: [],
+        attendance_rate_percent: 0,
+      },
+      opportunity_pipeline: {
+        application_status_distribution: [],
+        shortlisted_rate_percent: 0,
+        hired_rate_percent: 0,
+      },
+      knowledge_trends: {
+        top_fields: [],
+        top_offered_skills: [],
+        top_learning_skills: [],
+        top_course_categories: [],
+        top_event_categories: [],
+        top_opportunity_categories: [],
+      },
+      social_impact_heatmap: [],
+      matching_quality: {},
+      system_health: {
+        provider: {},
+        feature_rollouts: [],
+      },
+      insight_cards: [],
+    },
     loading: true,
     error: "",
   });
@@ -64,4 +94,3 @@ export function useOrganizationDashboardData() {
     refresh: load,
   };
 }
-

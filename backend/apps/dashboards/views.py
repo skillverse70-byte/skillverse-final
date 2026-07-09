@@ -5,6 +5,7 @@ from rest_framework import permissions, status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
+from apps.dashboards.analytics import build_admin_analytics, build_organization_analytics
 from apps.ai.monitoring import build_admin_cognitive_monitoring_overview
 from apps.ai.signals import build_recommendation_signals
 from apps.common.enums import (
@@ -24,7 +25,9 @@ from apps.common.enums import (
 from apps.common.permissions import IsAdminActor, IsOrganizationActor, IsRegularUser
 from apps.courses.models import CourseModule, CourseProgram, Enrollment
 from apps.dashboards.serializers import (
+    AdminAnalyticsSerializer,
     AdminDashboardSerializer,
+    OrganizationAnalyticsSerializer,
     OrganizationDashboardSerializer,
     RegularUserDashboardSerializer,
 )
@@ -313,6 +316,37 @@ class OrganizationDashboardView(GenericAPIView):
 
 @extend_schema_view(
     get=extend_schema(
+        tags=["dashboards"],
+        operation_id="dashboard_organization_analytics",
+        responses={200: OrganizationAnalyticsSerializer},
+    )
+)
+class OrganizationAnalyticsView(GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsOrganizationActor]
+
+    def get(self, request):
+        organization = Organization.objects.select_related("owner", "financial_account").get(
+            owner=request.user
+        )
+        courses = list(organization_course_queryset(organization))
+        enrollments = list(organization_dashboard_enrollment_queryset(organization))
+        events = list(organization_event_queryset(organization))
+        opportunities = list(organization_opportunity_queryset(organization))
+        applications = list(organization_application_queryset(organization))
+        payload = build_organization_analytics(
+            organization=organization,
+            courses=courses,
+            enrollments=enrollments,
+            events=events,
+            opportunities=opportunities,
+            applications=applications,
+        )
+        serializer = OrganizationAnalyticsSerializer(payload, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema_view(
+    get=extend_schema(
         tags=["dashboards", "admin"],
         operation_id="dashboard_admin_overview",
         responses={200: AdminDashboardSerializer},
@@ -385,4 +419,20 @@ class AdminDashboardView(GenericAPIView):
             "events": events,
         }
         serializer = AdminDashboardSerializer(payload, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["dashboards", "admin"],
+        operation_id="dashboard_admin_analytics",
+        responses={200: AdminAnalyticsSerializer},
+    )
+)
+class AdminAnalyticsView(GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdminActor]
+
+    def get(self, request):
+        payload = build_admin_analytics()
+        serializer = AdminAnalyticsSerializer(payload, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)

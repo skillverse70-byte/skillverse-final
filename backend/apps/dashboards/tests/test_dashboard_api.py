@@ -286,3 +286,63 @@ class DashboardApiTests(APITestCase):
         self.authenticate(self.regular_user)
         organization_response = self.client.get(reverse("dashboard-organization"))
         self.assertEqual(organization_response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_organization_analytics_returns_reporting_and_matching_visibility(self):
+        self.authenticate(self.organization_user)
+
+        response = self.client.get(reverse("dashboard-organization-analytics"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["summary"]["managed_learners"], 1)
+        self.assertEqual(response.data["summary"]["active_courses"], 1)
+        self.assertEqual(response.data["summary"]["open_opportunities"], 1)
+        self.assertEqual(response.data["event_engagement"]["attendance_rate_percent"], 100.0)
+        self.assertEqual(response.data["matching_quality"]["learners_with_peer_matches"], 1)
+        self.assertEqual(response.data["matching_quality"]["average_peer_match_score"], 88.0)
+        self.assertTrue(
+            any(
+                item["label"] == "Product"
+                for item in response.data["course_category_distribution"]
+            )
+        )
+        self.assertIn("provider", response.data["system_health"])
+        self.assertTrue(
+            any(item["location"] == "Addis Ababa" for item in response.data["social_impact_heatmap"])
+        )
+
+    def test_admin_analytics_returns_system_health_and_quality_metrics(self):
+        self.authenticate(self.admin_user)
+
+        response = self.client.get(reverse("dashboard-admin-analytics"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["summary"]["total_match_suggestions"], 1)
+        self.assertEqual(response.data["matching_quality"]["high_confidence_matches"], 1)
+        self.assertEqual(response.data["matching_quality"]["accepted_swaps_from_suggestions"], 1)
+        self.assertEqual(
+            response.data["session_coordination_analytics"]["sessions_with_meeting_links"],
+            1,
+        )
+        self.assertEqual(
+            response.data["session_coordination_analytics"]["meeting_link_usage_percent"],
+            100.0,
+        )
+        self.assertIn("provider", response.data["system_health"])
+        self.assertTrue(
+            any(
+                item["label"] == "Product"
+                for item in response.data["global_knowledge_trends"]["top_course_categories"]
+            )
+        )
+        self.assertTrue(
+            any(item["location"] == "Addis Ababa" for item in response.data["social_impact_heatmap"])
+        )
+
+    def test_analytics_endpoints_enforce_actor_separation(self):
+        self.authenticate(self.organization_user)
+        admin_response = self.client.get(reverse("dashboard-admin-analytics"))
+        self.assertEqual(admin_response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.authenticate(self.regular_user)
+        organization_response = self.client.get(reverse("dashboard-organization-analytics"))
+        self.assertEqual(organization_response.status_code, status.HTTP_403_FORBIDDEN)

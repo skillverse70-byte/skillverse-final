@@ -124,3 +124,5 @@ These are useful future directions but should not silently replace the PRD prior
 - Have a flow like i dont have to go to other page to find learners for a course i should see a link that says learners besides of every course or see attendees for every event , or see cereticate issued for course inside or besides a course or event or something similar. while current is good but finding connected things shouldn't be hard or complicated
 -1, Adaptive monitoring should have all turned on by default and I should find that customization on there own link not embedded in other pages maybe in my profile on its own tab
 - Make sure you have check .env file to make sure you have enabled nessessary once like AI_FEATURES_ENABLED
+
+- Notify regualr users when courses, events , jobs or communities that matches gets published especially jobs

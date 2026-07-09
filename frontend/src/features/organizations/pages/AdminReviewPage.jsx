@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,6 +41,14 @@ import EmptyState from "@/components/shared/EmptyState";
 import NotificationFeedPanel from "@/components/shared/NotificationFeedPanel";
 import PageLoader from "@/components/shared/PageLoader";
 import WorkspaceShell from "@/components/shared/WorkspaceShell";
+import {
+  AnalyticsCountListCard,
+  AnalyticsHeatmapPanel,
+  AnalyticsInsightPanel,
+  AnalyticsMetricGrid,
+  AnalyticsSectionTabs,
+  AnalyticsSystemHealthPanel,
+} from "@/components/shared/AnalyticsWorkspacePanels";
 import DashboardStats from "@/features/dashboard/components/DashboardStats";
 import AdminTrustPanel from "@/features/organizations/components/AdminTrustPanel";
 import { useToast } from "@/components/ui/use-toast";
@@ -77,6 +85,7 @@ import moment from "moment";
 
 const validTabs = [
   "overview",
+  "analytics",
   "orgs",
   "financial",
   "users",
@@ -99,7 +108,9 @@ const taxonomyDomainOptions = [
 ];
 
 export default function AdminReviewPage() {
+  const navigate = useNavigate();
   const { activeTab, setActiveTab } = useWorkspaceTab(validTabs, "overview");
+  const [analyticsSection, setAnalyticsSection] = useState("overview");
   const { toast } = useToast();
   const [actingKey, setActingKey] = useState("");
   const [reviewerNotes, setReviewerNotes] = useState({});
@@ -174,6 +185,7 @@ export default function AdminReviewPage() {
     taxonomySuggestions,
     taxonomyCatalog,
     auditLogs,
+    analytics,
     loading,
     error,
     refresh,
@@ -627,6 +639,12 @@ export default function AdminReviewPage() {
       description: "Platform snapshot.",
     },
     {
+      value: "analytics",
+      label: "Analytics",
+      icon: Activity,
+      description: "Health and quality.",
+    },
+    {
       value: "orgs",
       label: `Verification (${organizationVerificationRequests.length})`,
       icon: Building,
@@ -722,6 +740,14 @@ export default function AdminReviewPage() {
       onClick: () => setActiveTab("taxonomy"),
     },
     {
+      icon: Activity,
+      label: "Analytics lane",
+      count: analytics.insight_cards?.length ?? 0,
+      description: "System health and quality signals.",
+      color: "bg-emerald-50 text-emerald-600",
+      onClick: () => setActiveTab("analytics"),
+    },
+    {
       icon: History,
       label: "Audit records",
       count: auditSummary.total,
@@ -812,6 +838,12 @@ export default function AdminReviewPage() {
                   value={String(adaptiveMonitoring.currently_monitored_users ?? 0)}
                   actionLabel="Open trust"
                   onAction={() => setActiveTab("trust")}
+                />
+                <AttentionRow
+                  label="Analytics and system health"
+                  value="Recommendation quality, monitoring signals, and rollout readiness"
+                  actionLabel="Open analytics"
+                  onAction={() => setActiveTab("analytics")}
                 />
               </div>
             </section>
@@ -1047,6 +1079,264 @@ export default function AdminReviewPage() {
             </div>
           </section>
         </div>
+      </TabsContent>
+
+      <TabsContent value="analytics" className="mt-0 space-y-6">
+        <AnalyticsSectionTabs
+          title="Admin analytics workspace"
+          description="Switch between summary, matching, monitoring, health, and impact views instead of reading one long analytics report."
+          value={analyticsSection}
+          onValueChange={setAnalyticsSection}
+          sections={[
+            {
+              value: "overview",
+              label: "Overview",
+              description: "Primary platform outcomes and top insights.",
+            },
+            {
+              value: "matching",
+              label: "Matching",
+              description: "Recommendation quality and conversion monitoring.",
+            },
+            {
+              value: "monitoring",
+              label: "Monitoring",
+              description: "Adaptive-signal and consent visibility.",
+            },
+            {
+              value: "health",
+              label: "Health",
+              description: "Provider readiness and coordination health.",
+            },
+            {
+              value: "impact",
+              label: "Impact",
+              description: "Knowledge and location trend signals.",
+            },
+          ]}
+        >
+          <TabsContent value="overview" className="mt-0 space-y-6">
+            <AnalyticsMetricGrid
+              items={[
+                {
+                  label: "Match suggestions",
+                  value: analytics.summary?.total_match_suggestions ?? 0,
+                  helper: "Stored recommendation results across the platform.",
+                },
+                {
+                  label: "Adaptive check-ins",
+                  value: analytics.summary?.total_adaptive_checkins ?? 0,
+                  helper: "Opt-in monitoring records available for governance review.",
+                },
+                {
+                  label: "Tracked sessions",
+                  value: analytics.summary?.tracked_sessions ?? 0,
+                  helper: "Learning-session records visible to platform oversight.",
+                },
+                {
+                  label: "Certificates issued",
+                  value: analytics.summary?.issued_certificates ?? 0,
+                  helper: "Recognition records currently managed by the trust system.",
+                },
+                {
+                  label: "Service credits",
+                  value: analytics.summary?.service_credit_records ?? 0,
+                  helper: "Participation evidence tracked beyond course enrollments.",
+                },
+                {
+                  label: "Accepted swap conversion",
+                  value: `${Number(
+                    analytics.matching_quality?.accepted_swap_conversion_percent || 0,
+                  ).toFixed(1)}%`,
+                  helper: "How often match suggestions are turning into accepted swaps.",
+                },
+              ]}
+            />
+
+            <AnalyticsInsightPanel
+              insights={analytics.insight_cards}
+              onOpenRoute={(route) => navigate(route)}
+              description="These alerts summarize where admin attention is most needed across recommendation quality, monitoring, and trust operations."
+            />
+          </TabsContent>
+
+          <TabsContent value="matching" className="mt-0 space-y-6">
+            <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h2 className="font-heading text-lg font-semibold text-foreground">
+                    Matching quality
+                  </h2>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Keep recommendation performance visible before drilling into specific actors or policies.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={() => setActiveTab("overview")}>
+                    Open overview
+                  </Button>
+                  <Button variant="outline" onClick={() => setActiveTab("trust")}>
+                    Open trust
+                  </Button>
+                </div>
+              </div>
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <MiniMetric
+                  label="Average match score"
+                  value={Number(analytics.matching_quality?.average_match_score || 0).toFixed(1)}
+                />
+                <MiniMetric
+                  label="High confidence matches"
+                  value={analytics.matching_quality?.high_confidence_matches ?? 0}
+                />
+                <MiniMetric
+                  label="Request-backed suggestions"
+                  value={analytics.matching_quality?.suggestions_backed_by_requests ?? 0}
+                />
+                <MiniMetric
+                  label="Accepted from suggestions"
+                  value={analytics.matching_quality?.accepted_swaps_from_suggestions ?? 0}
+                />
+              </div>
+            </section>
+
+            <AnalyticsCountListCard
+              icon={Sparkles}
+              title="Match score distribution"
+              description="The score ranges currently produced by the recommendation layer."
+              items={analytics.matching_quality?.score_distribution}
+              emptyText="Score distribution will appear once enough match suggestions have been generated."
+            />
+          </TabsContent>
+
+          <TabsContent value="monitoring" className="mt-0 space-y-6">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <MiniMetric
+                label="Active consents"
+                value={analytics.adaptive_monitoring?.summary?.active_consents ?? 0}
+              />
+              <MiniMetric
+                label="Currently monitored"
+                value={analytics.adaptive_monitoring?.summary?.currently_monitored_users ?? 0}
+              />
+              <MiniMetric
+                label="Avg focus"
+                value={Number(analytics.adaptive_monitoring?.average_focus_level || 0).toFixed(1)}
+              />
+              <MiniMetric
+                label="Avg stress"
+                value={Number(analytics.adaptive_monitoring?.average_stress_level || 0).toFixed(1)}
+              />
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-3">
+              <AnalyticsCountListCard
+                icon={Activity}
+                title="Adaptive signal counts"
+                description="Approved signal types currently being used in adaptive monitoring."
+                items={analytics.adaptive_monitoring?.signal_counts}
+                emptyText="Signal counts will appear after learners opt into adaptive monitoring."
+              />
+              <AnalyticsCountListCard
+                icon={Users}
+                title="Monitoring surfaces"
+                description="Where adaptive monitoring interactions are currently being recorded."
+                items={analytics.adaptive_monitoring?.surface_distribution}
+                emptyText="Surface analytics will appear after adaptive monitoring usage begins."
+              />
+              <AnalyticsCountListCard
+                icon={Calendar}
+                title="Monitoring moods"
+                description="Mood mirror labels currently present in adaptive check-ins."
+                items={analytics.adaptive_monitoring?.mood_distribution}
+                emptyText="Mood distribution will appear after adaptive check-ins are submitted."
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="health" className="mt-0 space-y-6">
+            <AnalyticsSystemHealthPanel
+              health={analytics.system_health}
+              description="Provider health and feature rollout state stay visible without mixing them into moderation queues."
+            />
+
+            <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-teal-600" />
+                <h2 className="font-heading text-lg font-semibold text-foreground">
+                  Session coordination analytics
+                </h2>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Coordination health stays visible here without taking over moderation workspaces.
+              </p>
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <MiniMetric
+                  label="Delivery mode"
+                  value={analytics.session_coordination_analytics?.delivery_mode || "external"}
+                />
+                <MiniMetric
+                  label="Total sessions"
+                  value={analytics.session_coordination_analytics?.total_sessions ?? 0}
+                />
+                <MiniMetric
+                  label="Confirmed sessions"
+                  value={analytics.session_coordination_analytics?.confirmed_sessions ?? 0}
+                />
+                <MiniMetric
+                  label="Completed sessions"
+                  value={analytics.session_coordination_analytics?.completed_sessions ?? 0}
+                />
+                <MiniMetric
+                  label="Planned sessions"
+                  value={analytics.session_coordination_analytics?.planned_sessions ?? 0}
+                />
+                <MiniMetric
+                  label="With meeting link"
+                  value={analytics.session_coordination_analytics?.sessions_with_meeting_links ?? 0}
+                />
+                <MiniMetric
+                  label="Meeting link usage"
+                  value={`${Number(
+                    analytics.session_coordination_analytics?.meeting_link_usage_percent || 0,
+                  ).toFixed(1)}%`}
+                />
+                <MiniMetric
+                  label="Recent monitoring"
+                  value={analytics.adaptive_monitoring?.recent_checkins_7d ?? 0}
+                />
+              </div>
+            </section>
+          </TabsContent>
+
+          <TabsContent value="impact" className="mt-0 space-y-6">
+            <div className="grid gap-4 xl:grid-cols-3">
+              <AnalyticsCountListCard
+                icon={Building}
+                title="Top fields"
+                description="The strongest field-interest patterns across the platform."
+                items={analytics.global_knowledge_trends?.top_fields}
+              />
+              <AnalyticsCountListCard
+                icon={BookOpen}
+                title="Top course categories"
+                description="Course themes currently getting the most structured activity."
+                items={analytics.global_knowledge_trends?.top_course_categories}
+              />
+              <AnalyticsCountListCard
+                icon={Briefcase}
+                title="Top opportunity categories"
+                description="Which opportunity categories are most represented in current activity."
+                items={analytics.global_knowledge_trends?.top_opportunity_categories}
+              />
+            </div>
+
+            <AnalyticsHeatmapPanel
+              items={analytics.social_impact_heatmap}
+              description="Location signals stay readable as cards until a heavier map view is truly needed."
+            />
+          </TabsContent>
+        </AnalyticsSectionTabs>
       </TabsContent>
 
       <TabsContent value="orgs" className="mt-0">

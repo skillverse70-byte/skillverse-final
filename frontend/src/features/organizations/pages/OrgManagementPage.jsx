@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { TabsContent } from "@/components/ui/tabs";
 import {
+  Activity,
   BookOpen,
   Briefcase,
   Building,
@@ -22,6 +23,14 @@ import NotificationFeedPanel from "@/components/shared/NotificationFeedPanel";
 import PageLoader from "@/components/shared/PageLoader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import WorkspaceShell from "@/components/shared/WorkspaceShell";
+import {
+  AnalyticsCountListCard,
+  AnalyticsHeatmapPanel,
+  AnalyticsInsightPanel,
+  AnalyticsMetricGrid,
+  AnalyticsSectionTabs,
+  AnalyticsSystemHealthPanel,
+} from "@/components/shared/AnalyticsWorkspacePanels";
 import DashboardStats from "@/features/dashboard/components/DashboardStats";
 import { useAILearningGuidance } from "@/hooks/ai/useAILearningGuidance";
 import FinancialAccountSetupCard from "@/features/organizations/components/FinancialAccountSetupCard";
@@ -45,12 +54,22 @@ import { saveFinancialAccountSetup } from "@/services/organizations/organization
 import { useOrganizationDashboardData } from "@/hooks/dashboard/useOrganizationDashboardData";
 import { useWorkspaceTab } from "@/hooks/dashboard/useWorkspaceTab";
 
-const validTabs = ["overview", "setup", "courses", "events", "jobs", "learners", "trust"];
+const validTabs = [
+  "overview",
+  "analytics",
+  "setup",
+  "courses",
+  "events",
+  "jobs",
+  "learners",
+  "trust",
+];
 
 export default function OrgManagementPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { activeTab, setActiveTab } = useWorkspaceTab(validTabs, "overview");
+  const [analyticsSection, setAnalyticsSection] = useState("snapshot");
   const [selectedLearnerId, setSelectedLearnerId] = useState("");
   const {
     organization,
@@ -63,6 +82,7 @@ export default function OrgManagementPage() {
     events,
     opportunities,
     applications,
+    analytics,
     loading,
     error,
     refresh,
@@ -274,6 +294,12 @@ export default function OrgManagementPage() {
       description: "Business snapshot.",
     },
     {
+      value: "analytics",
+      label: "Analytics",
+      icon: Activity,
+      description: "Performance and health.",
+    },
+    {
       value: "setup",
       label: "Setup",
       icon: Settings2,
@@ -473,6 +499,12 @@ export default function OrgManagementPage() {
                 actionLabel="Open trust"
                 onAction={() => setActiveTab("trust")}
               />
+              <AttentionRow
+                label="Analytics lane"
+                value="Track performance, health, and recommendation readiness"
+                actionLabel="Open analytics"
+                onAction={() => setActiveTab("analytics")}
+              />
             </div>
           </section>
 
@@ -543,6 +575,226 @@ export default function OrgManagementPage() {
             </div>
           )}
         </section>
+      </TabsContent>
+
+      <TabsContent value="analytics" className="mt-0 space-y-6">
+        <AnalyticsSectionTabs
+          title="Organization analytics workspace"
+          description="Switch between performance, engagement, signal, and health views instead of scrolling through every dataset at once."
+          value={analyticsSection}
+          onValueChange={setAnalyticsSection}
+          sections={[
+            {
+              value: "snapshot",
+              label: "Snapshot",
+              description: "Primary outcomes and high-priority insights.",
+            },
+            {
+              value: "engagement",
+              label: "Engagement",
+              description: "Learner, event, and hiring funnel analytics.",
+            },
+            {
+              value: "signals",
+              label: "Signals",
+              description: "Fields, skills, and location trends.",
+            },
+            {
+              value: "health",
+              label: "Health",
+              description: "System readiness and rollout state.",
+            },
+          ]}
+        >
+          <TabsContent value="snapshot" className="mt-0 space-y-6">
+            <AnalyticsMetricGrid
+              items={[
+                {
+                  label: "Managed learners",
+                  value: analytics.summary?.managed_learners ?? enrollments.length,
+                  helper: "Learners currently tied to your organization record.",
+                },
+                {
+                  label: "Issued certificates",
+                  value: analytics.summary?.issued_certificates ?? 0,
+                  helper: "Verified recognition records already issued.",
+                },
+                {
+                  label: "Service credits",
+                  value: analytics.summary?.service_credit_records ?? 0,
+                  helper: "Participation records that support trust surfaces later.",
+                },
+                {
+                  label: "Recommendation ready",
+                  value: `${Number(
+                    analytics.matching_quality?.recommendation_ready_percent || 0,
+                  ).toFixed(1)}%`,
+                  helper: "Learners with enough signal depth for recommendations.",
+                },
+                {
+                  label: "Average peer match score",
+                  value: Number(
+                    analytics.matching_quality?.average_peer_match_score || 0,
+                  ).toFixed(1),
+                  helper: "How strongly learner signals align with peer matches.",
+                },
+                {
+                  label: "Event attendance rate",
+                  value: `${Number(
+                    analytics.event_engagement?.attendance_rate_percent || 0,
+                  ).toFixed(1)}%`,
+                  helper: "Share of RSVPs that became attendance records.",
+                },
+              ]}
+            />
+
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
+              <AnalyticsInsightPanel
+                insights={analytics.insight_cards}
+                onOpenRoute={(route) => navigate(route)}
+                description="These cues take the team straight into learner, event, or hiring work that needs attention."
+              />
+              <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <h2 className="font-heading text-lg font-semibold text-foreground">
+                      Matching and pipeline quality
+                    </h2>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Keep peer-match health and hiring momentum visible without mixing them into daily operations.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={() => setActiveTab("learners")}>
+                      Open learners
+                    </Button>
+                    <Button variant="outline" onClick={() => setActiveTab("jobs")}>
+                      Open jobs
+                    </Button>
+                  </div>
+                </div>
+                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <MiniPanel
+                    title="Learners with profile fields"
+                    value={analytics.matching_quality?.learners_with_profile_fields ?? 0}
+                    description="Profiles carrying usable field signals."
+                  />
+                  <MiniPanel
+                    title="Learners with skill signals"
+                    value={analytics.matching_quality?.learners_with_skill_signals ?? 0}
+                    description="Learners with skill data rich enough to match on."
+                  />
+                  <MiniPanel
+                    title="Learners with peer matches"
+                    value={analytics.matching_quality?.learners_with_peer_matches ?? 0}
+                    description="Learners already receiving peer suggestions."
+                  />
+                  <MiniPanel
+                    title="Accepted swaps"
+                    value={analytics.matching_quality?.accepted_peer_swaps ?? 0}
+                    description="Successful swap acceptances tied to current signals."
+                  />
+                </div>
+              </section>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="engagement" className="mt-0 space-y-6">
+            <div className="grid gap-4 xl:grid-cols-2">
+              <AnalyticsCountListCard
+                icon={BookOpen}
+                title="Course category distribution"
+                description="See where your catalog currently concentrates."
+                items={analytics.course_category_distribution}
+                emptyText="Publish courses with categories to start seeing distribution trends."
+              />
+              <AnalyticsCountListCard
+                icon={GraduationCap}
+                title="Learner progress bands"
+                description="Track whether learner progress is clustered at the start, middle, or finish line."
+                items={analytics.learner_progress_bands}
+                emptyText="Learner progress bands will appear once enrollments begin moving through course content."
+              />
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-2">
+              <AnalyticsCountListCard
+                icon={Calendar}
+                title="Event RSVP status"
+                description="Understand where event interest is sitting before you inspect individual attendees."
+                items={analytics.event_engagement?.rsvp_status_distribution}
+                emptyText="Event RSVP analytics will appear once learners start responding to published events."
+              />
+              <AnalyticsCountListCard
+                icon={Briefcase}
+                title="Applicant pipeline status"
+                description="Keep pipeline shape visible before you drill into individual applicants."
+                items={analytics.opportunity_pipeline?.application_status_distribution}
+                emptyText="Application status analytics will appear when candidates start entering the pipeline."
+              />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <MiniPanel
+                title="Shortlisted rate"
+                value={`${Number(
+                  analytics.opportunity_pipeline?.shortlisted_rate_percent || 0,
+                ).toFixed(1)}%`}
+                description="Share of applicants moving to the shortlist stage."
+              />
+              <MiniPanel
+                title="Hired rate"
+                value={`${Number(
+                  analytics.opportunity_pipeline?.hired_rate_percent || 0,
+                ).toFixed(1)}%`}
+                description="Share of applicants reaching the hired state."
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="signals" className="mt-0 space-y-6">
+            <div className="grid gap-4 xl:grid-cols-3">
+              <AnalyticsCountListCard
+                icon={Sparkles}
+                title="Top fields"
+                description="The field signals currently leading learner and organization activity."
+                items={analytics.knowledge_trends?.top_fields}
+              />
+              <AnalyticsCountListCard
+                icon={Users}
+                title="Top offered skills"
+                description="Skills most commonly surfaced as teachable strengths."
+                items={analytics.knowledge_trends?.top_offered_skills}
+              />
+              <AnalyticsCountListCard
+                icon={GraduationCap}
+                title="Top learning skills"
+                description="Skills learners are most actively trying to develop."
+                items={analytics.knowledge_trends?.top_learning_skills}
+              />
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-2">
+              <AnalyticsCountListCard
+                icon={Calendar}
+                title="Event formats"
+                description="A quick view of how your event mix is split across delivery styles."
+                items={analytics.event_engagement?.format_distribution}
+              />
+              <AnalyticsHeatmapPanel
+                items={analytics.social_impact_heatmap}
+                description="Locations are kept as readable activity cards so the workspace stays lightweight."
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="health" className="mt-0 space-y-6">
+            <AnalyticsSystemHealthPanel
+              health={analytics.system_health}
+              description="AI readiness, rollout state, and recent activity stay separate from daily operations so setup issues are easy to spot."
+            />
+          </TabsContent>
+        </AnalyticsSectionTabs>
       </TabsContent>
 
       <TabsContent value="setup" className="mt-0 space-y-6">

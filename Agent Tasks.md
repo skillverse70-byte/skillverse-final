@@ -1341,6 +1341,7 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 ### TASK-1009: Deliver Advanced Analytics, Matching-Quality Monitoring, and System Health Backend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
 - **Owner:** Backend
+- **Status:** Complete
 - **Actor(s):** Organization, Admin
 - **Route(s):** `/dashboard`, `/org`, `/admin`, `/discover`
 - **Files touched:** `backend/apps/dashboards/`, `backend/apps/ai/`, `backend/apps/common/`, `schema.yaml`
@@ -1354,6 +1355,7 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 
 ### TASK-1009-FE: Deliver Advanced Analytics, Matching-Quality Monitoring, and System Health Frontend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
 - **Owner:** Frontend
 - **Actor(s):** Organization, Admin
 - **Route(s):** `/dashboard`, `/org`, `/admin`, `/discover`
@@ -1362,9 +1364,9 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 - **Spec:** `PRD.md` Sections `4.3`, `6.6`, `6.7`, `6.11`; `schema.yaml` analytics endpoints when added
 - **Setup reference:** Use `Agents/future improvements.md` sections `Recommendation and Matching Expansion`, `Cognitive Monitoring Guardrails`, and `Remaining Deferred Product Areas`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Organization and admin dashboards expose the analytics, matching-quality monitoring, adaptive-signal visibility, and system-health views required by the PRD roadmap without collapsing those operator surfaces into stacked, hard-to-scan page sections
+- **Definition of Done:** Organization and admin dashboards expose the analytics, matching-quality monitoring, adaptive-signal visibility, and system-health views required by the PRD roadmap through tabs, card summaries, drill-downs, or workspace sections instead of collapsing those operator surfaces into stacked, hard-to-scan page sections
 - **Blockers:** None
-- **Description:** Build the frontend analytics surfaces on top of `TASK-1009` so operators can actually use the new reporting and monitoring layer. This includes charts, summaries, drill-downs, explanation states, and actor-safe visibility rules. Any new heavy dashboard or detail surfaces introduced here must follow the shared tabs-first navigation rule from `TASK-1008-FE-A` instead of appending more cards into existing long pages.
+- **Description:** Build the frontend analytics surfaces on top of `TASK-1009` so operators can actually use the new reporting and monitoring layer. This includes charts, summaries, drill-downs, explanation states, and actor-safe visibility rules. Any new heavy dashboard or detail surfaces introduced here must follow the shared tabs-first navigation rule from `TASK-1008-FE-A`, using card summaries and drill-down states where a full tab split is not needed, instead of appending more content into existing long pages.
 
 ### TASK-1010: Add Community-Service Monetization and Advanced Payment Automation Backend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
@@ -1390,9 +1392,9 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 - **Spec:** `PRD.md` Sections `4.3`, `6.8`, `6.9`, `6.10`; `schema.yaml` payment and community-service monetization endpoints when added
 - **Setup reference:** Use `Agents/future improvements.md` sections `Remaining Deferred Product Areas`, `Extra Requested Ideas Outside Current PRD Core`, and the shared detail-page rule established in `TASK-1008-FE-A`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Users, organizations, and admins can operate the paid community-service workflow through frontend surfaces that match the backend monetization rules and slot into scalable tabs/workspace sections rather than cluttering existing pages
+- **Definition of Done:** Users, organizations, and admins can operate the paid community-service workflow through frontend surfaces that match the backend monetization rules and slot into scalable tabs, card-based workflow summaries, drill-down views, or workspace sections rather than cluttering existing pages
 - **Blockers:** None
-- **Description:** Build the frontend operator and learner experience on top of `TASK-1010`. This includes checkout-adjacent UI, payment state visibility, organization/admin workflow surfaces, and actor-safe messaging for community-service monetization behavior. Any course, dashboard, or operator page touched here should use the shared tabs-first module pattern where the experience would otherwise become a stacked list of payment and governance cards.
+- **Description:** Build the frontend operator and learner experience on top of `TASK-1010`. This includes checkout-adjacent UI, payment state visibility, organization/admin workflow surfaces, and actor-safe messaging for community-service monetization behavior. Any course, dashboard, or operator page touched here should use the shared tabs-first module pattern where multiple major flows compete, and otherwise use card summaries with intentional drill-downs so the experience does not regress into a stacked list of payment and governance panels.
 
 ### TASK-1011: Run Final PRD Coverage Audit and Deferred-Feature Closure Backend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
@@ -1418,9 +1420,9 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 - **Spec:** `PRD.md` Sections `3` through `7`
 - **Setup reference:** Use `Agents/future improvements.md` as the companion source for Phase 10 deferred and advanced features, including the tabs-first navigation rule introduced under `TASK-1008-FE-A`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Every remaining frontend or actor-surface PRD requirement is either implemented in this phase or explicitly re-mapped with no silent omissions, the coverage checklist stays accurate, and no newly added module surface regresses into stacked-panel UX where tabs or workspace navigation are required
+- **Definition of Done:** Every remaining frontend or actor-surface PRD requirement is either implemented in this phase or explicitly re-mapped with no silent omissions, the coverage checklist stays accurate, and no newly added module surface regresses into stacked-panel UX where tabs, card summaries, drill-downs, or workspace navigation are required
 - **Blockers:** None
-- **Description:** Close the frontend and actor-surface side of the PRD loop after the remaining roadmap work lands. This task should reconcile the task map, role matrix, blockers, and governance docs so UI/route coverage can be claimed without ambiguous leftovers. The final audit must also enforce the shared detail-page navigation rule so feature growth does not quietly turn key pages back into endless vertical stacks.
+- **Description:** Close the frontend and actor-surface side of the PRD loop after the remaining roadmap work lands. This task should reconcile the task map, role matrix, blockers, and governance docs so UI/route coverage can be claimed without ambiguous leftovers. The final audit must also enforce the shared navigation rule across both detail and non-detail pages so feature growth does not quietly turn key surfaces back into endless vertical stacks when they should instead use tabs, card summaries, drill-downs, or workspace navigation.
 
 ### Phase 10 Definition of Done
 

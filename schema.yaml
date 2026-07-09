@@ -1719,6 +1719,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/AdminDashboard'
           description: ''
+  /api/dashboard/admin/analytics/:
+    get:
+      operationId: dashboard_admin_analytics
+      tags:
+      - dashboards
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAnalytics'
+          description: ''
   /api/dashboard/me/:
     get:
       operationId: dashboard_regular_overview
@@ -1748,6 +1764,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrganizationDashboard'
+          description: ''
+  /api/dashboard/organization/analytics/:
+    get:
+      operationId: dashboard_organization_analytics
+      tags:
+      - dashboards
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationAnalytics'
           description: ''
   /api/events/:
     get:
@@ -4703,6 +4734,52 @@ components:
       - email
       - full_name
       - id
+    AdminAdaptiveMonitoringAnalytics:
+      type: object
+      properties:
+        summary:
+          allOf:
+          - $ref: '#/components/schemas/AdminAdaptiveMonitoringSummary'
+          readOnly: true
+        signal_counts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        mood_distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        surface_distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        average_focus_level:
+          type: number
+          format: double
+          readOnly: true
+        average_energy_level:
+          type: number
+          format: double
+          readOnly: true
+        average_stress_level:
+          type: number
+          format: double
+          readOnly: true
+        recent_checkins_7d:
+          type: integer
+          readOnly: true
+      required:
+      - average_energy_level
+      - average_focus_level
+      - average_stress_level
+      - mood_distribution
+      - recent_checkins_7d
+      - signal_counts
+      - summary
+      - surface_distribution
     AdminAdaptiveMonitoringSummary:
       type: object
       properties:
@@ -4723,6 +4800,76 @@ components:
       - currently_monitored_users
       - distinct_consented_users
       - revoked_consents
+    AdminAnalytics:
+      type: object
+      properties:
+        summary:
+          allOf:
+          - $ref: '#/components/schemas/AdminAnalyticsSummary'
+          readOnly: true
+        matching_quality:
+          allOf:
+          - $ref: '#/components/schemas/AdminMatchingQualityAnalytics'
+          readOnly: true
+        adaptive_monitoring:
+          allOf:
+          - $ref: '#/components/schemas/AdminAdaptiveMonitoringAnalytics'
+          readOnly: true
+        system_health:
+          allOf:
+          - $ref: '#/components/schemas/AnalyticsSystemHealth'
+          readOnly: true
+        session_coordination_analytics:
+          allOf:
+          - $ref: '#/components/schemas/AdminSessionCoordinationAnalytics'
+          readOnly: true
+        global_knowledge_trends:
+          allOf:
+          - $ref: '#/components/schemas/KnowledgeTrendAnalytics'
+          readOnly: true
+        social_impact_heatmap:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsHeatmapItem'
+          readOnly: true
+        insight_cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsInsightCard'
+          readOnly: true
+      required:
+      - adaptive_monitoring
+      - global_knowledge_trends
+      - insight_cards
+      - matching_quality
+      - session_coordination_analytics
+      - social_impact_heatmap
+      - summary
+      - system_health
+    AdminAnalyticsSummary:
+      type: object
+      properties:
+        total_match_suggestions:
+          type: integer
+          readOnly: true
+        total_adaptive_checkins:
+          type: integer
+          readOnly: true
+        issued_certificates:
+          type: integer
+          readOnly: true
+        service_credit_records:
+          type: integer
+          readOnly: true
+        tracked_sessions:
+          type: integer
+          readOnly: true
+      required:
+      - issued_certificates
+      - service_credit_records
+      - total_adaptive_checkins
+      - total_match_suggestions
+      - tracked_sessions
     AdminCourseModeration:
       type: object
       properties:
@@ -5122,6 +5269,42 @@ components:
       - submitted_at
       - updated_at
       - verified_at
+    AdminMatchingQualityAnalytics:
+      type: object
+      properties:
+        total_match_suggestions:
+          type: integer
+          readOnly: true
+        average_match_score:
+          type: number
+          format: double
+          readOnly: true
+        high_confidence_matches:
+          type: integer
+          readOnly: true
+        suggestions_backed_by_requests:
+          type: integer
+          readOnly: true
+        accepted_swaps_from_suggestions:
+          type: integer
+          readOnly: true
+        accepted_swap_conversion_percent:
+          type: number
+          format: double
+          readOnly: true
+        score_distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+      required:
+      - accepted_swap_conversion_percent
+      - accepted_swaps_from_suggestions
+      - average_match_score
+      - high_confidence_matches
+      - score_distribution
+      - suggestions_backed_by_requests
+      - total_match_suggestions
     AdminOpportunityModeration:
       type: object
       properties:
@@ -5329,6 +5512,39 @@ components:
       - regular_users
       - total_users
       - verified_organizations
+    AdminSessionCoordinationAnalytics:
+      type: object
+      properties:
+        delivery_mode:
+          type: string
+          readOnly: true
+        total_sessions:
+          type: integer
+          readOnly: true
+        planned_sessions:
+          type: integer
+          readOnly: true
+        confirmed_sessions:
+          type: integer
+          readOnly: true
+        completed_sessions:
+          type: integer
+          readOnly: true
+        sessions_with_meeting_links:
+          type: integer
+          readOnly: true
+        meeting_link_usage_percent:
+          type: number
+          format: double
+          readOnly: true
+      required:
+      - completed_sessions
+      - confirmed_sessions
+      - delivery_mode
+      - meeting_link_usage_percent
+      - planned_sessions
+      - sessions_with_meeting_links
+      - total_sessions
     AdminTrustOverview:
       type: object
       properties:
@@ -5414,6 +5630,169 @@ components:
           type: string
       required:
       - is_active
+    AnalyticsAIFeatureRollout:
+      type: object
+      properties:
+        key:
+          type: string
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        enabled:
+          type: boolean
+          readOnly: true
+        rollout_state:
+          type: string
+          readOnly: true
+        actor_roles:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        surfaces:
+          type: array
+          items:
+            type: string
+          readOnly: true
+      required:
+      - actor_roles
+      - enabled
+      - key
+      - label
+      - rollout_state
+      - surfaces
+    AnalyticsAIProvider:
+      type: object
+      properties:
+        provider:
+          type: string
+          readOnly: true
+        configured:
+          type: boolean
+          readOnly: true
+        healthy:
+          type: boolean
+          readOnly: true
+        default_model:
+          type: string
+          readOnly: true
+        base_url:
+          type: string
+          readOnly: true
+        timeout_seconds:
+          type: integer
+          readOnly: true
+      required:
+      - base_url
+      - configured
+      - default_model
+      - healthy
+      - provider
+      - timeout_seconds
+    AnalyticsCountItem:
+      type: object
+      properties:
+        key:
+          type: string
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        count:
+          type: integer
+          readOnly: true
+      required:
+      - count
+      - key
+      - label
+    AnalyticsHeatmapItem:
+      type: object
+      properties:
+        location:
+          type: string
+          readOnly: true
+        source_type:
+          type: string
+          readOnly: true
+        count:
+          type: integer
+          readOnly: true
+      required:
+      - count
+      - location
+      - source_type
+    AnalyticsInsightCard:
+      type: object
+      properties:
+        key:
+          type: string
+          readOnly: true
+        severity:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        route:
+          type: string
+          readOnly: true
+      required:
+      - description
+      - key
+      - route
+      - severity
+      - title
+    AnalyticsSystemHealth:
+      type: object
+      properties:
+        provider:
+          allOf:
+          - $ref: '#/components/schemas/AnalyticsAIProvider'
+          readOnly: true
+        feature_rollouts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsAIFeatureRollout'
+          readOnly: true
+        ready_features:
+          type: integer
+          readOnly: true
+        fallback_only_features:
+          type: integer
+          readOnly: true
+        disabled_features:
+          type: integer
+          readOnly: true
+        recent_match_suggestions_7d:
+          type: integer
+          readOnly: true
+        recent_checkins_7d:
+          type: integer
+          readOnly: true
+        recent_enrollments_7d:
+          type: integer
+          readOnly: true
+        recent_rsvps_7d:
+          type: integer
+          readOnly: true
+        recent_applications_7d:
+          type: integer
+          readOnly: true
+      required:
+      - disabled_features
+      - fallback_only_features
+      - feature_rollouts
+      - provider
+      - ready_features
+      - recent_applications_7d
+      - recent_checkins_7d
+      - recent_enrollments_7d
+      - recent_match_suggestions_7d
+      - recent_rsvps_7d
     ApplicantInfo:
       type: object
       properties:
@@ -7425,6 +7804,46 @@ components:
       - reviewer_notes
       - status
       - updated_at
+    KnowledgeTrendAnalytics:
+      type: object
+      properties:
+        top_fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        top_offered_skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        top_learning_skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        top_course_categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        top_event_categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        top_opportunity_categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+      required:
+      - top_course_categories
+      - top_event_categories
+      - top_fields
+      - top_learning_skills
+      - top_offered_skills
+      - top_opportunity_categories
     LearningSession:
       type: object
       properties:
@@ -8316,6 +8735,147 @@ components:
       required:
       - description
       - title
+    OrganizationAnalytics:
+      type: object
+      properties:
+        summary:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationAnalyticsSummary'
+          readOnly: true
+        course_category_distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        learner_progress_bands:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        event_engagement:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationEventEngagementAnalytics'
+          readOnly: true
+        opportunity_pipeline:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationOpportunityPipelineAnalytics'
+          readOnly: true
+        knowledge_trends:
+          allOf:
+          - $ref: '#/components/schemas/KnowledgeTrendAnalytics'
+          readOnly: true
+        social_impact_heatmap:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsHeatmapItem'
+          readOnly: true
+        matching_quality:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationMatchingQualityAnalytics'
+          readOnly: true
+        system_health:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationAnalyticsSystemHealth'
+          readOnly: true
+        insight_cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsInsightCard'
+          readOnly: true
+      required:
+      - course_category_distribution
+      - event_engagement
+      - insight_cards
+      - knowledge_trends
+      - learner_progress_bands
+      - matching_quality
+      - opportunity_pipeline
+      - social_impact_heatmap
+      - summary
+      - system_health
+    OrganizationAnalyticsSummary:
+      type: object
+      properties:
+        managed_learners:
+          type: integer
+          readOnly: true
+        active_courses:
+          type: integer
+          readOnly: true
+        active_events:
+          type: integer
+          readOnly: true
+        open_opportunities:
+          type: integer
+          readOnly: true
+        issued_certificates:
+          type: integer
+          readOnly: true
+        service_credit_records:
+          type: integer
+          readOnly: true
+      required:
+      - active_courses
+      - active_events
+      - issued_certificates
+      - managed_learners
+      - open_opportunities
+      - service_credit_records
+    OrganizationAnalyticsSystemHealth:
+      type: object
+      properties:
+        provider:
+          allOf:
+          - $ref: '#/components/schemas/AnalyticsAIProvider'
+          readOnly: true
+        feature_rollouts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsAIFeatureRollout'
+          readOnly: true
+        ready_features:
+          type: integer
+          readOnly: true
+        fallback_only_features:
+          type: integer
+          readOnly: true
+        disabled_features:
+          type: integer
+          readOnly: true
+        recent_match_suggestions_7d:
+          type: integer
+          readOnly: true
+        recent_checkins_7d:
+          type: integer
+          readOnly: true
+        recent_enrollments_7d:
+          type: integer
+          readOnly: true
+        recent_rsvps_7d:
+          type: integer
+          readOnly: true
+        recent_applications_7d:
+          type: integer
+          readOnly: true
+        verification_status:
+          type: string
+          readOnly: true
+        financial_account_status:
+          type: string
+          readOnly: true
+      required:
+      - disabled_features
+      - fallback_only_features
+      - feature_rollouts
+      - financial_account_status
+      - provider
+      - ready_features
+      - recent_applications_7d
+      - recent_checkins_7d
+      - recent_enrollments_7d
+      - recent_match_suggestions_7d
+      - recent_rsvps_7d
+      - verification_status
     OrganizationDashboard:
       type: object
       properties:
@@ -8467,6 +9027,77 @@ components:
       - learner
       - next_lesson_id
       - total_lessons
+    OrganizationEventEngagementAnalytics:
+      type: object
+      properties:
+        rsvp_status_distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        format_distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        attendance_rate_percent:
+          type: number
+          format: double
+          readOnly: true
+      required:
+      - attendance_rate_percent
+      - format_distribution
+      - rsvp_status_distribution
+    OrganizationMatchingQualityAnalytics:
+      type: object
+      properties:
+        learners_with_profile_fields:
+          type: integer
+          readOnly: true
+        learners_with_skill_signals:
+          type: integer
+          readOnly: true
+        learners_with_peer_matches:
+          type: integer
+          readOnly: true
+        average_peer_match_score:
+          type: number
+          format: double
+          readOnly: true
+        accepted_peer_swaps:
+          type: integer
+          readOnly: true
+        recommendation_ready_percent:
+          type: number
+          format: double
+          readOnly: true
+      required:
+      - accepted_peer_swaps
+      - average_peer_match_score
+      - learners_with_peer_matches
+      - learners_with_profile_fields
+      - learners_with_skill_signals
+      - recommendation_ready_percent
+    OrganizationOpportunityPipelineAnalytics:
+      type: object
+      properties:
+        application_status_distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsCountItem'
+          readOnly: true
+        shortlisted_rate_percent:
+          type: number
+          format: double
+          readOnly: true
+        hired_rate_percent:
+          type: number
+          format: double
+          readOnly: true
+      required:
+      - application_status_distribution
+      - hired_rate_percent
+      - shortlisted_rate_percent
     OrganizationProfile:
       type: object
       properties:
