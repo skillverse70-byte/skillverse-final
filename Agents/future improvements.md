@@ -68,6 +68,28 @@ Primary source of truth:
   - `TASK-1007-FE` exposes disclosure, consent, and transparency UI;
   - `TASK-1008` implements backend adaptive logic and explainable outputs;
   - `TASK-1008-FE` delivers the user-facing focus drift, mood mirror, and adaptive-response experience.
+- The current follow-up UX work under `TASK-1008-FE` is intentionally split so we do not repeat the stacked-card pattern on every detail page:
+  - `TASK-1008-FE-A` defines the shared tabbed detail-page pattern;
+  - `TASK-1008-FE-B` applies it to `/courses/:id`;
+  - `TASK-1008-FE-C` applies it to `/events/:id` and `/jobs/:id`;
+  - `TASK-1008-FE-D` audits remaining stacked module surfaces such as messages or discovery and normalizes them where needed.
+- Guiding rule for these follow-ups: core module content should open first, while AI helpers, support tools, and secondary actions should live behind intentional tabs or sectional navigation instead of all rendering in one scroll-heavy column.
+- The same tabs-first rule should be applied to later frontend Phase 10 tasks:
+  - `TASK-1009-FE` should place analytics and monitoring into scalable dashboard/detail navigation rather than long stacked summaries;
+  - `TASK-1010-FE` should place payment, monetization, and operator workflow surfaces into clear tabs or workspace sections rather than appending cards under existing content;
+  - `TASK-1011-FE` should treat this navigation rule as part of the final frontend coverage audit so no newly added module regresses into stacked-panel UX.
+- This rule should also extend beyond detail pages. User-facing browse pages, list pages, and workspaces should use progressive disclosure too:
+  - people should see major categories, summaries, tabs, or drill-down cards first;
+  - secondary data should be revealed when they ask for it, not dumped all at once;
+  - if a page is intentionally single-flow, that should be a conscious exception rather than the default layout pattern.
+- The dedicated non-detail follow-up is:
+  - `TASK-1008-FE-E` for the audit of non-detail user-facing pages;
+  - `TASK-1008-FE-F` for the implementation pass that restructures those pages where needed.
+- Audit result from `TASK-1008-FE-E`:
+  - keep `/dashboard`, `/org`, and `/admin` on the existing workspace-shell structure;
+  - keep `/courses` as an intentionally single-flow catalog unless new competing subflows are added;
+  - keep `/communities` on the current scoped master/detail model unless future growth makes secondary tools compete with the core community flow;
+  - prioritize `/events`, `/jobs`, and `/certificates` in `TASK-1008-FE-F` because those pages still combine multiple major flows on one surface and should reveal them more progressively.
 
 ## Remaining Deferred Product Areas
 
@@ -97,7 +119,8 @@ These are useful future directions but should not silently replace the PRD prior
 - Generate certeficate document if issued
 - On organization when issuing certeficate it should only select courses, or events or others that they completed , the list should be filtered based on the user. 
 
-- Add AI navigation helper since this project have a lot of features and alot of routes m a lot of things present in dashboard of each user role we need to add an AI assitant to help them go to pages just by typing like, Take me to a page where my certefication is found and it shows them suggestions then the user manually clicks, or regular user says how many courses an I enrolled to then it tells them, or says show me event listing tailered to my profile and it suggests links and the user manually clicks but when they open the chatbot it should suggest them 3 questions atilered to there user role to get them started , this should be applied for all user roles and the AI assistant should use open router and also visible at all times and at all screen types like in bottom right corner just floating there. When implementing this take out multiple tasks to handle this feature. 
+- Add AI navigation helper since this project have a lot of features and alot of routes m a lot of things present in dashboard of each user role we need to add an AI assitant to help them go to pages just by typing like, Take me to a page where my certefication is found and it shows them suggestions then the user manually clicks, or regular user says how many courses an I enrolled to then it tells them, or says show me event listing tailered to my profile and it suggests links and the user manually clicks but when they open the chatbot it should suggest them 3 questions atilered to there user role to get them started , this should be applied for all user roles and the AI assistant should use open router and also visible at all times and at all screen types like in bottom right corner just floating there. When implementing this take out multiple tasks to handle this feature.  And the system should make sure it is using the current up to date information, I don't know if we should create a file that references the routes and there functionality with the current database information but it should be very effective.
+
 - Have a flow like i dont have to go to other page to find learners for a course i should see a link that says learners besides of every course or see attendees for every event , or see cereticate issued for course inside or besides a course or event or something similar. while current is good but finding connected things shouldn't be hard or complicated
 -1, Adaptive monitoring should have all turned on by default and I should find that customization on there own link not embedded in other pages maybe in my profile on its own tab
 - Make sure you have check .env file to make sure you have enabled nessessary once like AI_FEATURES_ENABLED

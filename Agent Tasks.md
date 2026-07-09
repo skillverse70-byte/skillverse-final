@@ -1246,6 +1246,97 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 - **Blockers:** None
 - **Description:** Deliver the user-facing adaptive learning experience after the backend engine and consent surfaces exist. This includes in-product prompts, adaptive-response UI, explanation copy, and safe empty/error states that match the backend outputs.
 
+### TASK-1008-FE-A: Define Shared Detail-Page Tab Pattern for Multi-Panel Modules
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Frontend
+- **Status:** Complete
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** `/courses/:id`, `/events/:id`, `/jobs/:id`, `/messages`
+- **Files touched:** `frontend/src/components/shared/`, `frontend/src/hooks/dashboard/`, `frontend/src/app/routes.jsx`, `frontend/FRONTEND_PRD_READY.md`
+- **Depends on:** `TASK-1008-FE`
+- **Spec:** `PRD.md` Sections `4.1`, `4.2`, `4.3`, `6.5`, `6.7`; `schema.yaml` existing detail endpoints remain the source of truth for data shapes
+- **Setup reference:** Reuse `WorkspaceShell`, `useWorkspaceTab`, and existing actor-safe route structure; see `Agents/future improvements.md` section `Cognitive Monitoring Guardrails`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** A reusable tab/query-param navigation pattern exists for detail pages so auxiliary tools do not stack endlessly above or below the core module content
+- **Blockers:** None
+- **Description:** Establish the shared frontend pattern we will use for module detail pages that now contain multiple independent panels. This task defines the tab behavior, default active tab rules, mobile handling, query-param or route-state convention, and visual hierarchy so later pages can adopt one consistent navigation-first structure instead of long stacked scrolling.
+
+### TASK-1008-FE-B: Refactor Course Detail into Navigable Tabs
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Frontend
+- **Status:** Complete
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** `/courses/:id`
+- **Files touched:** `frontend/src/features/courses/pages/CourseDetailPage.jsx`, `frontend/src/components/shared/`, `frontend/src/hooks/dashboard/`
+- **Depends on:** `TASK-1008-FE-A`
+- **Spec:** `PRD.md` Sections `4.2`, `4.3`, `6.5`, `6.7`; `schema.yaml` course detail, enrollment, recommendation, learning-guidance, and adaptive-monitoring endpoints already in use
+- **Setup reference:** Use the frontend AI surfaces already introduced in `TASK-1003`, `TASK-1004`, and `TASK-1008-FE`; see `Agents/future improvements.md` sections `Learning Guidance and Feedback` and `Cognitive Monitoring Guardrails`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** The course page defaults to a course-detail tab and moves AI/support surfaces into their own navigable tabs so learners do not need to scroll through every panel in one column
+- **Blockers:** None
+- **Description:** Rework `/courses/:id` so the main course detail remains the default first tab and the auxiliary surfaces each live behind clear navigation. At minimum, course details/content should stop competing with `Recommended next moves`, `Course learning guidance`, and `Course focus mirror` in one long stacked column. Preserve existing backend behavior and actor restrictions while improving readability and discoverability.
+
+### TASK-1008-FE-C: Apply the Same Tabbed Detail Pattern to Event and Job Modules
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Frontend
+- **Status:** Complete
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** `/events/:id`, `/jobs/:id`
+- **Files touched:** `frontend/src/features/events/pages/EventDetailPage.jsx`, `frontend/src/features/jobs/pages/JobDetailPage.jsx`, `frontend/src/components/shared/`
+- **Depends on:** `TASK-1008-FE-A`
+- **Spec:** `PRD.md` Sections `4.1`, `4.2`, `6.8`; `schema.yaml` event-detail, RSVP, opportunity-detail, and application endpoints
+- **Setup reference:** Reuse the shared detail-page tab pattern from `TASK-1008-FE-A`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Event and job detail pages separate overview information from action-heavy or supplemental sections so those modules remain readable as more capability is added
+- **Blockers:** None
+- **Description:** Apply the same navigation-first detail-page structure to events and opportunities before those pages grow further. Event pages should separate details, participation, and related verification/certificate context. Job pages should separate overview, requirements, and application workflow so the page remains scalable instead of becoming a single long document.
+
+### TASK-1008-FE-D: Audit Remaining Stacked Module Surfaces and Normalize Navigation
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Frontend
+- **Status:** Complete
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** `/messages`, `/dashboard`, `/discover`, additional module surfaces identified during implementation
+- **Files touched:** `frontend/src/features/messages/`, `frontend/src/features/dashboard/`, `frontend/src/features/skills/`, `frontend/src/components/shared/`, `ROLE_ACCESS_MATRIX.md`
+- **Depends on:** `TASK-1008-FE-B`, `TASK-1008-FE-C`
+- **Spec:** `PRD.md` Sections `4.1`, `4.2`, `4.3`, `6.6`, `6.7`, `6.11`
+- **Setup reference:** Use the shared detail-page pattern from `TASK-1008-FE-A` and keep route ownership aligned with `ROLE_ACCESS_MATRIX.md`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Any remaining module surface that stacks auxiliary tools around a core workflow is either converted to clearer tabbed/sectional navigation or explicitly documented as intentionally single-flow
+- **Blockers:** None
+- **Description:** Perform a UX architecture sweep after the course, event, and job detail refactors land. The goal is to catch any remaining pages where AI tools, supporting panels, or secondary actions are still bolted onto the main flow in a way that makes the page tiring to use. This task should normalize the pattern and update route/access notes where new tab affordances matter.
+
+### TASK-1008-FE-E: Audit Non-Detail User-Facing Pages for Progressive Disclosure
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Frontend
+- **Status:** Complete
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** `/dashboard`, `/org`, `/admin`, `/discover`, `/courses`, `/events`, `/jobs`, `/communities`, `/certificates`, additional user-facing list/workspace routes identified during implementation
+- **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/features/skills/`, `frontend/src/features/courses/`, `frontend/src/features/events/`, `frontend/src/features/jobs/`, `frontend/src/features/communities/`, `frontend/src/features/certificates/`, `frontend/src/components/shared/`, `ROLE_ACCESS_MATRIX.md`
+- **Depends on:** `TASK-1008-FE-D`
+- **Spec:** `PRD.md` Sections `4.1`, `4.2`, `4.3`, `6.5`, `6.6`, `6.8`, `6.9`, `6.11`
+- **Setup reference:** Use the tabs-first and progressive-disclosure rule established under `TASK-1008-FE-A` through `TASK-1008-FE-D`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Every important user-facing non-detail surface is reviewed for whether it reveals information progressively through tabs, cards, expandable sections, or workspace navigation instead of dumping everything at once
+- **Blockers:** None
+- **Description:** Extend the UX audit beyond detail pages. This task should review browse pages, dashboards, operator workspaces, list pages, and trust/certificate/community surfaces so the platform does not regress into overwhelming “everything visible immediately” layouts. The output should identify which pages already satisfy the rule and which still need restructuring work.
+
+### TASK-1008-FE-F: Normalize Non-Detail User-Facing Pages with Tabs, Cards, and Progressive Disclosure
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Frontend
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** `/dashboard`, `/org`, `/admin`, `/discover`, `/courses`, `/events`, `/jobs`, `/communities`, `/certificates`, plus additional non-detail routes confirmed by `TASK-1008-FE-E`
+- **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/features/skills/`, `frontend/src/features/courses/`, `frontend/src/features/events/`, `frontend/src/features/jobs/`, `frontend/src/features/communities/`, `frontend/src/features/certificates/`, `frontend/src/components/shared/`, `ROLE_ACCESS_MATRIX.md`, `frontend/FRONTEND_PRD_READY.md`
+- **Depends on:** `TASK-1008-FE-E`
+- **Spec:** `PRD.md` Sections `4.1`, `4.2`, `4.3`, `6.5`, `6.6`, `6.8`, `6.9`, `6.11`
+- **Setup reference:** Use `ModuleDetailShell`, `WorkspaceShell`, and the shared progressive-disclosure rule from `frontend/FRONTEND_PRD_READY.md`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** User-facing non-detail pages are intentionally structured so people reveal what they need when they need it through tabs, cards, summaries, drill-downs, or expandable sections rather than long undifferentiated content stacks
+- **Blockers:** None
+- **Description:** Implement the non-detail-page UX cleanup after the audit. Prioritize the pages confirmed by `TASK-1008-FE-E`: `/events` and `/jobs`, where personalized recommendation feeds currently compete with the main browse/filter flow on the same page, and `/certificates`, where public lookup and authenticated record management currently share one surface. Keep `/dashboard`, `/org`, and `/admin` on the existing workspace-shell model, keep `/courses` as an intentionally single-purpose catalog unless new competing subflows are added, and preserve `/communities` as a scoped master/detail experience unless new secondary tools make tabs necessary. Use tabs where multiple major subflows compete, use cards or summaries where a lighter structure is enough, and keep “show everything immediately” layouts out of the product unless a page is intentionally single-purpose.
+
+
+<!-- Make sure you update the frontend tasks to adpat to tab related approch -->
 ### TASK-1009: Deliver Advanced Analytics, Matching-Quality Monitoring, and System Health Backend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
 - **Owner:** Backend
@@ -1266,13 +1357,13 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 - **Actor(s):** Organization, Admin
 - **Route(s):** `/dashboard`, `/org`, `/admin`, `/discover`
 - **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/dashboard/`, `frontend/src/components/shared/`
-- **Depends on:** `TASK-1009`
+- **Depends on:** `TASK-1009`, `TASK-1008-FE-A`
 - **Spec:** `PRD.md` Sections `4.3`, `6.6`, `6.7`, `6.11`; `schema.yaml` analytics endpoints when added
-- **Setup reference:** Use `Agents/future improvements.md` sections `Recommendation and Matching Expansion` and `Remaining Deferred Product Areas`
+- **Setup reference:** Use `Agents/future improvements.md` sections `Recommendation and Matching Expansion`, `Cognitive Monitoring Guardrails`, and `Remaining Deferred Product Areas`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Organization and admin dashboards expose the analytics, matching-quality monitoring, adaptive-signal visibility, and system-health views required by the PRD roadmap
+- **Definition of Done:** Organization and admin dashboards expose the analytics, matching-quality monitoring, adaptive-signal visibility, and system-health views required by the PRD roadmap without collapsing those operator surfaces into stacked, hard-to-scan page sections
 - **Blockers:** None
-- **Description:** Build the frontend analytics surfaces on top of `TASK-1009` so operators can actually use the new reporting and monitoring layer. This includes charts, summaries, drill-downs, explanation states, and actor-safe visibility rules.
+- **Description:** Build the frontend analytics surfaces on top of `TASK-1009` so operators can actually use the new reporting and monitoring layer. This includes charts, summaries, drill-downs, explanation states, and actor-safe visibility rules. Any new heavy dashboard or detail surfaces introduced here must follow the shared tabs-first navigation rule from `TASK-1008-FE-A` instead of appending more cards into existing long pages.
 
 ### TASK-1010: Add Community-Service Monetization and Advanced Payment Automation Backend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
@@ -1294,13 +1385,13 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/courses/:id`, `/dashboard`, `/org`, `/admin`, `/payments`
 - **Files touched:** `frontend/src/features/courses/`, `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/payments/`
-- **Depends on:** `TASK-1010`
+- **Depends on:** `TASK-1010`, `TASK-1008-FE-A`
 - **Spec:** `PRD.md` Sections `4.3`, `6.8`, `6.9`, `6.10`; `schema.yaml` payment and community-service monetization endpoints when added
-- **Setup reference:** Use `Agents/future improvements.md` sections `Remaining Deferred Product Areas` and `Extra Requested Ideas Outside Current PRD Core`
+- **Setup reference:** Use `Agents/future improvements.md` sections `Remaining Deferred Product Areas`, `Extra Requested Ideas Outside Current PRD Core`, and the shared detail-page rule established in `TASK-1008-FE-A`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Users, organizations, and admins can operate the paid community-service workflow through frontend surfaces that match the backend monetization rules
+- **Definition of Done:** Users, organizations, and admins can operate the paid community-service workflow through frontend surfaces that match the backend monetization rules and slot into scalable tabs/workspace sections rather than cluttering existing pages
 - **Blockers:** None
-- **Description:** Build the frontend operator and learner experience on top of `TASK-1010`. This includes checkout-adjacent UI, payment state visibility, organization/admin workflow surfaces, and actor-safe messaging for community-service monetization behavior.
+- **Description:** Build the frontend operator and learner experience on top of `TASK-1010`. This includes checkout-adjacent UI, payment state visibility, organization/admin workflow surfaces, and actor-safe messaging for community-service monetization behavior. Any course, dashboard, or operator page touched here should use the shared tabs-first module pattern where the experience would otherwise become a stacked list of payment and governance cards.
 
 ### TASK-1011: Run Final PRD Coverage Audit and Deferred-Feature Closure Backend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
@@ -1322,13 +1413,13 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 - **Actor(s):** Guest, Regular User, Organization, Admin
 - **Route(s):** All routes in `ROLE_ACCESS_MATRIX.md` plus future additions that must be added there first
 - **Files touched:** `Agent Tasks.md`, `Agents/future improvements.md`, `BLOCKERS.md`, `ROLE_ACCESS_MATRIX.md`, `DEFINITION_OF_DONE.md`
-- **Depends on:** `TASK-1011`, `TASK-1007-FE`, `TASK-1008-FE`, `TASK-1009-FE`, `TASK-1010-FE`
+- **Depends on:** `TASK-1011`, `TASK-1007-FE`, `TASK-1008-FE`, `TASK-1008-FE-A`, `TASK-1009-FE`, `TASK-1010-FE`
 - **Spec:** `PRD.md` Sections `3` through `7`
-- **Setup reference:** Use `Agents/future improvements.md` as the companion source for Phase 10 deferred and advanced features
+- **Setup reference:** Use `Agents/future improvements.md` as the companion source for Phase 10 deferred and advanced features, including the tabs-first navigation rule introduced under `TASK-1008-FE-A`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Every remaining frontend or actor-surface PRD requirement is either implemented in this phase or explicitly re-mapped with no silent omissions, and the coverage checklist stays accurate
+- **Definition of Done:** Every remaining frontend or actor-surface PRD requirement is either implemented in this phase or explicitly re-mapped with no silent omissions, the coverage checklist stays accurate, and no newly added module surface regresses into stacked-panel UX where tabs or workspace navigation are required
 - **Blockers:** None
-- **Description:** Close the frontend and actor-surface side of the PRD loop after the remaining roadmap work lands. This task should reconcile the task map, role matrix, blockers, and governance docs so UI/route coverage can be claimed without ambiguous leftovers.
+- **Description:** Close the frontend and actor-surface side of the PRD loop after the remaining roadmap work lands. This task should reconcile the task map, role matrix, blockers, and governance docs so UI/route coverage can be claimed without ambiguous leftovers. The final audit must also enforce the shared detail-page navigation rule so feature growth does not quietly turn key pages back into endless vertical stacks.
 
 ### Phase 10 Definition of Done
 

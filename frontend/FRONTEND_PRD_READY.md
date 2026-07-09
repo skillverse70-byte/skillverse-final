@@ -48,3 +48,36 @@ These are the frontend-side shared vocabulary for roles, trust states, workflow 
 ## AI rollout contract
 
 The backend now exposes a shared AI capability snapshot so future AI features can read rollout state, fallback behavior, and availability without embedding provider logic in components. Frontend AI work should consume that contract instead of reading environment flags directly.
+
+## Shared detail-page navigation rule
+
+To keep feature-heavy module pages usable as AI, analytics, payments, and governance surfaces grow, detail pages should not stack every secondary panel into one long scroll.
+
+The shared pattern now lives in:
+
+- `src/components/shared/ModuleDetailShell.jsx`
+- `src/hooks/dashboard/useDetailPageTab.js`
+- `src/hooks/dashboard/useRouteTab.js`
+
+Rules for future frontend work:
+
+- Module detail pages should default to the core overview or primary content tab.
+- Secondary surfaces such as AI helpers, analytics, application tools, payment state, and support panels should live behind tabs unless they are essential to the first view.
+- Detail-page tabs should use the `tab` query param, and the default tab should keep the URL clean by omitting the param when possible.
+- Dashboard-style workspaces can continue using `WorkspaceShell`, while feature detail pages should prefer `ModuleDetailShell`.
+
+Audit outcome after `TASK-1008-FE-D`:
+
+- `/courses/:id`, `/events/:id`, and `/jobs/:id` now use tabbed detail workspaces.
+- `/messages` now separates the core chat flow from adaptive focus support with tabs.
+- `/discover` now separates public exploration from personalized AI discovery with tabs.
+- `/dashboard` was reviewed and intentionally kept on the existing `WorkspaceShell` model because it already provides first-level navigation instead of a single long surface.
+
+Audit outcome after `TASK-1008-FE-E`:
+
+- `/dashboard`, `/org`, and `/admin` already satisfy the rule through `WorkspaceShell`-based navigation and do not need a second tab system layered on top.
+- `/courses` currently remains an intentionally single-purpose catalog page: search/filter controls feed one browse flow instead of multiple competing subflows.
+- `/communities` currently remains acceptable as a scoped master/detail workspace: users choose a community first, then reveal discussion, members, and related links within that selected context.
+- `/events` and `/jobs` should be normalized next because each page currently mixes a personalized AI recommendation feed with the main browse/filter/list flow on the same surface.
+- `/certificates` should be normalized next because public certificate lookup and authenticated personal trust-record management currently share one page and should move toward clearer tabbed or workspace-style separation.
+- Future frontend work should treat this audit as the baseline: if a non-detail page grows a second major workflow, it should graduate to tabs, cards, drill-downs, or workspace navigation instead of becoming a longer stacked page.

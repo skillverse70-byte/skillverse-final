@@ -25,13 +25,13 @@ Legend:
 | `/forgot-password` | Yes | Redirect | Redirect | Redirect | Public password recovery |
 | `/reset-password` | Yes | Redirect | Redirect | Redirect | Public reset completion |
 | `/verify-email` | Yes | Redirect | Redirect | Redirect | Public verification completion page |
-| `/discover` | Yes | Yes | Yes | Yes | Public browse surface |
+| `/discover` | Yes | Yes | Yes | Yes | Public browse surface with tabs for general exploration and personalized discovery |
 | `/courses` | Yes | Yes | Yes | Yes | Public browse surface |
-| `/courses/:id` | Yes | Yes | Yes | Yes | Public course detail and trust visibility; authenticated regular-user view can show course adaptive focus state |
+| `/courses/:id` | Yes | Yes | Yes | Yes | Public course detail and trust visibility; authenticated regular-user view uses a tabbed course workspace for overview, recommendations, learning guidance, and adaptive focus state |
 | `/events` | Yes | Yes | Yes | Yes | Public event browse surface |
-| `/events/:id` | Yes | Yes | Yes | Yes | Public event detail |
+| `/events/:id` | Yes | Yes | Yes | Yes | Public event detail with a tabbed workspace for overview and RSVP/access flow |
 | `/jobs` | Yes | Yes | Yes | Yes | Public opportunity browse surface |
-| `/jobs/:id` | Yes | Yes | Yes | Yes | Public opportunity detail |
+| `/jobs/:id` | Yes | Yes | Yes | Yes | Public opportunity detail with a tabbed workspace for overview, requirements, and application flow |
 | `/communities` | Yes | Yes | Yes | Yes | Public community browse; membership actions require authenticated regular users |
 | `/certificates` | Yes | Yes | Yes | Yes | Public certificate lookup; authenticated users also see personal trust records |
 | `/certificates/:id` | Yes | Yes | Yes | Yes | Public certificate verification detail |
@@ -41,7 +41,7 @@ Legend:
 | `/profile` | No | Yes | No | No | Private regular-user profile and adaptive monitoring settings |
 | `/skill-portfolio` | No | Yes | No | No | Regular-user skills only |
 | `/skill-swap` | No | Yes | No | No | Free peer swap workflow only |
-| `/messages` | No | Yes | No | No | Swap/session messaging only; regular-user messaging can show adaptive focus and check-in tools |
+| `/messages` | No | Yes | No | No | Swap/session messaging workspace with tabs for core conversations and separate adaptive focus/check-in support |
 | `/saved-opportunities` | No | Yes | No | No | Regular-user saved items only |
 | `/org` | No | No | Yes | No | Structured organization workspace with overview, account setup, finance status, publishing, communities, service-credit issuance, and certificate operations |
 | `/organization-profile` | No | No | Yes | No | Organization profile management |

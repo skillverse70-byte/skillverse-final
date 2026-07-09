@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-  ArrowLeft,
   Calendar,
   Clock3,
   Globe,
@@ -10,11 +9,14 @@ import {
 } from "lucide-react";
 import BookmarkButton from "@/components/shared/BookmarkButton";
 import EmptyState from "@/components/shared/EmptyState";
+import ModuleDetailShell from "@/components/shared/ModuleDetailShell";
 import PageLoader from "@/components/shared/PageLoader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDetailPageTab } from "@/hooks/dashboard/useDetailPageTab";
 import { roles, rsvpStatuses } from "@/lib/domain-enums";
 import {
   ApiError,
@@ -150,127 +152,152 @@ export default function EventDetailPage() {
     }
     return "Reserve your spot or save your interest.";
   }, [currentRsvpStatus, isAuthenticated, isRegularUser]);
+  const eventTabs = useMemo(
+    () => [
+      {
+        value: "overview",
+        label: "Event detail",
+        description: "Overview, host information, format, and event context.",
+        icon: Calendar,
+      },
+      {
+        value: "rsvp",
+        label: "RSVP and access",
+        description: "Participation status, spot availability, and access actions.",
+        icon: Users,
+        badge: event.current_attendees || 0,
+      },
+    ],
+    [event.current_attendees],
+  );
+  const { activeTab, setActiveTab } = useDetailPageTab(
+    eventTabs.map((tab) => tab.value),
+    "overview",
+  );
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <Link
-        to="/events"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" /> Back to Events
-      </Link>
-
-      <div className="overflow-hidden rounded-3xl border border-border/60 bg-white shadow-sm shadow-black/5">
-        <div className="relative aspect-[3/1] bg-gradient-to-br from-sky-50 via-white to-teal-50">
-          {event.cover_image_url ? (
-            <img
-              src={event.cover_image_url}
-              alt={event.title}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Calendar className="h-16 w-16 text-sky-200" />
-            </div>
-          )}
-        </div>
-
-        <div className="p-6 sm:p-8">
-          <div className="mb-4 flex flex-wrap gap-2">
-            <StatusBadge status={event.status} />
-            {currentRsvpStatus ? (
-              <StatusBadge status={currentRsvpStatus} />
-            ) : null}
+    <ModuleDetailShell
+      backHref="/events"
+      backLabel="Back to Events"
+      eyebrow="Event workspace"
+      title={event.title}
+      description="Review the event first, then move into RSVP and access when you are ready to take action."
+      value={activeTab}
+      onValueChange={setActiveTab}
+      tabs={eventTabs}
+      actions={(
+        <BookmarkButton
+          itemType="event"
+          itemId={event.id}
+          itemTitle={event.title}
+          itemSubtitle={event.is_online ? "Online Event" : event.location}
+          itemCategory={event.category}
+        />
+      )}
+    >
+      <TabsContent value="overview" className="mt-0">
+        <div className="overflow-hidden rounded-3xl border border-border/60 bg-white shadow-sm shadow-black/5">
+          <div className="relative aspect-[3/1] bg-gradient-to-br from-sky-50 via-white to-teal-50">
+            {event.cover_image_url ? (
+              <img
+                src={event.cover_image_url}
+                alt={event.title}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <Calendar className="h-16 w-16 text-sky-200" />
+              </div>
+            )}
           </div>
 
-          <div className="mb-6 flex items-start justify-between gap-4">
-            <div>
-              <h1 className="font-heading text-2xl font-bold text-foreground sm:text-3xl">
-                {event.title}
-              </h1>
-              {event.category ? (
-                <p className="mt-2 text-sm text-muted-foreground">{event.category}</p>
+          <div className="p-6 sm:p-8">
+            <div className="mb-4 flex flex-wrap gap-2">
+              <StatusBadge status={event.status} />
+              {currentRsvpStatus ? (
+                <StatusBadge status={currentRsvpStatus} />
               ) : null}
             </div>
-            <BookmarkButton
-              itemType="event"
-              itemId={event.id}
-              itemTitle={event.title}
-              itemSubtitle={event.is_online ? "Online Event" : event.location}
-              itemCategory={event.category}
-            />
+
+            {event.category ? (
+              <p className="mb-6 text-sm text-muted-foreground">{event.category}</p>
+            ) : null}
+
+            <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="flex items-center gap-3 rounded-2xl bg-secondary/20 p-4 text-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50">
+                  <Clock3 className="h-5 w-5 text-sky-600" />
+                </div>
+                <div>
+                  <div className="font-medium">
+                    {moment(event.starts_at).format("MMMM D, YYYY")}
+                  </div>
+                  <div className="text-muted-foreground">
+                    {moment(event.starts_at).format("h:mm A")}
+                    {event.ends_at ? ` - ${moment(event.ends_at).format("h:mm A")}` : ""}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-2xl bg-secondary/20 p-4 text-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50">
+                  {event.is_online ? (
+                    <Globe className="h-5 w-5 text-teal-600" />
+                  ) : (
+                    <MapPin className="h-5 w-5 text-teal-600" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-medium">{eventLocationLabel}</div>
+                  <div className="text-muted-foreground">
+                    {meetingAccessMessage || "Event format and access details."}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-2xl bg-secondary/20 p-4 text-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50">
+                  <Users className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <div className="font-medium">
+                    {event.max_attendees
+                      ? `${event.current_attendees}/${event.max_attendees} spots taken`
+                      : `${event.current_attendees} RSVPs`}
+                  </div>
+                  <div className="text-muted-foreground">
+                    {spotsLeft !== null ? `${spotsLeft} spots remaining` : "Open attendance"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {event.organization ? (
+              <div className="mb-6 flex items-center gap-2 rounded-2xl bg-secondary/40 p-4 text-sm">
+                <span>
+                  Hosted by{" "}
+                  <Link
+                    to={`/organizations/${event.organization_id}`}
+                    className="font-medium text-foreground hover:text-teal-700 hover:underline"
+                  >
+                    {event.organization_name}
+                  </Link>
+                </span>
+                <StatusBadge organization={event.organization} />
+              </div>
+            ) : null}
+
+            <div className="prose prose-sm max-w-none">
+              <p className="whitespace-pre-wrap leading-relaxed text-foreground">
+                {event.description}
+              </p>
+            </div>
           </div>
+        </div>
+      </TabsContent>
 
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <div className="flex items-center gap-3 rounded-2xl bg-secondary/20 p-4 text-sm">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50">
-                <Clock3 className="h-5 w-5 text-sky-600" />
-              </div>
-              <div>
-                <div className="font-medium">
-                  {moment(event.starts_at).format("MMMM D, YYYY")}
-                </div>
-                <div className="text-muted-foreground">
-                  {moment(event.starts_at).format("h:mm A")}
-                  {event.ends_at ? ` - ${moment(event.ends_at).format("h:mm A")}` : ""}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-2xl bg-secondary/20 p-4 text-sm">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50">
-                {event.is_online ? (
-                  <Globe className="h-5 w-5 text-teal-600" />
-                ) : (
-                  <MapPin className="h-5 w-5 text-teal-600" />
-                )}
-              </div>
-              <div>
-                <div className="font-medium">{eventLocationLabel}</div>
-                <div className="text-muted-foreground">
-                  {meetingAccessMessage || "Event format and access details."}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-2xl bg-secondary/20 p-4 text-sm">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50">
-                <Users className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <div className="font-medium">
-                  {event.max_attendees
-                    ? `${event.current_attendees}/${event.max_attendees} spots taken`
-                    : `${event.current_attendees} RSVPs`}
-                </div>
-                <div className="text-muted-foreground">
-                  {spotsLeft !== null ? `${spotsLeft} spots remaining` : "Open attendance"}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {event.organization ? (
-            <div className="mb-6 flex items-center gap-2 rounded-2xl bg-secondary/40 p-4 text-sm">
-              <span>
-                Hosted by{" "}
-                <Link
-                  to={`/organizations/${event.organization_id}`}
-                  className="font-medium text-foreground hover:text-teal-700 hover:underline"
-                >
-                  {event.organization_name}
-                </Link>
-              </span>
-              <StatusBadge organization={event.organization} />
-            </div>
-          ) : null}
-
-          <div className="mb-8 prose prose-sm max-w-none">
-            <p className="whitespace-pre-wrap leading-relaxed text-foreground">
-              {event.description}
-            </p>
-          </div>
-
+      <TabsContent value="rsvp" className="mt-0">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_320px]">
           <div className="rounded-3xl border border-border/60 bg-secondary/20 p-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="max-w-2xl">
@@ -325,18 +352,56 @@ export default function EventDetailPage() {
                 </div>
               )}
             </div>
+
             <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-4 text-sm">
               <div className="font-medium text-foreground">Verified participation path</div>
               <p className="mt-2 text-muted-foreground">
                 After attendance is recorded, verified organizations can issue service-credit records or participation certificates tied to this event.
               </p>
-              <Link to="/certificates" className="mt-3 inline-flex text-sm font-medium text-teal-700 hover:text-teal-800">
+              <Link
+                to="/certificates"
+                className="mt-3 inline-flex text-sm font-medium text-teal-700 hover:text-teal-800"
+              >
                 Open certificates
               </Link>
             </div>
           </div>
+
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-border/60 bg-white p-5 shadow-sm shadow-black/5">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Users className="h-4 w-4 text-teal-700" />
+                Participation snapshot
+              </div>
+              <div className="mt-4 space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Current RSVPs</span>
+                  <span className="font-medium text-foreground">{event.current_attendees}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Spots left</span>
+                  <span className="font-medium text-foreground">
+                    {spotsLeft !== null ? spotsLeft : "Open"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Your status</span>
+                  <span className="font-medium text-foreground">
+                    {currentRsvpStatus ? currentRsvpStatus.replace("_", " ") : "Not RSVP'd"}
+                  </span>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="mt-5 w-full"
+                onClick={() => setActiveTab("overview")}
+              >
+                Back to event detail
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </TabsContent>
+    </ModuleDetailShell>
   );
 }
