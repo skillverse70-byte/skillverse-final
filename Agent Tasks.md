@@ -1159,6 +1159,7 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 
 ### TASK-1005: Expand Course Creation for Regular Users and Richer Creator Operations
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Split into `TASK-1012` and `TASK-1012-FE` by `TASK-1011`
 - **Owner:** Both
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/course-builder`, `/dashboard`, `/org`, `/admin`, `/courses/:id`
@@ -1169,7 +1170,7 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 - **Conventions:** Follow `CONVENTIONS.md`
 - **Definition of Done:** Regular-user course creation, free-only creator rules, and richer content operations exist without breaking the organization monetization model or admin oversight model
 - **Blockers:** None
-- **Description:** Deliver the deferred creator-side course roadmap. This task should expand course authoring so regular users can create allowed course types under the PRD rules, while keeping organization-only monetization boundaries, richer content operations, and admin governance intact.
+- **Description:** Original umbrella task for deferred creator-side course work. `TASK-1011` split this into backend-first and frontend-second execution so the backend/API contract lands before UI implementation. Use `TASK-1012` for backend course-creator contracts and `TASK-1012-FE` for the frontend creator workspace.
 
 ### TASK-1006: Build Community, Service-Credit, and Certificate Systems
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
@@ -1400,17 +1401,18 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 
 ### TASK-1011: Run Final PRD Coverage Audit and Deferred-Feature Closure Backend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
 - **Owner:** Backend
 - **Actor(s):** Guest, Regular User, Organization, Admin
 - **Route(s):** All routes in `ROLE_ACCESS_MATRIX.md` plus future additions that must be added there first
 - **Files touched:** `Agent Tasks.md`, `Agents/future improvements.md`, `BLOCKERS.md`, `ROLE_ACCESS_MATRIX.md`, `schema.yaml`, `DEFINITION_OF_DONE.md`
-- **Depends on:** `TASK-1003`, `TASK-1004`, `TASK-1005`, `TASK-1006`, `TASK-1007`, `TASK-1008`, `TASK-1009`, `TASK-1010`
+- **Depends on:** `TASK-1003`, `TASK-1004`, `TASK-1006`, `TASK-1007`, `TASK-1008`, `TASK-1009`, `TASK-1010`
 - **Spec:** `PRD.md` Sections `3` through `7`
 - **Setup reference:** Use `Agents/future improvements.md` as the companion source for Phase 10 deferred and advanced features
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Every remaining backend/API contract in the PRD is either implemented in this phase or explicitly re-mapped with no silent omissions, and the coverage checklist stays accurate
+- **Definition of Done:** This task behaves as a backend audit-and-closure task, not a catch-all implementation bucket. Every remaining backend/API contract in the PRD is either already implemented, explicitly re-mapped, or split into one or more new focused backend follow-up tasks with clear IDs, dependencies, ownership, and PRD coverage references; the coverage checklist stays accurate; and this task only closes after those spawned backend tasks are completed or formally mapped
 - **Blockers:** None
-- **Description:** Close the backend and contract side of the PRD loop after the remaining roadmap work lands. This task should update the task map, route matrix, blockers, schema, and governance docs so backend/system coverage can be claimed without ambiguous leftovers.
+- **Description:** Close the backend and contract side of the PRD loop after the remaining roadmap work lands. This task must first audit the PRD, backend contracts, schema, and governance files for backend/system gaps. If gaps are found, do not absorb them into this one task unless the change is truly trivial and fully in-scope for an audit touch-up; instead, create focused backend follow-up tasks under Phase 10 with clear titles, ownership, dependencies, and file targets, then update the coverage checklist and governance files to point to them. Use this task to update the task map, route matrix, blockers, schema, and governance docs so backend/system coverage can be claimed without ambiguous leftovers.
 
 ### TASK-1011-FE: Run Final PRD Coverage Audit and Deferred-Feature Closure Frontend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
@@ -1422,9 +1424,65 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 - **Spec:** `PRD.md` Sections `3` through `7`
 - **Setup reference:** Use `Agents/future improvements.md` as the companion source for Phase 10 deferred and advanced features, including the tabs-first navigation rule introduced under `TASK-1008-FE-A`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Every remaining frontend or actor-surface PRD requirement is either implemented in this phase or explicitly re-mapped with no silent omissions, the coverage checklist stays accurate, and no newly added module surface regresses into stacked-panel UX where tabs, card summaries, drill-downs, or workspace navigation are required
+- **Definition of Done:** This task behaves as a frontend audit-and-closure task, not a catch-all implementation bucket. Every remaining frontend or actor-surface PRD requirement is either already implemented, explicitly re-mapped, or split into one or more new focused frontend follow-up tasks with clear IDs, dependencies, ownership, actor/route scope, and PRD coverage references; the coverage checklist stays accurate; no newly added module surface regresses into stacked-panel UX where tabs, card summaries, drill-downs, or workspace navigation are required; and this task only closes after those spawned frontend tasks are completed or formally mapped
 - **Blockers:** None
-- **Description:** Close the frontend and actor-surface side of the PRD loop after the remaining roadmap work lands. This task should reconcile the task map, role matrix, blockers, and governance docs so UI/route coverage can be claimed without ambiguous leftovers. The final audit must also enforce the shared navigation rule across both detail and non-detail pages so feature growth does not quietly turn key surfaces back into endless vertical stacks when they should instead use tabs, card summaries, drill-downs, or workspace navigation.
+- **Description:** Close the frontend and actor-surface side of the PRD loop after the remaining roadmap work lands. This task must first audit the PRD, actor routes, visible surfaces, and governance files for frontend gaps. If gaps are found, do not absorb them into this one task unless the change is truly trivial and fully in-scope for an audit touch-up; instead, create focused frontend follow-up tasks under Phase 10 with clear titles, ownership, actor scope, route targets, dependencies, and file targets, then update the coverage checklist and governance files to point to them. This task should reconcile the task map, role matrix, blockers, and governance docs so UI/route coverage can be claimed without ambiguous leftovers. The final audit must also enforce the shared navigation rule across both detail and non-detail pages so feature growth does not quietly turn key surfaces back into endless vertical stacks when they should instead use tabs, card summaries, drill-downs, or workspace navigation.
+
+### TASK-1012: Add Regular-User Course Creation Backend Contracts and Creator Policy
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Backend
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/dashboard`, `/courses/:id`, `/course-builder`, future regular-user creator routes that must be added to `ROLE_ACCESS_MATRIX.md` first
+- **Files touched:** `backend/apps/courses/`, `backend/apps/common/permissions.py`, `backend/apps/common/trust.py`, `backend/apps/audit/`, `schema.yaml`, `ROLE_ACCESS_MATRIX.md`, `Agent Tasks.md`
+- **Depends on:** `TASK-706`, `TASK-104`, `TASK-1011`
+- **Spec:** `PRD.md` Sections `4.2`, `6.5`; `PRD.md` line items stating regular-user course creation is a V2 capability and must remain free-only unless policy expands later
+- **Setup reference:** Use `Agents/future improvements.md` sections `Remaining Deferred Product Areas` and `Phase 10 Sequencing`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Backend/API support exists for regular-user course creation with explicit free-only creator rules, actor-safe permissions, admin-review/moderation readiness, and schema-defined creator endpoints that do not break the organization-only monetization model
+- **Blockers:** None
+- **Description:** Backend-first follow-up created by `TASK-1011` to replace the unsplit creator umbrella in `TASK-1005`. Implement the creator-side course contracts for Regular Users, keeping monetization locked to organizations, preserving actor separation, and exposing the backend surfaces the later frontend creator workflow will consume. This task should also define whether regular-user courses reuse or extend the existing course model, how creator-owned courses are moderated or reviewed, and how free-only enforcement is guaranteed server-side.
+
+### TASK-1012-FE: Add Regular-User Course Creation Frontend and Creator Workspace
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Frontend
+- **Actor(s):** Regular User, Admin
+- **Route(s):** `/dashboard`, `/courses/:id`, regular-user creator routes added by this task to `ROLE_ACCESS_MATRIX.md`
+- **Files touched:** `frontend/src/features/courses/`, `frontend/src/features/dashboard/`, `frontend/src/services/courses/`, `frontend/src/components/shared/`, `ROLE_ACCESS_MATRIX.md`
+- **Depends on:** `TASK-1012`, `TASK-1008-FE-A`
+- **Spec:** `PRD.md` Sections `4.2`, `6.5`; `schema.yaml` regular-user creator endpoints added by `TASK-1012`
+- **Setup reference:** Use `Agents/future improvements.md` sections `Remaining Deferred Product Areas` and `Cognitive Monitoring Guardrails` only for the tabs/cards progressive-disclosure rule
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Regular Users can create and manage allowed free-only courses through a structured creator workflow that respects actor boundaries, uses progressive disclosure instead of a stacked form dump, and consumes the backend creator contract from `TASK-1012`
+- **Blockers:** None
+- **Description:** Frontend follow-up created by `TASK-1011` to complete the creator-side course roadmap after backend contracts are stable. Build the regular-user creator entry points, creator workspace, and related course-management UI while keeping monetization messaging, moderation visibility, and actor-safe routing aligned with the backend creator policy.
+
+### TASK-1013: Add MFA and Elevated Authentication Backend for Admin-First Rollout
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Backend
+- **Actor(s):** Admin, Organization, Regular User
+- **Route(s):** `/login`, `/admin`, future MFA setup and challenge routes that must be added to `ROLE_ACCESS_MATRIX.md` first
+- **Files touched:** `backend/apps/accounts/`, `backend/apps/common/`, `backend/config/settings/`, `backend/config/urls.py`, `schema.yaml`, `Agent Tasks.md`, `ROLE_ACCESS_MATRIX.md`
+- **Depends on:** `TASK-206`, `TASK-202`, `TASK-1011`
+- **Spec:** `PRD.md` Section `6.1`; `PRD.md` acceptance criteria for stronger admin security baseline and MFA support that can expand to broader roles
+- **Setup reference:** Reuse the current Django/DRF/JWT auth baseline documented in `backend/BACKEND_SETUP.md`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** The backend supports an MFA-capable authentication contract with at least an admin-first rollout path, secure challenge/verification endpoints, recovery or reset considerations, rollout flags, and schema-defined flows that can later expand to non-admin actors
+- **Blockers:** None
+- **Description:** Backend-first follow-up created by `TASK-1011` because MFA was previously only referenced abstractly in the audit checklist. Implement the real authentication contract for MFA/elevated authentication starting with Admin accounts, while keeping rollout expandable to organizations and Regular Users later without rewriting the auth system.
+
+### TASK-1013-FE: Add MFA Setup and Challenge Frontend for Admin-First Rollout
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Frontend
+- **Actor(s):** Admin, Organization, Regular User
+- **Route(s):** `/login`, `/admin`, MFA setup/challenge routes added by this task to `ROLE_ACCESS_MATRIX.md`
+- **Files touched:** `frontend/src/features/auth/`, `frontend/src/features/dashboard/`, `frontend/src/services/auth/`, `frontend/src/components/shared/`, `ROLE_ACCESS_MATRIX.md`
+- **Depends on:** `TASK-1013`
+- **Spec:** `PRD.md` Section `6.1`; `schema.yaml` MFA endpoints added by `TASK-1013`
+- **Setup reference:** Reuse the existing auth flow and actor routing foundation in `frontend/FRONTEND_PRD_READY.md`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** The frontend supports admin-first MFA setup and login challenge flows, handles actor-aware redirects cleanly, and stays ready for later expansion to broader roles without inventing frontend-only auth logic
+- **Blockers:** None
+- **Description:** Frontend follow-up created by `TASK-1011` to make the MFA contract usable in product flows after `TASK-1013` lands. This includes setup, challenge, recovery messaging, and actor-safe navigation behavior for the elevated-auth rollout.
 
 ### Phase 10 Definition of Done
 
@@ -1465,7 +1523,7 @@ Every PRD feature or rule below maps to at least one task ID.
 - Access rules enforced server-side: `TASK-104`, `TASK-206`
 - Frontend protected route enforcement: `TASK-104`, `TASK-203`, `TASK-206`
 - Stronger admin security baseline: `TASK-206`
-- MFA future path: `TASK-1011`, `TASK-1011-FE`
+- MFA future path: `TASK-1013`, `TASK-1013-FE`
 
 ### Profile and skill graph
 
@@ -1512,7 +1570,7 @@ Every PRD feature or rule below maps to at least one task ID.
 - Missing verification blocks paid create/edit: `TASK-606`
 - Visible paid course before finance setup but enrollment blocked: `TASK-701`, `TASK-702`, `TASK-704`
 - UI must show `Enrollment Unavailable`: `TASK-105`, `TASK-704`
-- Regular-user course creation deferred but preserved: `TASK-1005`
+- Regular-user course creation deferred but preserved: `TASK-1012`, `TASK-1012-FE`
 
 ### Payments, finance, and monetization
 
@@ -1580,7 +1638,7 @@ Every PRD feature or rule below maps to at least one task ID.
 - Admin management of fixed category lists: `TASK-905`, `TASK-906`
 - User/org category suggestions with approval before activation: `TASK-905`, `TASK-906`
 - Audit-friendly important action records: `TASK-907`, `TASK-908`
-- Future identity/compliance workflows preserved: `TASK-1011`, `TASK-1011-FE`
+- Future identity/compliance workflows preserved: `TASK-1013`, `TASK-1013-FE`
 
 ### Non-functional requirements
 
@@ -1589,13 +1647,13 @@ Every PRD feature or rule below maps to at least one task ID.
 - Sensitive data protected in transit and trust-sensitive flows protected: `TASK-101`, `TASK-206`, `TASK-601`, `TASK-703`
 - Privacy-preserving handling and limited unnecessary exposure: `TASK-305`, `TASK-602`, `TASK-1007`, `TASK-1007-FE`, `TASK-1008`, `TASK-1008-FE`
 - Reliability of core records despite optional service failure: `TASK-503`, `TASK-505`, `TASK-705`, `TASK-907`
-- Maintainable modular architecture for V2/V3: `TASK-103`, `TASK-1000`, `TASK-1001`, `TASK-1002`, `TASK-1005`, `TASK-1006`, `TASK-1007`, `TASK-1007-FE`, `TASK-1009`, `TASK-1009-FE`, `TASK-1011`, `TASK-1011-FE`
+- Maintainable modular architecture for V2/V3: `TASK-103`, `TASK-1000`, `TASK-1001`, `TASK-1002`, `TASK-1006`, `TASK-1007`, `TASK-1007-FE`, `TASK-1009`, `TASK-1009-FE`, `TASK-1011`, `TASK-1011-FE`, `TASK-1012`, `TASK-1012-FE`, `TASK-1013`, `TASK-1013-FE`
 - Accessibility considered from V1: `TASK-102`, `TASK-201`, `TASK-302`, `TASK-604`, `TASK-902`
 
 ### Explicitly deferred but still tracked
 
-- Regular-user course creation: `TASK-1005`
-- Richer content management: `TASK-1005`
+- Regular-user course creation: `TASK-1012`, `TASK-1012-FE`
+- Richer content management: `TASK-1012`, `TASK-1012-FE`
 - AI-assisted recommendations and assignment feedback: `TASK-1002`, `TASK-1003`, `TASK-1004`
 - Discussion forums and community groups: `TASK-1006`
 - Verified digital certificates: `TASK-1006`

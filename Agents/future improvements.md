@@ -18,6 +18,8 @@ Primary source of truth:
   - `TASK-1009` -> `TASK-1009-FE`
   - `TASK-1010` -> `TASK-1010-FE`
   - `TASK-1011` -> `TASK-1011-FE`
+  - `TASK-1012` -> `TASK-1012-FE`
+  - `TASK-1013` -> `TASK-1013-FE`
 - When this file references a Phase 10 area below, read it as guidance for both halves of that task pair unless the note explicitly says backend-only or frontend-only.
 
 ## AI Provider Foundation
@@ -101,12 +103,16 @@ Primary source of truth:
   - system health visibility,
   - broader adaptive intelligence signals.
 - For split execution:
+  - `TASK-1012` is the backend-first regular-user creator contract and free-only creator-policy task created by the `TASK-1011` audit;
+  - `TASK-1012-FE` is the frontend creator workspace on top of that backend contract;
   - `TASK-1009` is backend-first analytics, oversight, and monitoring contracts;
   - `TASK-1009-FE` is frontend analytics, charting, operator visibility, and drill-down UX;
   - `TASK-1010` is backend-first monetization and automation support for paid community-service offerings;
   - `TASK-1010-FE` is the learner/operator/admin payment workflow UI on top of those contracts;
-  - `TASK-1011` closes backend/schema/governance coverage first;
-  - `TASK-1011-FE` closes route/UI/actor-surface coverage after the backend audit is stable.
+  - `TASK-1011` closes backend/schema/governance coverage first and must spawn focused follow-up tasks when the audit finds non-trivial backend gaps;
+  - `TASK-1011-FE` closes route/UI/actor-surface coverage after the backend audit is stable and must spawn focused frontend follow-up tasks when the audit finds non-trivial UI/route gaps;
+  - `TASK-1013` is the backend-first MFA/elevated-auth contract for admin-first rollout created by the `TASK-1011` audit;
+  - `TASK-1013-FE` is the frontend MFA setup/challenge flow on top of that contract.
 
 ## Extra Requested Ideas Outside Current PRD Core
 
