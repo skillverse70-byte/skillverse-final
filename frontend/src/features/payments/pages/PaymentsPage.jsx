@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Activity,
   BadgeCheck,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import EmptyState from "@/components/shared/EmptyState";
 import PageLoader from "@/components/shared/PageLoader";
+import StatusBadge from "@/components/shared/StatusBadge";
 import WorkspaceShell from "@/components/shared/WorkspaceShell";
 import DashboardStats from "@/features/dashboard/components/DashboardStats";
 import PaymentTransactionCard from "@/features/payments/components/PaymentTransactionCard";
@@ -137,6 +139,38 @@ function automationLabel(value) {
   }[value] || "All automation";
 }
 
+function automationTone(value) {
+  return {
+    [paymentAutomationStatuses.completed]: "ready",
+    [paymentAutomationStatuses.pending]: "pending",
+    [paymentAutomationStatuses.failed]: "restricted",
+  }[value] || "inactive";
+}
+
+function formatMoney(amount, currency = "ETB") {
+  const numericAmount = Number(amount || 0);
+  return `${currency} ${numericAmount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return "Not available";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Not available";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 export default function PaymentsPage() {
   const { actorRole } = useAuth();
   const { toast } = useToast();
@@ -156,8 +190,11 @@ export default function PaymentsPage() {
   const [automationFilter, setAutomationFilter] = useState(
     searchParams.get("automation") || "all",
   );
+  const [tableSearch, setTableSearch] = useState("");
+  const [tablePage, setTablePage] = useState(1);
   const courseFilter = searchParams.get("course") || "";
   const copy = formatActorCopy(actorRole);
+  const overviewPageSize = 6;
 
   useEffect(() => {
     const nextParams = new URLSearchParams(searchParams);
@@ -343,6 +380,33 @@ export default function PaymentsPage() {
       ];
 
   const recentTransactions = transactions.slice(0, 4);
+  const overviewTableTransactions = useMemo(() => {
+    const normalizedSearch = tableSearch.trim().toLowerCase();
+
+    const filtered = transactions.filter((transaction) => {
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      return String(transaction.tx_ref || "")
+        .toLowerCase()
+        .includes(normalizedSearch);
+    });
+
+    return [...filtered].sort((left, right) => {
+      const leftTime = new Date(left.created_at || 0).getTime();
+      const rightTime = new Date(right.created_at || 0).getTime();
+      return rightTime - leftTime;
+    });
+  }, [tableSearch, transactions]);
+  const overviewTablePageCount = Math.max(
+    1,
+    Math.ceil(overviewTableTransactions.length / overviewPageSize),
+  );
+  const paginatedOverviewTransactions = useMemo(() => {
+    const startIndex = (tablePage - 1) * overviewPageSize;
+    return overviewTableTransactions.slice(startIndex, startIndex + overviewPageSize);
+  }, [overviewPageSize, overviewTableTransactions, tablePage]);
   const receiptTransactions = transactions.filter(
     (item) =>
       item.status === paymentTransactionStatuses.succeeded ||
@@ -410,6 +474,16 @@ export default function PaymentsPage() {
       setBusyAction("");
     }
   };
+
+  useEffect(() => {
+    setTablePage(1);
+  }, [tableSearch, statusFilter, purposeFilter, automationFilter, courseFilter]);
+
+  useEffect(() => {
+    if (tablePage > overviewTablePageCount) {
+      setTablePage(overviewTablePageCount);
+    }
+  }, [overviewTablePageCount, tablePage]);
 
   if (loading) {
     return <PageLoader />;
@@ -538,34 +612,172 @@ export default function PaymentsPage() {
             onAction={() => window.location.assign(isLearner ? "/courses" : actorRole === roles.organization ? "/org" : "/admin")}
           />
         ) : (
-          <section className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-6">
+            <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-heading text-xl font-semibold text-foreground">
+                    Recent activity table
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    A simple at-a-glance summary of the latest transactions before opening the detail cards.
+                  </p>
+                </div>
+                <Button variant="outline" onClick={() => setActiveTab("transactions")}>
+                  Open all transactions
+                </Button>
+              </div>
+
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="w-full sm:max-w-sm">
+                  <Input
+                    value={tableSearch}
+                    onChange={(event) => setTableSearch(event.target.value)}
+                    placeholder="Search transaction number"
+                    aria-label="Search transaction number"
+                  />
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Showing {paginatedOverviewTransactions.length} of {overviewTableTransactions.length} matching transactions
+                </div>
+              </div>
+
+              <div className="mt-5 overflow-x-auto">
+                <table className="min-w-full divide-y divide-border/60 text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <th className="px-3 py-3 font-semibold">Date</th>
+                      <th className="px-3 py-3 font-semibold">Course</th>
+                      {!isLearner ? (
+                        <th className="px-3 py-3 font-semibold">Learner</th>
+                      ) : null}
+                      <th className="px-3 py-3 font-semibold">Amount</th>
+                      <th className="px-3 py-3 font-semibold">Purpose</th>
+                      <th className="px-3 py-3 font-semibold">Status</th>
+                      {!isLearner ? (
+                        <th className="px-3 py-3 font-semibold">Automation</th>
+                      ) : null}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {paginatedOverviewTransactions.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={isLearner ? 5 : 7}
+                          className="px-3 py-8 text-center text-sm text-muted-foreground"
+                        >
+                          No transactions match that transaction number.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedOverviewTransactions.map((transaction) => (
+                        <tr key={`overview-row-${transaction.tx_ref}`} className="align-top">
+                          <td className="px-3 py-4 text-muted-foreground">
+                            {formatDateTime(transaction.created_at)}
+                          </td>
+                          <td className="px-3 py-4">
+                            <div className="max-w-[260px]">
+                              <div className="truncate font-medium text-foreground">
+                                {transaction.course_program?.title || "Course payment"}
+                              </div>
+                              {transaction.organization?.name ? (
+                                <div className="truncate text-xs text-muted-foreground">
+                                  {transaction.organization.name}
+                                </div>
+                              ) : null}
+                            </div>
+                          </td>
+                          {!isLearner ? (
+                            <td className="px-3 py-4">
+                              <div className="max-w-[180px]">
+                                <div className="truncate text-foreground">
+                                  {transaction.user?.full_name || "Not available"}
+                                </div>
+                                {transaction.user?.email ? (
+                                  <div className="truncate text-xs text-muted-foreground">
+                                    {transaction.user.email}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </td>
+                          ) : null}
+                          <td className="px-3 py-4 font-medium text-foreground">
+                            {formatMoney(transaction.amount, transaction.currency)}
+                          </td>
+                          <td className="px-3 py-4 text-muted-foreground">
+                            {purposeLabel(transaction.purpose)}
+                          </td>
+                          <td className="px-3 py-4">
+                            <StatusBadge status={transaction.status} />
+                          </td>
+                          {!isLearner ? (
+                            <td className="px-3 py-4">
+                              <StatusBadge
+                                status={automationTone(transaction.automation_status)}
+                                label={automationLabel(transaction.automation_status)}
+                              />
+                            </td>
+                          ) : null}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {overviewTableTransactions.length > 0 ? (
+                <div className="mt-5 flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Page {tablePage} of {overviewTablePageCount}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      disabled={tablePage <= 1}
+                      onClick={() => setTablePage((current) => Math.max(1, current - 1))}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={tablePage >= overviewTablePageCount}
+                      onClick={() =>
+                        setTablePage((current) =>
+                          Math.min(overviewTablePageCount, current + 1),
+                        )
+                      }
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </section>
+
+            <section className="space-y-4">
               <div>
                 <h2 className="font-heading text-xl font-semibold text-foreground">
-                  Recent activity
+                  Recent activity cards
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  The latest payment records stay visible here, while full history lives in the transaction tab.
+                  Use the detailed cards when you need actions like verify, retry automation, or open receipts.
                 </p>
               </div>
-              <Button variant="outline" onClick={() => setActiveTab("transactions")}>
-                Open all transactions
-              </Button>
-            </div>
-            <div className="space-y-4">
-              {recentTransactions.map((transaction) => (
-                <PaymentTransactionCard
-                  key={transaction.tx_ref}
-                  actorRole={actorRole}
-                  transaction={transaction}
-                  onVerify={handleVerify}
-                  onRetryAutomation={handleRetryAutomation}
-                  busyAction={busyAction}
-                  compact
-                />
-              ))}
-            </div>
-          </section>
+              <div className="space-y-4">
+                {recentTransactions.map((transaction) => (
+                  <PaymentTransactionCard
+                    key={transaction.tx_ref}
+                    actorRole={actorRole}
+                    transaction={transaction}
+                    onVerify={handleVerify}
+                    onRetryAutomation={handleRetryAutomation}
+                    busyAction={busyAction}
+                    compact
+                  />
+                ))}
+              </div>
+            </section>
+          </div>
         )}
       </TabsContent>
 
