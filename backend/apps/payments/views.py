@@ -14,8 +14,11 @@ from rest_framework.views import APIView
 
 from apps.audit.services import record_audit_log
 from apps.common.enums import (
+    CourseOfferingType,
     CourseProgramStatus,
     FinancialAccountStatus,
+    PaymentAutomationStatus,
+    PaymentTransactionPurpose,
     PaymentTransactionStatus,
     Role,
 )
@@ -44,6 +47,7 @@ from apps.payments.services.payment import (
     ChapaPaymentService,
     ChapaVerificationError,
 )
+from apps.payments.services.automation import retry_community_service_automation
 
 
 @extend_schema(tags=["payments"], responses={200: FinancialAccountSerializer})
@@ -207,6 +211,7 @@ def payment_transaction_queryset():
     return PaymentTransaction.objects.select_related(
         "user",
         "course_program",
+        "service_credit_record",
         "organization",
         "organization__owner",
     )
@@ -219,6 +224,8 @@ def payment_transaction_for_actor(user, tx_ref):
         queryset = queryset.filter(user=user)
     elif role == Role.ORGANIZATION:
         queryset = queryset.filter(organization__owner=user)
+    elif role == Role.ADMIN:
+        pass
     else:
         raise PermissionDenied("This payment record is not available to your account.")
     return get_object_or_404(queryset, tx_ref=tx_ref)
@@ -248,8 +255,32 @@ class CourseCheckoutListCreateView(GenericAPIView):
         role = normalize_actor_role(request.user)
         if role == Role.REGULAR_USER:
             queryset = queryset.filter(user=request.user)
-        else:
+        elif role == Role.ORGANIZATION:
             queryset = queryset.filter(organization__owner=request.user)
+        elif role != Role.ADMIN:
+            raise PermissionDenied("This payment history is not available to your account.")
+
+        status_filter = request.query_params.get("status", "").strip()
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        purpose_filter = request.query_params.get("purpose", "").strip()
+        if purpose_filter:
+            queryset = queryset.filter(purpose=purpose_filter)
+        automation_status_filter = request.query_params.get("automation_status", "").strip()
+        if automation_status_filter:
+            queryset = queryset.filter(automation_status=automation_status_filter)
+        course_program_id = request.query_params.get("course_program_id", "").strip()
+        if course_program_id.isdigit():
+            queryset = queryset.filter(course_program_id=int(course_program_id))
+        if role in (Role.ORGANIZATION, Role.ADMIN):
+            user_id = request.query_params.get("user_id", "").strip()
+            if user_id.isdigit():
+                queryset = queryset.filter(user_id=int(user_id))
+        if role == Role.ADMIN:
+            organization_id = request.query_params.get("organization_id", "").strip()
+            if organization_id.isdigit():
+                queryset = queryset.filter(organization_id=int(organization_id))
+
         return Response(
             PaymentTransactionSerializer(queryset, many=True).data,
             status=status.HTTP_200_OK,
@@ -324,6 +355,12 @@ class CourseCheckoutListCreateView(GenericAPIView):
             tx_ref=tx_ref,
             amount=course_program.price_amount,
             currency=course_program.price_currency.upper(),
+            purpose=(
+                PaymentTransactionPurpose.COMMUNITY_SERVICE_ENROLLMENT
+                if course_program.offering_type == CourseOfferingType.COMMUNITY_SERVICE
+                else PaymentTransactionPurpose.COURSE_ENROLLMENT
+            ),
+            automation_status=PaymentAutomationStatus.NONE,
             callback_url=callback_url,
             return_url=return_url,
         )
@@ -356,7 +393,11 @@ class CourseCheckoutListCreateView(GenericAPIView):
                     "title": course_program.title,
                     "description": f"Enrollment in {course_program.title}",
                     "course_program_id": course_program.pk,
-                    "payment_reason": f"Course enrollment: {course_program.title}",
+                    "payment_reason": (
+                        f"Community-service enrollment: {course_program.title}"
+                        if course_program.offering_type == CourseOfferingType.COMMUNITY_SERVICE
+                        else f"Course enrollment: {course_program.title}"
+                    ),
                 },
             )
         except ChapaPaymentError as exc:
@@ -442,6 +483,42 @@ class CourseCheckoutVerifyView(GenericAPIView):
                 {"detail": str(exc)},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
+        payment_transaction.refresh_from_db()
+        return Response(
+            self.get_serializer(payment_transaction).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=["payments"],
+        operation_id="payments_course_checkout_retry_automation",
+        request=None,
+        responses={200: PaymentTransactionSerializer},
+    )
+)
+class CourseCheckoutAutomationRetryView(GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsPaymentActor]
+    serializer_class = PaymentTransactionSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "payment"
+
+    def post(self, request, tx_ref):
+        payment_transaction = payment_transaction_for_actor(request.user, tx_ref)
+        role = normalize_actor_role(request.user)
+        if role not in (Role.ORGANIZATION, Role.ADMIN):
+            raise PermissionDenied("Only organizations or admins can retry payment automation.")
+
+        try:
+            retry_community_service_automation(
+                payment_transaction,
+                actor=request.user,
+                source="manual_retry",
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
         payment_transaction.refresh_from_db()
         return Response(
             self.get_serializer(payment_transaction).data,

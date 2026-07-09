@@ -68,6 +68,11 @@ class CourseProgramStatus(models.TextChoices):
     ARCHIVED = "archived", "Archived"
 
 
+class CourseOfferingType(models.TextChoices):
+    STANDARD = "standard", "Standard"
+    COMMUNITY_SERVICE = "community_service", "Community Service"
+
+
 class LessonItemType(models.TextChoices):
     VIDEO = "video", "Video"
     RESOURCE = "resource", "Resource"
@@ -99,6 +104,21 @@ class PaymentTransactionStatus(models.TextChoices):
     CANCELLED = "cancelled", "Cancelled"
     REFUNDED = "refunded", "Refunded"
     REVERSED = "reversed", "Reversed"
+
+
+class PaymentTransactionPurpose(models.TextChoices):
+    COURSE_ENROLLMENT = "course_enrollment", "Course Enrollment"
+    COMMUNITY_SERVICE_ENROLLMENT = (
+        "community_service_enrollment",
+        "Community Service Enrollment",
+    )
+
+
+class PaymentAutomationStatus(models.TextChoices):
+    NONE = "none", "None"
+    PENDING = "pending", "Pending"
+    COMPLETED = "completed", "Completed"
+    FAILED = "failed", "Failed"
 
 
 class OpportunityType(models.TextChoices):

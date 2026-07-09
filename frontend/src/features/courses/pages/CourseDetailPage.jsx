@@ -42,7 +42,11 @@ import {
   buildEventRecommendationItems,
   buildOpportunityRecommendationItems,
 } from "@/lib/ai-recommendation-items";
-import { paymentTransactionStatuses, roles } from "@/lib/domain-enums";
+import {
+  courseOfferingTypes,
+  paymentTransactionStatuses,
+  roles,
+} from "@/lib/domain-enums";
 import { ApiError } from "@/lib/http-client";
 import { getPaidCourseEnrollmentGate } from "@/lib/trust-state";
 import {
@@ -591,6 +595,11 @@ export default function CourseDetailPage() {
               <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium capitalize text-muted-foreground">
                 {course.difficulty}
               </span>
+              {course.offering_type === courseOfferingTypes.communityService ? (
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                  Community service
+                </span>
+              ) : null}
               {!enrollmentGate.canEnroll && !enrollment ? (
                 <StatusBadge
                   status={enrollmentGate.status}
@@ -961,6 +970,7 @@ export default function CourseDetailPage() {
                   <PaidEnrollmentStatus
                     enrollmentGate={enrollmentGate}
                     transaction={paymentTransaction}
+                    courseId={course.id}
                   />
                 ) : null}
 
@@ -997,6 +1007,37 @@ export default function CourseDetailPage() {
                     <span className="font-medium capitalize">{course.difficulty}</span>
                   </div>
                 </div>
+
+                {course.offering_type === courseOfferingTypes.communityService ? (
+                  <div className="mt-5 rounded-2xl border border-teal-200 bg-teal-50/70 px-4 py-4 text-sm">
+                    <div className="font-medium text-foreground">
+                      Community-service fulfillment
+                    </div>
+                    <p className="mt-2 text-muted-foreground">
+                      This course uses the service-credit payment path. Once payment is verified,
+                      SkillVerse can follow through with the related community-service record.
+                    </p>
+                    {course.service_credit_hours ? (
+                      <p className="mt-2 text-muted-foreground">
+                        Service-credit hours:{" "}
+                        <span className="font-medium text-foreground">
+                          {course.service_credit_hours}
+                        </span>
+                      </p>
+                    ) : null}
+                    {course.service_credit_description ? (
+                      <p className="mt-2 text-muted-foreground">
+                        {course.service_credit_description}
+                      </p>
+                    ) : null}
+                    <Link
+                      to={`/payments?course=${encodeURIComponent(course.id)}`}
+                      className="mt-3 inline-flex text-sm font-medium text-teal-700 hover:text-teal-800"
+                    >
+                      Open payment workspace
+                    </Link>
+                  </div>
+                ) : null}
 
                 {course.tags?.length > 0 ? (
                   <div className="mt-5 border-t border-border/50 pt-4">

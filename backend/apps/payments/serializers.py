@@ -300,6 +300,9 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
     receipt_url = serializers.CharField(read_only=True)
     course_program = serializers.SerializerMethodField()
     organization = serializers.SerializerMethodField()
+    user = serializers.SerializerMethodField()
+    service_credit_record = serializers.SerializerMethodField()
+    is_community_service_payment = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = PaymentTransaction
@@ -309,7 +312,11 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
             "tx_ref",
             "amount",
             "currency",
+            "purpose",
             "status",
+            "automation_status",
+            "automation_error",
+            "fulfilled_at",
             "checkout_url",
             "provider_reference",
             "provider_method",
@@ -321,8 +328,11 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
             "updated_at",
             "enrollment_ready",
             "receipt_url",
+            "is_community_service_payment",
             "course_program",
             "organization",
+            "user",
+            "service_credit_record",
         )
         read_only_fields = fields
 
@@ -333,6 +343,9 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
                 "id": {"type": "integer"},
                 "title": {"type": "string"},
                 "is_free": {"type": "boolean"},
+                "offering_type": {"type": "string"},
+                "service_credit_hours": {"type": "string"},
+                "auto_issue_service_credit": {"type": "boolean"},
             },
         }
     )
@@ -341,6 +354,9 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
             "id": obj.course_program_id,
             "title": obj.course_program.title,
             "is_free": obj.course_program.is_free,
+            "offering_type": obj.course_program.offering_type,
+            "service_credit_hours": str(obj.course_program.service_credit_hours),
+            "auto_issue_service_credit": obj.course_program.auto_issue_service_credit,
         }
 
     @extend_schema_field(
@@ -349,6 +365,7 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
             "properties": {
                 "id": {"type": "integer"},
                 "name": {"type": "string"},
+                "verification_status": {"type": "string"},
             },
         }
     )
@@ -356,6 +373,44 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
         return {
             "id": obj.organization_id,
             "name": obj.organization.name,
+            "verification_status": obj.organization.verification_status,
+        }
+
+    @extend_schema_field(
+        {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "full_name": {"type": "string"},
+                "email": {"type": "string", "format": "email"},
+            },
+        }
+    )
+    def get_user(self, obj):
+        return {
+            "id": obj.user_id,
+            "full_name": obj.user.full_name,
+            "email": obj.user.email,
+        }
+
+    @extend_schema_field(
+        {
+            "type": "object",
+            "nullable": True,
+            "properties": {
+                "id": {"type": "integer"},
+                "title": {"type": "string"},
+                "status": {"type": "string"},
+            },
+        }
+    )
+    def get_service_credit_record(self, obj):
+        if obj.service_credit_record is None:
+            return None
+        return {
+            "id": obj.service_credit_record_id,
+            "title": obj.service_credit_record.title,
+            "status": obj.service_credit_record.status,
         }
 
 

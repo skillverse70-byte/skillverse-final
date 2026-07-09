@@ -42,6 +42,7 @@ Legend:
 | `/skill-portfolio` | No | Yes | No | No | Regular-user skills only |
 | `/skill-swap` | No | Yes | No | No | Free peer swap workflow only |
 | `/messages` | No | Yes | No | No | Swap/session messaging workspace with tabs for core conversations and separate adaptive focus/check-in support |
+| `/payments` | No | Yes | Yes | Yes | Actor-aware payment workspace: learners manage checkout status and receipts, organizations manage monetization and service-credit automation, admins inspect payment operations without inheriting organization-only course controls |
 | `/saved-opportunities` | No | Yes | No | No | Regular-user saved items only |
 | `/org` | No | No | Yes | No | Structured organization workspace with overview, account setup, finance status, publishing, communities, service-credit issuance, and certificate operations |
 | `/organization-profile` | No | No | Yes | No | Organization profile management |
@@ -57,14 +58,14 @@ Legend:
 
 ## Navigation Rules
 
-- Regular User navigation exposes discovery plus learner/member workflows, including community participation and certificate lookup.
-- Organization navigation exposes organization workspace routes only.
-- Admin navigation exposes oversight routes only, with `/admin` tabbed into verification, finance, moderation, trust oversight, adaptive-monitoring oversight, event oversight, and taxonomy governance surfaces.
+- Regular User navigation exposes discovery plus learner/member workflows, including community participation, certificate lookup, and the dedicated payment workspace.
+- Organization navigation exposes organization workspace routes only, plus the dedicated payment operations workspace.
+- Admin navigation exposes oversight routes only, with `/admin` tabbed into verification, finance, moderation, trust oversight, adaptive-monitoring oversight, event oversight, and taxonomy governance surfaces; `/payments` stays available as a separate payment-operations lane.
 - Public browse routes stay directly reachable because the PRD requires public trust-sensitive listings and public opportunity/course/event discovery.
 
 ## Separation Intent
 
-- Regular Users own skill swaps, messaging, personal profiles, saved items, enrollments, learner progress, community membership, and personal trust records.
-- Organizations own organization profile management, verification readiness, program authoring, communities, service-credit issuance, and certificate issuance.
-- Admins own moderation, verification review, taxonomy governance, trust oversight, and platform oversight.
+- Regular Users own skill swaps, messaging, personal profiles, saved items, enrollments, learner progress, community membership, personal trust records, and their own payment/receipt history.
+- Organizations own organization profile management, verification readiness, program authoring, communities, service-credit issuance, certificate issuance, and organization-scoped payment operations.
+- Admins own moderation, verification review, taxonomy governance, trust oversight, platform oversight, and platform-wide payment operations visibility.
 - Admin access is not treated as "show every regular-user or organization screen"; admin gets its own workspace.

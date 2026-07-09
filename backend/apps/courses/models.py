@@ -1,7 +1,12 @@
 from django.conf import settings
 from django.db import models
 
-from apps.common.enums import CourseProgramStatus, EnrollmentStatus, LessonItemType
+from apps.common.enums import (
+    CourseOfferingType,
+    CourseProgramStatus,
+    EnrollmentStatus,
+    LessonItemType,
+)
 from apps.organizations.models import Organization
 
 
@@ -17,9 +22,18 @@ class CourseProgram(models.Model):
     difficulty = models.CharField(max_length=32, default="beginner")
     instructor_name = models.CharField(max_length=255, blank=True)
     tags = models.JSONField(default=list, blank=True)
+    offering_type = models.CharField(
+        max_length=32,
+        choices=CourseOfferingType.choices,
+        default=CourseOfferingType.STANDARD,
+    )
     is_free = models.BooleanField(default=True)
     price_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     price_currency = models.CharField(max_length=8, default="ETB")
+    service_credit_hours = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    auto_issue_service_credit = models.BooleanField(default=False)
+    service_credit_title = models.CharField(max_length=255, blank=True)
+    service_credit_description = models.TextField(blank=True)
     enrollment_open = models.BooleanField(default=True)
     admin_review_notes = models.TextField(blank=True)
     admin_reviewed_by = models.ForeignKey(

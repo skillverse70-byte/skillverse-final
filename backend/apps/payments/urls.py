@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.payments.views import (
     ChapaCallbackView,
+    CourseCheckoutAutomationRetryView,
     CourseCheckoutDetailView,
     CourseCheckoutListCreateView,
     CourseCheckoutVerifyView,
@@ -28,6 +29,11 @@ urlpatterns = [
         "course-checkouts/<str:tx_ref>/verify/",
         CourseCheckoutVerifyView.as_view(),
         name="course-checkout-verify",
+    ),
+    path(
+        "course-checkouts/<str:tx_ref>/retry-automation/",
+        CourseCheckoutAutomationRetryView.as_view(),
+        name="course-checkout-retry-automation",
     ),
     path(
         "chapa/callback/",

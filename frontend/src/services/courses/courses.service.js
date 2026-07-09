@@ -95,6 +95,14 @@ export function normalizeCourse(course) {
       typeof course.price_amount === "number"
         ? course.price_amount
         : Number.parseFloat(course.price_amount || "0") || 0,
+    offering_type: course.offering_type || "standard",
+    service_credit_hours:
+      typeof course.service_credit_hours === "number"
+        ? course.service_credit_hours
+        : Number.parseFloat(course.service_credit_hours || "0") || 0,
+    auto_issue_service_credit: Boolean(course.auto_issue_service_credit),
+    service_credit_title: course.service_credit_title || "",
+    service_credit_description: course.service_credit_description || "",
     enrollment_open: course.enrollment_open ?? true,
     modules: modules.map((module, index) => normalizeModule(module, index)),
     total_lessons: totalLessons,
@@ -131,6 +139,10 @@ function normalizePaymentTransaction(transaction) {
         ? transaction.amount
         : Number.parseFloat(transaction.amount || "0") || 0,
     currency: transaction.currency || "ETB",
+    purpose: transaction.purpose || "course_enrollment",
+    automation_status: transaction.automation_status || "none",
+    automation_error: transaction.automation_error || "",
+    fulfilled_at: transaction.fulfilled_at || null,
     checkout_url: transaction.checkout_url || "",
     provider_reference: transaction.provider_reference || "",
     provider_method: transaction.provider_method || "",
@@ -138,6 +150,23 @@ function normalizePaymentTransaction(transaction) {
     failure_reason: transaction.failure_reason || "",
     enrollment_ready: transaction.enrollment_ready ?? false,
     receipt_url: transaction.receipt_url || "",
+    is_community_service_payment: Boolean(transaction.is_community_service_payment),
+    course_program: transaction.course_program
+      ? {
+          ...transaction.course_program,
+          offering_type: transaction.course_program.offering_type || "standard",
+          service_credit_hours:
+            typeof transaction.course_program.service_credit_hours === "number"
+              ? transaction.course_program.service_credit_hours
+              : Number.parseFloat(transaction.course_program.service_credit_hours || "0") || 0,
+          auto_issue_service_credit: Boolean(
+            transaction.course_program.auto_issue_service_credit,
+          ),
+        }
+      : null,
+    organization: transaction.organization || null,
+    user: transaction.user || null,
+    service_credit_record: transaction.service_credit_record || null,
   };
 }
 

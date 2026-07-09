@@ -1370,6 +1370,7 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 
 ### TASK-1010: Add Community-Service Monetization and Advanced Payment Automation Backend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
 - **Owner:** Backend
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/courses/:id`, `/dashboard`, `/org`, `/admin`, `/payments`
@@ -1384,6 +1385,7 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 
 ### TASK-1010-FE: Add Community-Service Monetization and Advanced Payment Automation Frontend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
 - **Owner:** Frontend
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/courses/:id`, `/dashboard`, `/org`, `/admin`, `/payments`

@@ -7,7 +7,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.common.enums import CourseProgramStatus, OrganizationType, Role
+from apps.common.enums import CourseOfferingType, CourseProgramStatus, OrganizationType, Role
 from apps.courses.models import CourseModule, CourseProgram, Enrollment, LessonItem
 from apps.organizations.models import Organization
 from apps.payments.models import FinancialAccount
@@ -444,6 +444,55 @@ class CourseApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertFalse(response.data["is_free"])
+        self.assertEqual(response.data["offering_type"], CourseOfferingType.STANDARD)
+
+    def test_verified_organization_can_create_paid_community_service_course(self):
+        self.organization.verification_status = "verified"
+        self.organization.save(update_fields=["verification_status", "updated_at"])
+        FinancialAccount.objects.create(
+            organization=self.organization,
+            status="ready",
+            business_name="Course Organization PLC",
+        )
+        self.authenticate("org-courses@example.com", "StrongPass123!")
+
+        response = self.client.post(
+            reverse("course-manage-list-create"),
+            self.build_course_payload(
+                is_free=False,
+                price_amount="1499.00",
+                offering_type=CourseOfferingType.COMMUNITY_SERVICE,
+                service_credit_hours="10.50",
+                auto_issue_service_credit=True,
+                service_credit_title="Volunteer Impact Credit",
+                service_credit_description="Awarded after completing the community-service program.",
+            ),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["offering_type"], CourseOfferingType.COMMUNITY_SERVICE)
+        self.assertTrue(response.data["auto_issue_service_credit"])
+        self.assertEqual(response.data["service_credit_hours"], "10.50")
+
+    def test_standard_course_cannot_enable_auto_service_credit(self):
+        self.organization.verification_status = "verified"
+        self.organization.save(update_fields=["verification_status", "updated_at"])
+        self.authenticate("org-courses@example.com", "StrongPass123!")
+
+        response = self.client.post(
+            reverse("course-manage-list-create"),
+            self.build_course_payload(
+                offering_type=CourseOfferingType.STANDARD,
+                auto_issue_service_credit=True,
+                service_credit_hours="6.00",
+                service_credit_title="Should Fail",
+            ),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("auto_issue_service_credit", response.data)
 
     def test_unverified_organization_cannot_edit_paid_course_without_making_it_free(self):
         self.organization.verification_status = "verified"

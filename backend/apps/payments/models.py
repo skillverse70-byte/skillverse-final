@@ -2,7 +2,12 @@ from django.db import models
 
 from django.conf import settings
 
-from apps.common.enums import FinancialAccountStatus, PaymentTransactionStatus
+from apps.common.enums import (
+    FinancialAccountStatus,
+    PaymentAutomationStatus,
+    PaymentTransactionPurpose,
+    PaymentTransactionStatus,
+)
 from apps.organizations.models import Organization
 
 
@@ -68,11 +73,23 @@ class PaymentTransaction(models.Model):
     tx_ref = models.CharField(max_length=128, unique=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=8)
+    purpose = models.CharField(
+        max_length=40,
+        choices=PaymentTransactionPurpose.choices,
+        default=PaymentTransactionPurpose.COURSE_ENROLLMENT,
+    )
     status = models.CharField(
         max_length=16,
         choices=PaymentTransactionStatus.choices,
         default=PaymentTransactionStatus.PENDING,
     )
+    automation_status = models.CharField(
+        max_length=16,
+        choices=PaymentAutomationStatus.choices,
+        default=PaymentAutomationStatus.NONE,
+    )
+    automation_error = models.TextField(blank=True)
+    fulfilled_at = models.DateTimeField(null=True, blank=True)
     checkout_url = models.URLField(max_length=500, blank=True)
     callback_url = models.URLField(max_length=500, blank=True)
     return_url = models.URLField(max_length=500, blank=True)
@@ -87,6 +104,13 @@ class PaymentTransaction(models.Model):
     )
     failure_reason = models.CharField(max_length=255, blank=True)
     verification_data = models.JSONField(default=dict, blank=True)
+    service_credit_record = models.ForeignKey(
+        "certificates.ServiceCreditRecord",
+        on_delete=models.SET_NULL,
+        related_name="payment_transactions",
+        null=True,
+        blank=True,
+    )
     last_verified_at = models.DateTimeField(null=True, blank=True)
     verified_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -97,6 +121,7 @@ class PaymentTransaction(models.Model):
         indexes = [
             models.Index(fields=["user", "course_program", "status"]),
             models.Index(fields=["organization", "status"]),
+            models.Index(fields=["purpose", "automation_status"]),
         ]
 
     @property
@@ -108,6 +133,10 @@ class PaymentTransaction(models.Model):
         if not self.provider_reference:
             return ""
         return f"https://chapa.link/payment-receipt/{self.provider_reference}"
+
+    @property
+    def is_community_service_payment(self):
+        return self.purpose == PaymentTransactionPurpose.COMMUNITY_SERVICE_ENROLLMENT
 
     def __str__(self):
         return f"{self.tx_ref} ({self.status})"

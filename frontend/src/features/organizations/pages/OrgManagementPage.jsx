@@ -395,6 +395,12 @@ export default function OrgManagementPage() {
               Course builder
             </Button>
           </Link>
+          <Link to="/payments">
+            <Button variant="outline" className="gap-2">
+              <CreditCard className="h-4 w-4" />
+              Payments
+            </Button>
+          </Link>
           <Link to={`/organizations/${organization.id}`}>
             <Button variant="outline" className="gap-2">
               <ExternalLink className="h-4 w-4" />
@@ -498,6 +504,12 @@ export default function OrgManagementPage() {
                 value="Manage service records and certificates"
                 actionLabel="Open trust"
                 onAction={() => setActiveTab("trust")}
+              />
+              <AttentionRow
+                label="Paid enrollments and automation"
+                value={financeReady ? "Track transactions and service-credit fulfillment" : "Finish finance setup before paid enrollment opens"}
+                actionLabel="Open payments"
+                onAction={() => navigate("/payments")}
               />
               <AttentionRow
                 label="Analytics lane"

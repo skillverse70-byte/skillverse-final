@@ -79,6 +79,23 @@ export const paymentTransactionStatuses = Object.freeze({
   reversed: "reversed",
 });
 
+export const paymentTransactionPurposes = Object.freeze({
+  courseEnrollment: "course_enrollment",
+  communityServiceEnrollment: "community_service_enrollment",
+});
+
+export const paymentAutomationStatuses = Object.freeze({
+  none: "none",
+  pending: "pending",
+  completed: "completed",
+  failed: "failed",
+});
+
+export const courseOfferingTypes = Object.freeze({
+  standard: "standard",
+  communityService: "community_service",
+});
+
 export const opportunityTypes = Object.freeze({
   job: "job",
   internship: "internship",

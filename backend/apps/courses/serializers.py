@@ -1,7 +1,15 @@
+from decimal import Decimal
+
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.common.enums import CourseProgramStatus, LessonItemType, Role
+from apps.common.enums import (
+    CourseOfferingType,
+    CourseProgramStatus,
+    LessonItemType,
+    OrganizationVerificationStatus,
+    Role,
+)
 from apps.common.trust import can_organization_create_paid_course
 from apps.courses.models import CourseModule, CourseProgram, Enrollment, LessonItem
 from apps.courses.services import calculate_progression_state
@@ -184,9 +192,14 @@ class CourseProgramSummarySerializer(serializers.ModelSerializer):
             "difficulty",
             "instructor_name",
             "tags",
+            "offering_type",
             "is_free",
             "price_amount",
             "price_currency",
+            "service_credit_hours",
+            "auto_issue_service_credit",
+            "service_credit_title",
+            "service_credit_description",
             "enrollment_open",
             "status",
             "total_lessons",
@@ -240,9 +253,14 @@ class CourseProgramWriteSerializer(serializers.ModelSerializer):
             "difficulty",
             "instructor_name",
             "tags",
+            "offering_type",
             "is_free",
             "price_amount",
             "price_currency",
+            "service_credit_hours",
+            "auto_issue_service_credit",
+            "service_credit_title",
+            "service_credit_description",
             "enrollment_open",
             "status",
             "modules",
@@ -267,6 +285,35 @@ class CourseProgramWriteSerializer(serializers.ModelSerializer):
         is_free = attrs.get("is_free")
         price_amount = attrs.get("price_amount")
         organization = self.context.get("organization")
+        offering_type = attrs.get("offering_type") or getattr(
+            self.instance,
+            "offering_type",
+            CourseOfferingType.STANDARD,
+        )
+        auto_issue_service_credit = attrs.get("auto_issue_service_credit")
+        if auto_issue_service_credit is None:
+            auto_issue_service_credit = getattr(
+                self.instance,
+                "auto_issue_service_credit",
+                False,
+            )
+        service_credit_hours = attrs.get("service_credit_hours")
+        if service_credit_hours is None:
+            service_credit_hours = getattr(
+                self.instance,
+                "service_credit_hours",
+                Decimal("0"),
+            )
+        service_credit_title = attrs.get("service_credit_title")
+        if service_credit_title is None:
+            service_credit_title = getattr(self.instance, "service_credit_title", "")
+        service_credit_description = attrs.get("service_credit_description")
+        if service_credit_description is None:
+            service_credit_description = getattr(
+                self.instance,
+                "service_credit_description",
+                "",
+            )
 
         effective_is_free = (
             is_free
@@ -292,11 +339,67 @@ class CourseProgramWriteSerializer(serializers.ModelSerializer):
                 }
             )
 
+        if (
+            offering_type != CourseOfferingType.COMMUNITY_SERVICE
+            and auto_issue_service_credit
+        ):
+            raise serializers.ValidationError(
+                {
+                    "auto_issue_service_credit": (
+                        "Automatic service-credit issuance is only available for community-service offerings."
+                    )
+                }
+            )
+
+        if offering_type != CourseOfferingType.COMMUNITY_SERVICE:
+            if attrs.get("offering_type") == CourseOfferingType.STANDARD:
+                service_credit_hours = Decimal("0")
+                service_credit_title = ""
+                service_credit_description = ""
+            has_community_service_data = any(
+                [
+                    Decimal(str(service_credit_hours or "0")) > 0,
+                    bool(str(service_credit_title or "").strip()),
+                    bool(str(service_credit_description or "").strip()),
+                ]
+            )
+            if has_community_service_data:
+                raise serializers.ValidationError(
+                    {
+                        "offering_type": (
+                            "Service-credit metadata is only allowed for community-service offerings."
+                        )
+                    }
+                )
+
+        if auto_issue_service_credit and Decimal(str(service_credit_hours or "0")) <= 0:
+            raise serializers.ValidationError(
+                {
+                    "service_credit_hours": (
+                        "Automatic service-credit issuance requires a positive credit-hour value."
+                    )
+                }
+            )
+
+        if (
+            auto_issue_service_credit
+            and organization is not None
+            and organization.verification_status != OrganizationVerificationStatus.VERIFIED
+        ):
+            raise serializers.ValidationError(
+                {
+                    "auto_issue_service_credit": (
+                        "Only verified organizations can enable automatic service-credit issuance."
+                    )
+                }
+            )
+
         return attrs
 
     def create(self, validated_data):
         modules_data = validated_data.pop("modules", [])
         organization = self.context["organization"]
+        self._normalize_community_service_fields(validated_data)
         course_program = CourseProgram.objects.create(
             organization=organization,
             **validated_data,
@@ -306,12 +409,23 @@ class CourseProgramWriteSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         modules_data = validated_data.pop("modules", None)
+        self._normalize_community_service_fields(validated_data)
         for field, value in validated_data.items():
             setattr(instance, field, value)
         instance.save()
         if modules_data is not None:
             self._replace_modules(instance, modules_data)
         return instance
+
+    @staticmethod
+    def _normalize_community_service_fields(validated_data):
+        offering_type = validated_data.get("offering_type")
+        if offering_type == CourseOfferingType.COMMUNITY_SERVICE or offering_type is None:
+            return
+        validated_data["auto_issue_service_credit"] = False
+        validated_data["service_credit_title"] = ""
+        validated_data["service_credit_description"] = ""
+        validated_data["service_credit_hours"] = Decimal("0")
 
     def _replace_modules(self, course_program, modules_data):
         existing_lessons = {

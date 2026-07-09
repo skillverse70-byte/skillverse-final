@@ -50,6 +50,7 @@ const primaryNavByRole = {
   [roles.organization]: [
     { label: "Dashboard", path: "/org", icon: LayoutDashboard },
     { label: "Courses", path: "/org?tab=courses", icon: BookOpen },
+    { label: "Payments", path: "/payments", icon: CreditCard },
     { label: "Events", path: "/org?tab=events", icon: Calendar },
     { label: "Jobs", path: "/org?tab=jobs", icon: Briefcase },
     { label: "Learners", path: "/org?tab=learners", icon: GraduationCap },
@@ -59,6 +60,7 @@ const primaryNavByRole = {
     { label: "Admin Dashboard", path: "/admin", icon: LayoutDashboard },
     { label: "Verification", path: "/admin?tab=orgs", icon: Building },
     { label: "Finance", path: "/admin?tab=financial", icon: CreditCard },
+    { label: "Payments", path: "/payments", icon: CreditCard },
     { label: "Moderation", path: "/admin?tab=users", icon: ShieldCheck },
     { label: "Trust", path: "/admin?tab=trust", icon: Award },
     { label: "Taxonomy", path: "/admin?tab=taxonomy", icon: Tags },
@@ -69,17 +71,20 @@ const quickLinksByRole = {
   [roles.regularUser]: [
     { path: "/messages", label: "Messages", icon: MessageCircle },
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/payments", label: "Payments", icon: CreditCard },
     { path: "/skill-portfolio", label: "Portfolio", icon: GraduationCap },
     { path: "/certificates", label: "Certificates", icon: Award },
     { path: "/saved-opportunities", label: "Saved", icon: Bookmark },
   ],
   [roles.organization]: [
     { path: "/org", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/payments", label: "Payments", icon: CreditCard },
     { path: "/organization-profile", label: "Org Profile", icon: Building },
     { path: "/org?tab=trust", label: "Trust", icon: Award },
   ],
   [roles.admin]: [
     { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/payments", label: "Payments", icon: CreditCard },
     { path: "/admin?tab=trust", label: "Trust", icon: Award },
   ],
 };

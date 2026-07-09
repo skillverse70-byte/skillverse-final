@@ -32,6 +32,7 @@ const SavedOpportunitiesPage = lazy(() => import("@/features/saved/pages/SavedOp
 const CommunitiesPage = lazy(() => import("@/features/communities/pages/CommunitiesPage"));
 const CertificatesPage = lazy(() => import("@/features/certificates/pages/CertificatesPage"));
 const CertificateDetailPage = lazy(() => import("@/features/certificates/pages/CertificateDetailPage"));
+const PaymentsPage = lazy(() => import("@/features/payments/pages/PaymentsPage"));
 
 export const guestRoutes = [
   { path: "/", element: <LandingPage />, access: "public" },
@@ -119,5 +120,11 @@ export const appRoutes = [
     element: <SavedOpportunitiesPage />,
     access: "authenticated",
     allowedRoles: [roles.regularUser],
+  },
+  {
+    path: "/payments",
+    element: <PaymentsPage />,
+    access: "authenticated",
+    allowedRoles: [roles.regularUser, roles.organization, roles.admin],
   },
 ];

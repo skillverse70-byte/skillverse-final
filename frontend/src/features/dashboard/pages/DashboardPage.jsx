@@ -10,6 +10,7 @@ import {
   Calendar,
   CheckCircle2,
   Clock3,
+  CreditCard,
   ExternalLink,
   LayoutDashboard,
   Link2,
@@ -419,6 +420,14 @@ export default function DashboardPage() {
                 onClick={() => navigate("/courses")}
               >
                 Browse courses
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:bg-slate-50"
+                onClick={() => navigate("/payments")}
+              >
+                <CreditCard className="h-4 w-4" />
+                Payment workspace
               </button>
             </div>
           </section>

@@ -766,6 +766,14 @@ export default function AdminReviewPage() {
       onValueChange={setActiveTab}
       tabs={tabs}
       showTabDescriptions={false}
+      actions={
+        <Link to="/payments">
+          <Button variant="outline" className="gap-2">
+            <CreditCard className="h-4 w-4" />
+            Payment operations
+          </Button>
+        </Link>
+      }
     >
       <TabsContent value="overview" className="mt-0 space-y-6">
         <DashboardStats stats={statCards} />
@@ -814,6 +822,12 @@ export default function AdminReviewPage() {
                   value={String(oversight.pending_financial_accounts ?? 0)}
                   actionLabel="Open finance"
                   onAction={() => setActiveTab("financial")}
+                />
+                <AttentionRow
+                  label="Payment operations"
+                  value={`${auditSummary.payments} recent payment-sensitive actions`}
+                  actionLabel="Open payments"
+                  onAction={() => navigate("/payments")}
                 />
                 <AttentionRow
                   label="Events from unverified orgs"

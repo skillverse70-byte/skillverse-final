@@ -7,15 +7,20 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.audit.models import AuditLog
+from apps.certificates.models import ServiceCreditRecord
 from apps.common.enums import (
+    CourseOfferingType,
     CourseProgramStatus,
     FinancialAccountStatus,
     OrganizationType,
     OrganizationVerificationStatus,
+    PaymentAutomationStatus,
+    PaymentTransactionPurpose,
     PaymentTransactionStatus,
     Role,
 )
@@ -94,6 +99,7 @@ class PaymentFlowApiTests(APITestCase):
             "tx_ref": "SV-test-payment",
             "amount": self.course.price_amount,
             "currency": self.course.price_currency,
+            "purpose": PaymentTransactionPurpose.COURSE_ENROLLMENT,
             "status": PaymentTransactionStatus.PENDING,
             "checkout_url": "https://checkout.chapa.co/test",
         }
@@ -359,3 +365,181 @@ class PaymentFlowApiTests(APITestCase):
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
         self.assertEqual(list_response.data, [])
         self.assertEqual(detail_response.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("apps.payments.views.ChapaPaymentService.initiate_payment")
+    @patch("apps.payments.views.ChapaPaymentService.verify_payment")
+    def test_paid_community_service_course_completes_service_credit_automation(
+        self,
+        mock_verify_payment,
+        mock_initiate_payment,
+    ):
+        self.course.offering_type = CourseOfferingType.COMMUNITY_SERVICE
+        self.course.auto_issue_service_credit = True
+        self.course.service_credit_hours = Decimal("8.50")
+        self.course.service_credit_title = "Neighborhood Service Credit"
+        self.course.service_credit_description = "Issued for completing the neighborhood support program."
+        self.course.save(
+            update_fields=[
+                "offering_type",
+                "auto_issue_service_credit",
+                "service_credit_hours",
+                "service_credit_title",
+                "service_credit_description",
+                "updated_at",
+            ]
+        )
+        module = self.course.modules.create(title="Service module", sort_order=0)
+        lesson = module.lesson_items.create(
+            title="Volunteer reflection",
+            item_type="reading",
+            content_url="https://example.com/community-service",
+            sort_order=0,
+        )
+        mock_initiate_payment.return_value = {
+            "status": PaymentTransactionStatus.PENDING,
+            "tx_ref": "provider-uses-local-ref",
+            "checkout_url": "https://checkout.chapa.co/hosted/community-service",
+        }
+        self.authenticate(self.learner)
+
+        checkout_response = self.client.post(
+            reverse("course-checkout-list-create"),
+            {"course_program_id": self.course.id},
+            format="json",
+        )
+        payment = PaymentTransaction.objects.get()
+        mock_verify_payment.return_value = self.successful_verification(payment)
+
+        verify_response = self.client.post(
+            reverse("course-checkout-verify", args=[payment.tx_ref])
+        )
+        with self.captureOnCommitCallbacks(execute=True):
+            complete_response = self.client.post(
+                reverse("course-lesson-complete", args=[self.course.id, lesson.id])
+            )
+
+        self.assertEqual(checkout_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(payment.purpose, PaymentTransactionPurpose.COMMUNITY_SERVICE_ENROLLMENT)
+        self.assertEqual(
+            verify_response.data["automation_status"],
+            PaymentAutomationStatus.PENDING,
+        )
+        self.assertEqual(complete_response.status_code, status.HTTP_200_OK)
+        payment.refresh_from_db()
+        self.assertEqual(payment.automation_status, PaymentAutomationStatus.COMPLETED)
+        self.assertIsNotNone(payment.fulfilled_at)
+        self.assertIsNotNone(payment.service_credit_record_id)
+        service_credit = ServiceCreditRecord.objects.get(id=payment.service_credit_record_id)
+        self.assertEqual(service_credit.course_program, self.course)
+        self.assertEqual(service_credit.user, self.learner)
+        self.assertEqual(service_credit.credit_hours, Decimal("8.50"))
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="payment.automation.completed",
+                target_id=payment.id,
+            ).exists()
+        )
+
+    def test_organization_can_filter_payment_history_by_purpose_and_automation_status(self):
+        self.course.offering_type = CourseOfferingType.COMMUNITY_SERVICE
+        self.course.save(update_fields=["offering_type", "updated_at"])
+        completed_payment = self.create_payment(
+            tx_ref="SV-community-complete",
+            status=PaymentTransactionStatus.SUCCEEDED,
+            purpose=PaymentTransactionPurpose.COMMUNITY_SERVICE_ENROLLMENT,
+            automation_status=PaymentAutomationStatus.COMPLETED,
+        )
+        self.create_payment(
+            tx_ref="SV-standard-pending",
+            status=PaymentTransactionStatus.PENDING,
+            purpose=PaymentTransactionPurpose.COURSE_ENROLLMENT,
+            automation_status=PaymentAutomationStatus.NONE,
+        )
+        ServiceCreditRecord.objects.create(
+            organization=self.organization,
+            user=self.learner,
+            course_program=self.course,
+            title="Community credit",
+            credit_hours=Decimal("4.00"),
+            issued_by=self.organization_user,
+        )
+        self.authenticate(self.organization_user)
+
+        response = self.client.get(
+            reverse("course-checkout-list-create"),
+            {
+                "purpose": PaymentTransactionPurpose.COMMUNITY_SERVICE_ENROLLMENT,
+                "automation_status": PaymentAutomationStatus.COMPLETED,
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["tx_ref"], completed_payment.tx_ref)
+        self.assertEqual(
+            response.data[0]["purpose"],
+            PaymentTransactionPurpose.COMMUNITY_SERVICE_ENROLLMENT,
+        )
+
+    def test_organization_can_retry_failed_community_service_automation(self):
+        self.course.offering_type = CourseOfferingType.COMMUNITY_SERVICE
+        self.course.auto_issue_service_credit = True
+        self.course.service_credit_hours = Decimal("6.00")
+        self.course.save(
+            update_fields=[
+                "offering_type",
+                "auto_issue_service_credit",
+                "service_credit_hours",
+                "updated_at",
+            ]
+        )
+        Enrollment.objects.create(
+            user=self.learner,
+            course_program=self.course,
+            status="completed",
+            progress_percent=100,
+            completed_at=timezone.now(),
+        )
+        payment = self.create_payment(
+            tx_ref="SV-community-retry",
+            status=PaymentTransactionStatus.SUCCEEDED,
+            purpose=PaymentTransactionPurpose.COMMUNITY_SERVICE_ENROLLMENT,
+            automation_status=PaymentAutomationStatus.FAILED,
+            automation_error="Previous automation failed.",
+        )
+        self.authenticate(self.organization_user)
+
+        response = self.client.post(
+            reverse("course-checkout-retry-automation", args=[payment.tx_ref])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        payment.refresh_from_db()
+        self.assertEqual(payment.automation_status, PaymentAutomationStatus.COMPLETED)
+        self.assertEqual(payment.automation_error, "")
+        self.assertIsNotNone(payment.service_credit_record_id)
+
+    def test_admin_can_view_payment_history_with_org_filter(self):
+        payment = self.create_payment(
+            tx_ref="SV-admin-history",
+            status=PaymentTransactionStatus.SUCCEEDED,
+            purpose=PaymentTransactionPurpose.COURSE_ENROLLMENT,
+        )
+        admin_user = User.objects.create_user(
+            email="payments-root-admin@example.com",
+            password="StrongPass123!",
+            full_name="Root Admin",
+            role=Role.ADMIN,
+            is_staff=True,
+            email_verified_at="2026-07-06T00:00:00Z",
+        )
+        self.authenticate(admin_user)
+
+        response = self.client.get(
+            reverse("course-checkout-list-create"),
+            {"organization_id": self.organization.id},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["tx_ref"], payment.tx_ref)

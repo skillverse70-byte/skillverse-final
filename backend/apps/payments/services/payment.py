@@ -11,7 +11,11 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.audit.services import record_audit_log
-from apps.common.enums import PaymentTransactionStatus
+from apps.common.enums import (
+    PaymentAutomationStatus,
+    PaymentTransactionPurpose,
+    PaymentTransactionStatus,
+)
 
 
 class ChapaPaymentError(Exception):
@@ -171,6 +175,15 @@ class ChapaPaymentService:
         payment_transaction.verification_data = self._safe_verification_data(data)
         if payment_transaction.status == PaymentTransactionStatus.SUCCEEDED:
             payment_transaction.verified_at = payment_transaction.verified_at or timezone.now()
+            if (
+                payment_transaction.purpose
+                == PaymentTransactionPurpose.COMMUNITY_SERVICE_ENROLLMENT
+                and payment_transaction.course_program.auto_issue_service_credit
+                and payment_transaction.automation_status
+                == PaymentAutomationStatus.NONE
+            ):
+                payment_transaction.automation_status = PaymentAutomationStatus.PENDING
+                payment_transaction.automation_error = ""
         payment_transaction.save()
         if (
             previous_status != payment_transaction.status

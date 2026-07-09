@@ -1,7 +1,12 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { AlertCircle, ExternalLink, ReceiptText, ShieldCheck } from "lucide-react";
 import StatusBadge from "@/components/shared/StatusBadge";
-import { paymentTransactionStatuses } from "@/lib/domain-enums";
+import {
+  courseOfferingTypes,
+  paymentTransactionPurposes,
+  paymentTransactionStatuses,
+} from "@/lib/domain-enums";
 
 const blockedMessages = {
   organization_unverified:
@@ -11,7 +16,12 @@ const blockedMessages = {
   manual_closure: "The organization has closed enrollment for this course.",
 };
 
-export default function PaidEnrollmentStatus({ enrollmentGate, transaction }) {
+export default function PaidEnrollmentStatus({ enrollmentGate, transaction, courseId }) {
+  const isCommunityServicePayment =
+    transaction?.purpose === paymentTransactionPurposes.communityServiceEnrollment ||
+    transaction?.is_community_service_payment ||
+    transaction?.course_program?.offering_type === courseOfferingTypes.communityService;
+
   if (!enrollmentGate.canEnroll) {
     return (
       <div className="mb-4 border-t border-border/60 pt-4 text-sm">
@@ -37,6 +47,12 @@ export default function PaidEnrollmentStatus({ enrollmentGate, transaction }) {
         <p className="text-xs leading-relaxed text-muted-foreground">
           Your enrollment activates only after SkillVerse verifies the payment with Chapa.
         </p>
+        <Link
+          to={courseId ? `/payments?course=${encodeURIComponent(courseId)}` : "/payments"}
+          className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-teal-700 hover:underline"
+        >
+          Open payment workspace
+        </Link>
       </div>
     );
   }
@@ -66,6 +82,13 @@ export default function PaidEnrollmentStatus({ enrollmentGate, transaction }) {
         {statusMessages[transaction.status] || "Payment status is being updated."}
       </p>
 
+      {isCommunityServicePayment ? (
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          This checkout is linked to a community-service learning offer, so service-credit
+          fulfillment will follow payment verification.
+        </p>
+      ) : null}
+
       {transaction.status === paymentTransactionStatuses.pending &&
         transaction.checkout_url && (
           <a
@@ -76,6 +99,13 @@ export default function PaidEnrollmentStatus({ enrollmentGate, transaction }) {
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         )}
+
+      <Link
+        to={courseId ? `/payments?course=${encodeURIComponent(courseId)}` : "/payments"}
+        className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-teal-700 hover:underline"
+      >
+        Open payment workspace
+      </Link>
 
       {transaction.status === paymentTransactionStatuses.succeeded &&
         transaction.receipt_url && (

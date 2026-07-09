@@ -110,7 +110,7 @@ def sync_enrollment_state(enrollment):
         previous_status != EnrollmentStatus.COMPLETED
         and enrollment.status == EnrollmentStatus.COMPLETED
     ):
-        transaction.on_commit(lambda: notify_course_completed(enrollment.id))
+        transaction.on_commit(lambda: handle_completed_enrollment(enrollment.id))
     return state
 
 
@@ -201,3 +201,30 @@ def notify_course_completed(enrollment_id):
     from apps.notifications.services import notify_course_completed as create_completion_notification
 
     create_completion_notification(enrollment)
+
+
+def handle_completed_enrollment(enrollment_id):
+    enrollment = (
+        Enrollment.objects.select_related(
+            "user",
+            "course_program",
+            "course_program__organization",
+        )
+        .filter(id=enrollment_id)
+        .first()
+    )
+    if enrollment is None:
+        return
+
+    notify_course_completed(enrollment.id)
+
+    from apps.payments.services.automation import process_community_service_completion
+
+    try:
+        process_community_service_completion(
+            enrollment,
+            source="course_completion",
+        )
+    except Exception:
+        # Completion notifications should not be blocked by automation failures.
+        pass

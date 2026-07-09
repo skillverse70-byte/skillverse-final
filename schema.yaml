@@ -3011,6 +3011,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaymentTransaction'
           description: ''
+  /api/payments/course-checkouts/{tx_ref}/retry-automation/:
+    post:
+      operationId: payments_course_checkout_retry_automation
+      parameters:
+      - in: path
+        name: tx_ref
+        schema:
+          type: string
+        required: true
+      tags:
+      - payments
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTransaction'
+          description: ''
   /api/payments/course-checkouts/{tx_ref}/verify/:
     post:
       operationId: payments_course_checkout_verify
@@ -5994,6 +6015,18 @@ components:
       - is_staff
       - is_superuser
       - role
+    AutomationStatusEnum:
+      enum:
+      - none
+      - pending
+      - completed
+      - failed
+      type: string
+      description: |-
+        * `none` - None
+        * `pending` - Pending
+        * `completed` - Completed
+        * `failed` - Failed
     BlankEnum:
       enum:
       - ''
@@ -6577,6 +6610,8 @@ components:
           type: string
           maxLength: 255
         tags: {}
+        offering_type:
+          $ref: '#/components/schemas/OfferingTypeEnum'
         is_free:
           type: boolean
         price_amount:
@@ -6586,6 +6621,17 @@ components:
         price_currency:
           type: string
           maxLength: 8
+        service_credit_hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        auto_issue_service_credit:
+          type: boolean
+        service_credit_title:
+          type: string
+          maxLength: 255
+        service_credit_description:
+          type: string
         enrollment_open:
           type: boolean
         status:
@@ -6663,6 +6709,8 @@ components:
           type: string
           maxLength: 255
         tags: {}
+        offering_type:
+          $ref: '#/components/schemas/OfferingTypeEnum'
         is_free:
           type: boolean
         price_amount:
@@ -6672,6 +6720,17 @@ components:
         price_currency:
           type: string
           maxLength: 8
+        service_credit_hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        auto_issue_service_credit:
+          type: boolean
+        service_credit_title:
+          type: string
+          maxLength: 255
+        service_credit_description:
+          type: string
         enrollment_open:
           type: boolean
         status:
@@ -6721,6 +6780,8 @@ components:
           type: string
           maxLength: 255
         tags: {}
+        offering_type:
+          $ref: '#/components/schemas/OfferingTypeEnum'
         is_free:
           type: boolean
         price_amount:
@@ -6731,6 +6792,17 @@ components:
           type: string
           minLength: 1
           maxLength: 8
+        service_credit_hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        auto_issue_service_credit:
+          type: boolean
+        service_credit_title:
+          type: string
+          maxLength: 255
+        service_credit_description:
+          type: string
         enrollment_open:
           type: boolean
         status:
@@ -6838,6 +6910,8 @@ components:
           type: string
           maxLength: 255
         tags: {}
+        offering_type:
+          $ref: '#/components/schemas/OfferingTypeEnum'
         is_free:
           type: boolean
         price_amount:
@@ -6847,6 +6921,17 @@ components:
         price_currency:
           type: string
           maxLength: 8
+        service_credit_hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        auto_issue_service_credit:
+          type: boolean
+        service_credit_title:
+          type: string
+          maxLength: 255
+        service_credit_description:
+          type: string
         enrollment_open:
           type: boolean
         status:
@@ -6896,6 +6981,8 @@ components:
           type: string
           maxLength: 255
         tags: {}
+        offering_type:
+          $ref: '#/components/schemas/OfferingTypeEnum'
         is_free:
           type: boolean
         price_amount:
@@ -6906,6 +6993,17 @@ components:
           type: string
           minLength: 1
           maxLength: 8
+        service_credit_hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        auto_issue_service_credit:
+          type: boolean
+        service_credit_title:
+          type: string
+          maxLength: 255
+        service_credit_description:
+          type: string
         enrollment_open:
           type: boolean
         status:
@@ -8462,6 +8560,14 @@ components:
         * `community` - Community
         * `certificate` - Certificate
         * `admin` - Admin
+    OfferingTypeEnum:
+      enum:
+      - standard
+      - community_service
+      type: string
+      description: |-
+        * `standard` - Standard
+        * `community_service` - Community Service
     OpportunityDetail:
       type: object
       properties:
@@ -9595,6 +9701,8 @@ components:
           type: string
           maxLength: 255
         tags: {}
+        offering_type:
+          $ref: '#/components/schemas/OfferingTypeEnum'
         is_free:
           type: boolean
         price_amount:
@@ -9605,6 +9713,17 @@ components:
           type: string
           minLength: 1
           maxLength: 8
+        service_credit_hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        auto_issue_service_credit:
+          type: boolean
+        service_credit_title:
+          type: string
+          maxLength: 255
+        service_credit_description:
+          type: string
         enrollment_open:
           type: boolean
         status:
@@ -9860,10 +9979,26 @@ components:
         currency:
           type: string
           readOnly: true
+        purpose:
+          allOf:
+          - $ref: '#/components/schemas/PurposeEnum'
+          readOnly: true
         status:
           allOf:
           - $ref: '#/components/schemas/PaymentTransactionStatusEnum'
           readOnly: true
+        automation_status:
+          allOf:
+          - $ref: '#/components/schemas/AutomationStatusEnum'
+          readOnly: true
+        automation_error:
+          type: string
+          readOnly: true
+        fulfilled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
         checkout_url:
           type: string
           format: uri
@@ -9904,6 +10039,9 @@ components:
         receipt_url:
           type: string
           readOnly: true
+        is_community_service_payment:
+          type: boolean
+          readOnly: true
         course_program:
           type: object
           properties:
@@ -9913,6 +10051,12 @@ components:
               type: string
             is_free:
               type: boolean
+            offering_type:
+              type: string
+            service_credit_hours:
+              type: string
+            auto_issue_service_credit:
+              type: boolean
           readOnly: true
         organization:
           type: object
@@ -9921,26 +10065,57 @@ components:
               type: integer
             name:
               type: string
+            verification_status:
+              type: string
+          readOnly: true
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            full_name:
+              type: string
+            email:
+              type: string
+              format: email
+          readOnly: true
+        service_credit_record:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            title:
+              type: string
+            status:
+              type: string
           readOnly: true
       required:
       - amount
+      - automation_error
+      - automation_status
       - checkout_url
       - course_program
       - created_at
       - currency
       - enrollment_ready
       - failure_reason
+      - fulfilled_at
       - id
+      - is_community_service_payment
       - last_verified_at
       - organization
       - provider
       - provider_method
       - provider_mode
       - provider_reference
+      - purpose
       - receipt_url
+      - service_credit_record
       - status
       - tx_ref
       - updated_at
+      - user
       - verified_at
     PaymentTransactionStatusEnum:
       enum:
@@ -9975,6 +10150,14 @@ components:
       - full_name
       - id
       - role
+    PurposeEnum:
+      enum:
+      - course_enrollment
+      - community_service_enrollment
+      type: string
+      description: |-
+        * `course_enrollment` - Course Enrollment
+        * `community_service_enrollment` - Community Service Enrollment
     RSVPStatusEnum:
       enum:
       - going
