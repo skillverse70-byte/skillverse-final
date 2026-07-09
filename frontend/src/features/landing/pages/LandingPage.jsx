@@ -52,7 +52,7 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-3">
             <Link to="/courses">
-              <Button variant="ghost" className="text-sm">Browse Public Courses</Button>
+              <Button variant="ghost" className="text-sm">Browse</Button>
             </Link>
             <Link to="/get-started">
               <Button className="bg-teal-600 hover:bg-teal-700 text-sm">Get Started</Button>

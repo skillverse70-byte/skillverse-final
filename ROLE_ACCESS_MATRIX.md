@@ -28,12 +28,12 @@ Legend:
 | `/discover` | Yes | Yes | Yes | Yes | Public browse surface with tabs for general exploration and personalized discovery |
 | `/courses` | Yes | Yes | Yes | Yes | Public browse surface |
 | `/courses/:id` | Yes | Yes | Yes | Yes | Public course detail and trust visibility; authenticated regular-user view uses a tabbed course workspace for overview, recommendations, learning guidance, and adaptive focus state |
-| `/events` | Yes | Yes | Yes | Yes | Public event browse surface |
+| `/events` | Yes | Yes | Yes | Yes | Public event browse surface with tabs for catalog browsing and learner-specific personalized discovery |
 | `/events/:id` | Yes | Yes | Yes | Yes | Public event detail with a tabbed workspace for overview and RSVP/access flow |
-| `/jobs` | Yes | Yes | Yes | Yes | Public opportunity browse surface |
+| `/jobs` | Yes | Yes | Yes | Yes | Public opportunity browse surface with tabs for catalog browsing and learner-specific personalized matching |
 | `/jobs/:id` | Yes | Yes | Yes | Yes | Public opportunity detail with a tabbed workspace for overview, requirements, and application flow |
 | `/communities` | Yes | Yes | Yes | Yes | Public community browse; membership actions require authenticated regular users |
-| `/certificates` | Yes | Yes | Yes | Yes | Public certificate lookup; authenticated users also see personal trust records |
+| `/certificates` | Yes | Yes | Yes | Yes | Public certificate lookup with separate tabs for personal certificates and service-credit records after sign-in |
 | `/certificates/:id` | Yes | Yes | Yes | Yes | Public certificate verification detail |
 | `/organizations/:id` | Yes | Yes | Yes | Yes | Public organization profile |
 | `/dashboard` | No | Yes | Redirect to `/org` | Redirect to `/admin` | Role-aware home entry; regular-user dashboard includes adaptive focus and mood mirror summaries |

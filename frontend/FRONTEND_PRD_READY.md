@@ -81,3 +81,10 @@ Audit outcome after `TASK-1008-FE-E`:
 - `/events` and `/jobs` should be normalized next because each page currently mixes a personalized AI recommendation feed with the main browse/filter/list flow on the same surface.
 - `/certificates` should be normalized next because public certificate lookup and authenticated personal trust-record management currently share one page and should move toward clearer tabbed or workspace-style separation.
 - Future frontend work should treat this audit as the baseline: if a non-detail page grows a second major workflow, it should graduate to tabs, cards, drill-downs, or workspace navigation instead of becoming a longer stacked page.
+
+Audit outcome after `TASK-1008-FE-F`:
+
+- `/events` now separates public catalog browsing from personalized event discovery with route-driven tabs.
+- `/jobs` now separates public opportunity browsing from learner-specific personalized matching with route-driven tabs.
+- `/certificates` now separates public verification lookup, personal certificate history, and service-credit records into distinct tabs.
+- Future non-detail pages should follow the same rule: when a public browse flow and a personalized or private workspace start competing on one page, split them into intentional tabs or workspace sections instead of stacking both surfaces together.

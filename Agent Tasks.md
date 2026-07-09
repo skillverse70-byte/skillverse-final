@@ -1324,6 +1324,7 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 ### TASK-1008-FE-F: Normalize Non-Detail User-Facing Pages with Tabs, Cards, and Progressive Disclosure
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
 - **Owner:** Frontend
+- **Status:** Complete
 - **Actor(s):** Guest, Regular User, Organization, Admin
 - **Route(s):** `/dashboard`, `/org`, `/admin`, `/discover`, `/courses`, `/events`, `/jobs`, `/communities`, `/certificates`, plus additional non-detail routes confirmed by `TASK-1008-FE-E`
 - **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/features/skills/`, `frontend/src/features/courses/`, `frontend/src/features/events/`, `frontend/src/features/jobs/`, `frontend/src/features/communities/`, `frontend/src/features/certificates/`, `frontend/src/components/shared/`, `ROLE_ACCESS_MATRIX.md`, `frontend/FRONTEND_PRD_READY.md`
