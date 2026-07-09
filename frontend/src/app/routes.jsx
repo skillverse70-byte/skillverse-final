@@ -29,6 +29,9 @@ const OrganizationProfilePage = lazy(() => import("@/features/organizations/page
 const PublicOrganizationProfilePage = lazy(() => import("@/features/organizations/pages/PublicOrganizationProfilePage"));
 const SkillPortfolioPage = lazy(() => import("@/features/skills/pages/SkillPortfolioPage"));
 const SavedOpportunitiesPage = lazy(() => import("@/features/saved/pages/SavedOpportunitiesPage"));
+const CommunitiesPage = lazy(() => import("@/features/communities/pages/CommunitiesPage"));
+const CertificatesPage = lazy(() => import("@/features/certificates/pages/CertificatesPage"));
+const CertificateDetailPage = lazy(() => import("@/features/certificates/pages/CertificateDetailPage"));
 
 export const guestRoutes = [
   { path: "/", element: <LandingPage />, access: "public" },
@@ -49,6 +52,9 @@ export const publicBrowseRoutes = [
   { path: "/events/:id", element: <EventDetailPage />, access: "public" },
   { path: "/jobs", element: <JobsPage />, access: "public" },
   { path: "/jobs/:id", element: <JobDetailPage />, access: "public" },
+  { path: "/communities", element: <CommunitiesPage />, access: "public" },
+  { path: "/certificates", element: <CertificatesPage />, access: "public" },
+  { path: "/certificates/:id", element: <CertificateDetailPage />, access: "public" },
   { path: "/organizations/:id", element: <PublicOrganizationProfilePage />, access: "public" },
 ];
 

@@ -31,6 +31,8 @@ This notes the frontend capability gaps implied by `PRD.md` that were not fully 
 - Realtime hooks and websocket channels: `src/lib/realtime/socket-client.js`
 - Shared frontend store slices: `src/stores/app-shell-store.js`
 - Upload presets and dropzone config: `src/lib/uploads/upload-presets.js`
+- Shared AI rollout/capability parsing: `src/lib/ai-capabilities.js`
+- Shared AI capability fetches: `src/services/ai/ai.service.js`
 - Environment wiring for API + websocket endpoints: `.env.example`
 
 ## Shared domain contract baseline
@@ -42,3 +44,7 @@ Canonical frontend domain enums and entity/status references now live in:
 - `src/lib/trust-state.js`
 
 These are the frontend-side shared vocabulary for roles, trust states, workflow statuses, and major domain entities. Future feature work should import these instead of hardcoding status strings.
+
+## AI rollout contract
+
+The backend now exposes a shared AI capability snapshot so future AI features can read rollout state, fallback behavior, and availability without embedding provider logic in components. Frontend AI work should consume that contract instead of reading environment flags directly.

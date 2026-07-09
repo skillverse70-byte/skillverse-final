@@ -115,6 +115,32 @@ export const rsvpStatuses = Object.freeze({
   cancelled: "cancelled",
 });
 
+export const communityVisibilities = Object.freeze({
+  public: "public",
+  membersOnly: "members_only",
+});
+
+export const communityMembershipRoles = Object.freeze({
+  member: "member",
+  moderator: "moderator",
+});
+
+export const serviceCreditStatuses = Object.freeze({
+  issued: "issued",
+  revoked: "revoked",
+});
+
+export const certificateSourceTypes = Object.freeze({
+  courseCompletion: "course_completion",
+  eventParticipation: "event_participation",
+  serviceCredit: "service_credit",
+});
+
+export const certificateStatuses = Object.freeze({
+  active: "active",
+  revoked: "revoked",
+});
+
 export const reviewContexts = Object.freeze({
   skillSwap: "skill_swap",
   course: "course",
@@ -131,6 +157,8 @@ export const notificationTypes = Object.freeze({
   enrollment: "enrollment",
   event: "event",
   opportunity: "opportunity",
+  community: "community",
+  certificate: "certificate",
   admin: "admin",
 });
 
@@ -146,4 +174,17 @@ export const taxonomySuggestionStatuses = Object.freeze({
   pending: "pending",
   approved: "approved",
   rejected: "rejected",
+});
+
+export const aiFeatureKeys = Object.freeze({
+  recommendations: "recommendations",
+  learningGuidance: "learning_guidance",
+  assignmentFeedback: "assignment_feedback",
+  cognitiveMonitoring: "cognitive_monitoring",
+});
+
+export const aiRolloutStates = Object.freeze({
+  disabled: "disabled",
+  fallbackOnly: "fallback_only",
+  ready: "ready",
 });

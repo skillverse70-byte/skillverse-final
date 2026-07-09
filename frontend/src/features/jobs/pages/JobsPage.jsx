@@ -1,10 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Briefcase, Search } from "lucide-react";
+import AIRecommendationDeck from "@/components/shared/AIRecommendationDeck";
 import EmptyState from "@/components/shared/EmptyState";
 import PageLoader from "@/components/shared/PageLoader";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAIRecommendationFeed } from "@/hooks/ai/useAIRecommendationFeed";
 import OpportunityCard from "@/features/jobs/components/OpportunityCard";
+import {
+  buildOpportunityRecommendationItems,
+  buildSkillRecommendationItems,
+} from "@/lib/ai-recommendation-items";
+import { roles } from "@/lib/domain-enums";
 import { fetchPublicOpportunities } from "@/services/jobs/jobs.service";
 
 const typeLabels = {
@@ -15,11 +23,22 @@ const typeLabels = {
 };
 
 export default function JobsPage() {
+  const { isAuthenticated, actorRole, navigateToLogin } = useAuth();
   const [opportunities, setOpportunities] = useState([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const shouldShowPersonalizedFeed = isAuthenticated && actorRole === roles.regularUser;
+  const {
+    feature: recommendationFeature,
+    feed: recommendationFeed,
+    loading: recommendationsLoading,
+    error: recommendationsError,
+  } = useAIRecommendationFeed({
+    enabled: shouldShowPersonalizedFeed,
+    limitPerType: 2,
+  });
 
   useEffect(() => {
     let active = true;
@@ -67,6 +86,27 @@ export default function JobsPage() {
       }),
     [opportunities, search, typeFilter, statusFilter],
   );
+  const recommendationSections = useMemo(
+    () => [
+      {
+        key: "jobs",
+        title: "Recommended opportunities",
+        icon: Briefcase,
+        description: "Openings connected to your current learning and participation signals.",
+        items: buildOpportunityRecommendationItems(
+          recommendationFeed.opportunity_recommendations,
+        ),
+      },
+      {
+        key: "skills",
+        title: "Skills these roles point toward",
+        icon: Search,
+        description: "High-value skills surfacing across your relevant opportunities.",
+        items: buildSkillRecommendationItems(recommendationFeed.skill_recommendations),
+      },
+    ],
+    [recommendationFeed],
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -99,6 +139,43 @@ export default function JobsPage() {
           </div>
         </div>
       </div>
+
+      {shouldShowPersonalizedFeed ? (
+        <div className="mb-8">
+          <AIRecommendationDeck
+            title="Opportunity suggestions for you"
+            description="These recommendations use your profile, learning activity, events, and skill signals so jobs do not feel disconnected from the rest of the platform."
+            feature={recommendationFeature}
+            feed={recommendationFeed}
+            sections={recommendationSections}
+            loading={recommendationsLoading}
+            error={recommendationsError}
+            emptyTitle="No personalized job signals yet"
+            emptyDescription="Complete your profile, build your skill portfolio, and participate in courses or events to unlock more relevant opportunities."
+            compact
+          />
+        </div>
+      ) : !isAuthenticated ? (
+        <div className="mb-8 rounded-3xl border border-border/60 bg-white p-5 shadow-sm shadow-black/5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-2xl">
+              <h2 className="font-heading text-lg font-semibold text-foreground">
+                Personalized opportunity matching
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Log in as a regular user to see jobs and programs connected to your skills, courses, events, and field signals.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
+              onClick={navigateToLogin}
+            >
+              Log in to personalize
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mb-8 grid gap-3 rounded-3xl border border-border/60 bg-white p-4 shadow-sm shadow-black/5 md:grid-cols-[minmax(0,1fr)_180px_180px]">
         <div className="relative">

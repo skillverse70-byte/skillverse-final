@@ -26,18 +26,35 @@ import {
   LayoutDashboard,
   Search,
   ShieldCheck,
+  Sparkles,
   Tag,
   UserCog,
   Users,
   XCircle,
 } from "lucide-react";
+import AdminAICognitiveMonitoringPanel from "@/components/shared/AdminAICognitiveMonitoringPanel";
+import AIAdaptiveMonitoringPanel from "@/components/shared/AIAdaptiveMonitoringPanel";
+import AILearningGuidancePanel from "@/components/shared/AILearningGuidancePanel";
+import AIRecommendationDeck from "@/components/shared/AIRecommendationDeck";
 import StatusBadge from "@/components/shared/StatusBadge";
 import EmptyState from "@/components/shared/EmptyState";
 import NotificationFeedPanel from "@/components/shared/NotificationFeedPanel";
 import PageLoader from "@/components/shared/PageLoader";
 import WorkspaceShell from "@/components/shared/WorkspaceShell";
 import DashboardStats from "@/features/dashboard/components/DashboardStats";
+import AdminTrustPanel from "@/features/organizations/components/AdminTrustPanel";
 import { useToast } from "@/components/ui/use-toast";
+import { useAIAdaptiveMonitoring } from "@/hooks/ai/useAIAdaptiveMonitoring";
+import { useAdminAICognitiveMonitoringOverview } from "@/hooks/ai/useAdminAICognitiveMonitoringOverview";
+import { useAILearningGuidance } from "@/hooks/ai/useAILearningGuidance";
+import { useAIRecommendationFeed } from "@/hooks/ai/useAIRecommendationFeed";
+import {
+  buildCourseRecommendationItems,
+  buildEventRecommendationItems,
+  buildOpportunityRecommendationItems,
+  buildPeerRecommendationItems,
+  buildSkillRecommendationItems,
+} from "@/lib/ai-recommendation-items";
 import {
   createAdminTaxonomyCatalogEntry,
   decideAdminCourse,
@@ -55,7 +72,7 @@ import {
 } from "@/services/organizations/organization.service";
 import { useAdminDashboardData } from "@/hooks/dashboard/useAdminDashboardData";
 import { useWorkspaceTab } from "@/hooks/dashboard/useWorkspaceTab";
-import { taxonomyDomains } from "@/lib/domain-enums";
+import { roles, taxonomyDomains } from "@/lib/domain-enums";
 import moment from "moment";
 
 const validTabs = [
@@ -67,6 +84,7 @@ const validTabs = [
   "courses",
   "jobs",
   "events",
+  "trust",
   "taxonomy",
   "audit",
 ];
@@ -140,10 +158,12 @@ export default function AdminReviewPage() {
   const [selectedAuditId, setSelectedAuditId] = useState(null);
   const [selectedAuditLogDetail, setSelectedAuditLogDetail] = useState(null);
   const [auditDetailLoading, setAuditDetailLoading] = useState(false);
+  const [selectedRecommendationUserId, setSelectedRecommendationUserId] = useState("");
 
   const {
     summary,
     oversight,
+    adaptiveMonitoring,
     organizationVerificationRequests,
     financialAccounts,
     events,
@@ -158,6 +178,12 @@ export default function AdminReviewPage() {
     error,
     refresh,
   } = useAdminDashboardData();
+  const {
+    feature: monitoringFeature,
+    overview: monitoringOverview,
+    loading: monitoringLoading,
+    error: monitoringError,
+  } = useAdminAICognitiveMonitoringOverview();
 
   const inactiveUserCount = useMemo(
     () => users.filter((user) => !user.is_active).length,
@@ -235,6 +261,101 @@ export default function AdminReviewPage() {
     };
   }, [auditLogs]);
   const recentAuditLogs = useMemo(() => auditLogs.slice(0, 6), [auditLogs]);
+  const regularUsers = useMemo(
+    () => users.filter((user) => user.role === roles.regularUser),
+    [users],
+  );
+  const selectedRecommendationUser = useMemo(
+    () =>
+      regularUsers.find((user) => String(user.id) === String(selectedRecommendationUserId)) ||
+      null,
+    [regularUsers, selectedRecommendationUserId],
+  );
+  const {
+    feature: recommendationFeature,
+    feed: recommendationFeed,
+    loading: recommendationsLoading,
+    error: recommendationsError,
+  } = useAIRecommendationFeed({
+    enabled: Boolean(selectedRecommendationUserId),
+    userId: selectedRecommendationUserId || undefined,
+    limitPerType: 2,
+  });
+  const {
+    guidanceFeature,
+    assignmentFeature,
+    guidance,
+    loading: guidanceLoading,
+    error: guidanceError,
+  } = useAILearningGuidance({
+    enabled: Boolean(selectedRecommendationUserId),
+    userId: selectedRecommendationUserId || undefined,
+  });
+  const {
+    adaptiveState,
+    loading: adaptiveLoading,
+    error: adaptiveError,
+  } = useAIAdaptiveMonitoring({
+    enabled: Boolean(selectedRecommendationUserId),
+    userId: selectedRecommendationUserId || undefined,
+    surface: "/admin",
+  });
+  const recommendationSections = useMemo(
+    () => [
+      {
+        key: "skills",
+        title: "Skill signals",
+        icon: Sparkles,
+        description: "Skills the current learner is being nudged toward.",
+        items: buildSkillRecommendationItems(recommendationFeed.skill_recommendations),
+      },
+      {
+        key: "peers",
+        title: "Peer matches",
+        icon: Users,
+        description: "Who the recommendation layer is surfacing for collaboration.",
+        items: buildPeerRecommendationItems(recommendationFeed.peer_matches),
+      },
+      {
+        key: "courses",
+        title: "Courses",
+        icon: BookOpen,
+        description: "Learning paths currently connected to this learner's signals.",
+        items: buildCourseRecommendationItems(recommendationFeed.course_recommendations),
+      },
+      {
+        key: "events",
+        title: "Events",
+        icon: Calendar,
+        description: "Live experiences relevant to the same discovery graph.",
+        items: buildEventRecommendationItems(recommendationFeed.event_recommendations),
+      },
+      {
+        key: "jobs",
+        title: "Opportunities",
+        icon: Briefcase,
+        description: "How the learner's activity flows into opportunity discovery.",
+        items: buildOpportunityRecommendationItems(
+          recommendationFeed.opportunity_recommendations,
+        ),
+      },
+    ],
+    [recommendationFeed],
+  );
+
+  useEffect(() => {
+    if (!regularUsers.length) {
+      setSelectedRecommendationUserId("");
+      return;
+    }
+
+    setSelectedRecommendationUserId((current) => {
+      if (current && regularUsers.some((user) => String(user.id) === String(current))) {
+        return current;
+      }
+      return String(regularUsers[0].id);
+    });
+  }, [regularUsers]);
 
   const filteredEvents = useMemo(
     () =>
@@ -548,6 +669,12 @@ export default function AdminReviewPage() {
       description: "Event oversight.",
     },
     {
+      value: "trust",
+      label: "Trust",
+      icon: ShieldCheck,
+      description: "Communities, credits, certificates.",
+    },
+    {
       value: "taxonomy",
       label: `Taxonomy (${pendingSuggestionCount})`,
       icon: Tag,
@@ -674,6 +801,18 @@ export default function AdminReviewPage() {
                   actionLabel="Open taxonomy"
                   onAction={() => setActiveTab("taxonomy")}
                 />
+                <AttentionRow
+                  label="Trust record oversight"
+                  value="Communities, service credits, and certificates"
+                  actionLabel="Open trust"
+                  onAction={() => setActiveTab("trust")}
+                />
+                <AttentionRow
+                  label="Adaptive monitoring oversight"
+                  value={String(adaptiveMonitoring.currently_monitored_users ?? 0)}
+                  actionLabel="Open trust"
+                  onAction={() => setActiveTab("trust")}
+                />
               </div>
             </section>
 
@@ -744,6 +883,85 @@ export default function AdminReviewPage() {
             emptyTitle="No taxonomy suggestions yet"
           />
         </div>
+
+        <AIRecommendationDeck
+          title="Learner recommendation preview"
+          description="Inspect how the recommendation layer is connecting one learner's skills, swaps, courses, events, and opportunities without leaving the admin workspace."
+          feature={recommendationFeature}
+          feed={recommendationFeed}
+          sections={recommendationSections}
+          loading={recommendationsLoading}
+          error={recommendationsError}
+          emptyTitle="No learner recommendation preview available"
+          emptyDescription="Choose a regular user with richer activity signals or wait for more profile, learning, and participation data."
+          action={
+            regularUsers.length > 0 ? (
+              <div className="grid gap-3 md:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Inspect learner feed
+                  </div>
+                  <Select
+                    value={selectedRecommendationUserId}
+                    onValueChange={setSelectedRecommendationUserId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a regular user" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {regularUsers.map((user) => (
+                        <SelectItem key={user.id} value={String(user.id)}>
+                          {user.full_name || user.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="rounded-2xl border border-border/60 bg-secondary/10 px-4 py-3 text-sm text-muted-foreground">
+                  {selectedRecommendationUser ? (
+                    <>
+                      Previewing recommendation output for{" "}
+                      <span className="font-medium text-foreground">
+                        {selectedRecommendationUser.full_name || selectedRecommendationUser.email}
+                      </span>
+                      . This keeps recommendation rationale inspectable for governance and quality checks.
+                    </>
+                  ) : (
+                    "Select a learner to inspect the current recommendation graph."
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-border/60 bg-secondary/10 px-4 py-3 text-sm text-muted-foreground">
+                No regular users are available yet for recommendation inspection.
+              </div>
+            )
+          }
+        />
+
+        <AILearningGuidancePanel
+          title="Learner guidance preview"
+          description="Using the learner selected above, inspect skill-gap analysis, lesson coaching, and assignment-feedback readiness from the same admin workspace."
+          guidance={guidance}
+          guidanceFeature={guidanceFeature}
+          assignmentFeature={assignmentFeature}
+          loading={guidanceLoading}
+          error={guidanceError}
+          emptyTitle="No learner guidance preview available"
+          emptyDescription="Select a regular user with richer course activity or wait for more progress signals."
+          compact
+        />
+
+        <AIAdaptiveMonitoringPanel
+          title="Learner adaptive-state preview"
+          description="Inspect focus drift, mood mirror status, and adaptive responses for the learner selected above. Admins can view the computed state but cannot submit learner check-ins."
+          adaptiveState={adaptiveState}
+          loading={adaptiveLoading}
+          error={adaptiveError}
+          manageHref="/admin?tab=trust"
+          allowCheckIn={false}
+          compact
+        />
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
           <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
@@ -1852,6 +2070,16 @@ export default function AdminReviewPage() {
             ))}
           </div>
         )}
+      </TabsContent>
+
+      <TabsContent value="trust" className="mt-0 space-y-6">
+        <AdminAICognitiveMonitoringPanel
+          feature={monitoringFeature}
+          overview={monitoringOverview}
+          loading={monitoringLoading}
+          error={monitoringError}
+        />
+        <AdminTrustPanel />
       </TabsContent>
 
       <TabsContent value="taxonomy" className="mt-0 space-y-6">

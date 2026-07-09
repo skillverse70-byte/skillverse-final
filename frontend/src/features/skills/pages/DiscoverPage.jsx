@@ -1,18 +1,40 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { appClient } from "@/api/appClient";
+import AIRecommendationDeck from "@/components/shared/AIRecommendationDeck";
+import EmptyState from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAIRecommendationFeed } from "@/hooks/ai/useAIRecommendationFeed";
+import {
+  buildCourseRecommendationItems,
+  buildEventRecommendationItems,
+  buildOpportunityRecommendationItems,
+  buildPeerRecommendationItems,
+  buildSkillRecommendationItems,
+} from "@/lib/ai-recommendation-items";
+import { roles } from "@/lib/domain-enums";
 import { Search, BookOpen, ArrowLeftRight, Briefcase, Calendar, TrendingUp, Sparkles } from "lucide-react";
-import EmptyState from "@/components/shared/EmptyState";
 
 const CATEGORIES = ["All", "Design", "Programming", "Marketing", "Photography", "Music", "Writing", "Data Science", "Languages", "Business"];
 
 export default function Discover() {
+  const { isAuthenticated, actorRole, navigateToLogin } = useAuth();
   const [skills, setSkills] = useState([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [loading, setLoading] = useState(true);
+  const shouldShowPersonalizedFeed = isAuthenticated && actorRole === roles.regularUser;
+  const {
+    feature: recommendationFeature,
+    feed: recommendationFeed,
+    loading: recommendationsLoading,
+    error: recommendationsError,
+  } = useAIRecommendationFeed({
+    enabled: shouldShowPersonalizedFeed,
+    limitPerType: 2,
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -28,6 +50,48 @@ export default function Discover() {
   const filtered = skills.filter(s =>
     (category === "All" || s.category === category) &&
     (!search || s.name.toLowerCase().includes(search.toLowerCase()))
+  );
+  const recommendationSections = useMemo(
+    () => [
+      {
+        key: "skills",
+        title: "Skills to grow",
+        icon: Sparkles,
+        description: "Signals from your peers, courses, and opportunities.",
+        items: buildSkillRecommendationItems(recommendationFeed.skill_recommendations),
+      },
+      {
+        key: "peers",
+        title: "Peer matches",
+        icon: ArrowLeftRight,
+        description: "People you can learn with right now.",
+        items: buildPeerRecommendationItems(recommendationFeed.peer_matches),
+      },
+      {
+        key: "courses",
+        title: "Courses",
+        icon: BookOpen,
+        description: "Structured paths that fit what you are already pursuing.",
+        items: buildCourseRecommendationItems(recommendationFeed.course_recommendations),
+      },
+      {
+        key: "events",
+        title: "Events",
+        icon: Calendar,
+        description: "Workshops and live sessions connected to your field signals.",
+        items: buildEventRecommendationItems(recommendationFeed.event_recommendations),
+      },
+      {
+        key: "jobs",
+        title: "Opportunities",
+        icon: Briefcase,
+        description: "Roles and programs your activity is pointing toward.",
+        items: buildOpportunityRecommendationItems(
+          recommendationFeed.opportunity_recommendations,
+        ),
+      },
+    ],
+    [recommendationFeed],
   );
 
   const quickLinks = [
@@ -62,6 +126,42 @@ export default function Discover() {
           );
         })}
       </div>
+
+      {shouldShowPersonalizedFeed ? (
+        <div className="mb-10">
+          <AIRecommendationDeck
+            title="Personalized discovery"
+            description="These suggestions connect your profile, learning, swap activity, and participation history into one discovery surface."
+            feature={recommendationFeature}
+            feed={recommendationFeed}
+            sections={recommendationSections}
+            loading={recommendationsLoading}
+            error={recommendationsError}
+            emptyTitle="Personalized discovery is warming up"
+            emptyDescription="Add more profile fields and skills, then join a course, event, or swap to unlock stronger cross-module recommendations."
+          />
+        </div>
+      ) : !isAuthenticated ? (
+        <div className="mb-10 rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-emerald-50 p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-teal-700">
+                <Sparkles className="h-3.5 w-3.5" />
+                Personalized discovery
+              </div>
+              <h2 className="mt-3 font-heading text-2xl font-bold text-foreground">
+                Sign in to unlock learner-specific recommendations
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                SkillVerse can connect your fields, skills, courses, events, and opportunity activity into one recommendation feed once you are signed in.
+              </p>
+            </div>
+            <Button className="bg-teal-600 hover:bg-teal-700" onClick={navigateToLogin}>
+              Log in for recommendations
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">

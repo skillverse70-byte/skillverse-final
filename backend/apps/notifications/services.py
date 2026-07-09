@@ -479,6 +479,119 @@ def notify_event_attendance_updated(attendee):
     )
 
 
+def notify_certificate_community_joined(community, member):
+    organization_owner = getattr(community.organization, "owner", None)
+    if organization_owner is None:
+        return
+    create_notification(
+        user=organization_owner,
+        notification_type=NotificationType.COMMUNITY,
+        title="New community member joined",
+        message=f"{member.full_name or member.email} joined {community.title}.",
+        action_url="/org?tab=communities",
+        metadata={
+            "community_id": community.id,
+            "member_id": member.id,
+        },
+    )
+
+
+def notify_service_credit_issued(record):
+    create_notification(
+        user=record.user,
+        notification_type=NotificationType.CERTIFICATE,
+        title="Service credit issued",
+        message=f"{record.organization.name} recorded {record.credit_hours} hours for {record.title}.",
+        action_url="/certificates",
+        metadata={
+            "service_credit_id": record.id,
+            "organization_id": record.organization_id,
+        },
+        send_email=True,
+        email_subject="A new service-credit record was issued",
+        email_headline="You received a new verified service-credit record",
+        email_body_lines=[
+            f"{record.organization.name} issued {record.credit_hours} verified hours for {record.title}.",
+            "You can review the record in your SkillVerse certificate workspace.",
+        ],
+        email_action_label="Open certificates",
+    )
+
+
+def notify_certificate_issued(certificate):
+    create_notification(
+        user=certificate.user,
+        notification_type=NotificationType.CERTIFICATE,
+        title="Certificate issued",
+        message=f"{certificate.organization.name} issued certificate {certificate.certificate_id}.",
+        action_url=f"/certificates/{certificate.certificate_id}",
+        metadata={
+            "certificate_id": certificate.certificate_id,
+            "organization_id": certificate.organization_id,
+            "source_type": certificate.source_type,
+        },
+        send_email=True,
+        email_subject="A new SkillVerse certificate was issued",
+        email_headline="You received a new verified certificate",
+        email_body_lines=[
+            f"{certificate.organization.name} issued certificate {certificate.certificate_id}.",
+            certificate.title,
+        ],
+        email_action_label="View certificate",
+    )
+
+
+def notify_service_credit_revoked(record, *, reason=""):
+    body_lines = [
+        f"{record.organization.name} revoked the service-credit record for {record.title}.",
+    ]
+    if reason:
+        body_lines.append(reason)
+    create_notification(
+        user=record.user,
+        notification_type=NotificationType.CERTIFICATE,
+        title="Service credit revoked",
+        message=body_lines[0],
+        action_url="/certificates",
+        metadata={
+            "service_credit_id": record.id,
+            "organization_id": record.organization_id,
+            "status": record.status,
+        },
+        send_email=True,
+        email_subject="A SkillVerse service-credit record was revoked",
+        email_headline="A verified service-credit record was revoked",
+        email_body_lines=body_lines,
+        email_action_label="Open certificates",
+    )
+
+
+def notify_certificate_revoked(certificate, *, reason=""):
+    body_lines = [
+        f"{certificate.organization.name} revoked certificate {certificate.certificate_id}.",
+    ]
+    if reason:
+        body_lines.append(reason)
+    create_notification(
+        user=certificate.user,
+        notification_type=NotificationType.CERTIFICATE,
+        title="Certificate revoked",
+        message=body_lines[0],
+        action_url=f"/certificates/{certificate.certificate_id}",
+        metadata={
+            "certificate_id": certificate.certificate_id,
+            "organization_id": certificate.organization_id,
+            "source_type": certificate.source_type,
+            "status": certificate.status,
+        },
+        send_email=True,
+        email_subject="A SkillVerse certificate was revoked",
+        email_headline="A verified certificate was revoked",
+        email_body_lines=body_lines,
+        email_action_label="View certificate",
+    )
+
+
 def notify_event_admin_review(event):
     review_notes = (event.admin_review_notes or "").strip()
     body_lines = [f"Your event now has status {event.status}."]

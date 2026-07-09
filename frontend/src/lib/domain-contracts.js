@@ -1,4 +1,6 @@
 import {
+  certificateStatuses,
+  communityVisibilities,
   courseProgramStatuses,
   enrollmentStatuses,
   eventStatuses,
@@ -9,6 +11,7 @@ import {
   organizationVerificationStatuses,
   reviewContexts,
   roles,
+  serviceCreditStatuses,
   skillDirections,
   skillSwapStatuses,
 } from "@/lib/domain-enums";
@@ -42,6 +45,8 @@ export const domainEntities = Object.freeze({
   CategorySuggestion: "Requested addition to a controlled category list.",
   Notification: "System alert, reminder, or workflow update.",
   AuditLog: "Important admin or security-sensitive event record.",
+  AIFeatureCapability:
+    "Shared rollout and fallback contract for an AI-enabled product capability.",
 });
 
 export const coreDomainStatusFields = Object.freeze({
@@ -55,6 +60,9 @@ export const coreDomainStatusFields = Object.freeze({
   "FinancialAccount.status": Object.values(financialAccountStatuses),
   "JobApplication.status": Object.values(jobApplicationStatuses),
   "Event.status": Object.values(eventStatuses),
+  "CommunityGroup.visibility": Object.values(communityVisibilities),
+  "ServiceCredit.status": Object.values(serviceCreditStatuses),
+  "Certificate.status": Object.values(certificateStatuses),
   "RatingReview.context": Object.values(reviewContexts),
   "Notification.type": Object.values(notificationTypes),
 });

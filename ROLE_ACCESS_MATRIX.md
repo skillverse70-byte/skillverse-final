@@ -27,23 +27,26 @@ Legend:
 | `/verify-email` | Yes | Redirect | Redirect | Redirect | Public verification completion page |
 | `/discover` | Yes | Yes | Yes | Yes | Public browse surface |
 | `/courses` | Yes | Yes | Yes | Yes | Public browse surface |
-| `/courses/:id` | Yes | Yes | Yes | Yes | Public course detail and trust visibility |
+| `/courses/:id` | Yes | Yes | Yes | Yes | Public course detail and trust visibility; authenticated regular-user view can show course adaptive focus state |
 | `/events` | Yes | Yes | Yes | Yes | Public event browse surface |
 | `/events/:id` | Yes | Yes | Yes | Yes | Public event detail |
 | `/jobs` | Yes | Yes | Yes | Yes | Public opportunity browse surface |
 | `/jobs/:id` | Yes | Yes | Yes | Yes | Public opportunity detail |
+| `/communities` | Yes | Yes | Yes | Yes | Public community browse; membership actions require authenticated regular users |
+| `/certificates` | Yes | Yes | Yes | Yes | Public certificate lookup; authenticated users also see personal trust records |
+| `/certificates/:id` | Yes | Yes | Yes | Yes | Public certificate verification detail |
 | `/organizations/:id` | Yes | Yes | Yes | Yes | Public organization profile |
-| `/dashboard` | No | Yes | Redirect to `/org` | Redirect to `/admin` | Role-aware home entry |
+| `/dashboard` | No | Yes | Redirect to `/org` | Redirect to `/admin` | Role-aware home entry; regular-user dashboard includes adaptive focus and mood mirror summaries |
 | `/welcome` | No | Yes | No | No | Regular-user onboarding only |
-| `/profile` | No | Yes | No | No | Private regular-user profile |
+| `/profile` | No | Yes | No | No | Private regular-user profile and adaptive monitoring settings |
 | `/skill-portfolio` | No | Yes | No | No | Regular-user skills only |
 | `/skill-swap` | No | Yes | No | No | Free peer swap workflow only |
-| `/messages` | No | Yes | No | No | Swap/session messaging only |
+| `/messages` | No | Yes | No | No | Swap/session messaging only; regular-user messaging can show adaptive focus and check-in tools |
 | `/saved-opportunities` | No | Yes | No | No | Regular-user saved items only |
-| `/org` | No | No | Yes | No | Structured organization workspace with overview, account setup, finance status, and publishing sections |
+| `/org` | No | No | Yes | No | Structured organization workspace with overview, account setup, finance status, publishing, communities, service-credit issuance, and certificate operations |
 | `/organization-profile` | No | No | Yes | No | Organization profile management |
 | `/course-builder` | No | No | Yes | No | Organization course authoring |
-| `/admin` | No | No | No | Yes | Admin workspace for verification, financial review, user/org/course/job moderation, event oversight, and taxonomy governance |
+| `/admin` | No | No | No | Yes | Admin workspace for verification, financial review, user/org/course/job moderation, trust oversight, event oversight, taxonomy governance, and adaptive-monitoring oversight |
 
 ## Actor Home Rules
 
@@ -54,14 +57,14 @@ Legend:
 
 ## Navigation Rules
 
-- Regular User navigation exposes discovery plus learner/member workflows.
+- Regular User navigation exposes discovery plus learner/member workflows, including community participation and certificate lookup.
 - Organization navigation exposes organization workspace routes only.
-- Admin navigation exposes oversight routes only, with `/admin` tabbed into verification, finance, moderation, event oversight, and taxonomy governance surfaces.
+- Admin navigation exposes oversight routes only, with `/admin` tabbed into verification, finance, moderation, trust oversight, adaptive-monitoring oversight, event oversight, and taxonomy governance surfaces.
 - Public browse routes stay directly reachable because the PRD requires public trust-sensitive listings and public opportunity/course/event discovery.
 
 ## Separation Intent
 
-- Regular Users own skill swaps, messaging, personal profiles, saved items, enrollments, and learner progress.
-- Organizations own organization profile management, verification readiness, and program authoring.
-- Admins own moderation, verification review, taxonomy governance, and platform oversight.
+- Regular Users own skill swaps, messaging, personal profiles, saved items, enrollments, learner progress, community membership, and personal trust records.
+- Organizations own organization profile management, verification readiness, program authoring, communities, service-credit issuance, and certificate issuance.
+- Admins own moderation, verification review, taxonomy governance, trust oversight, and platform oversight.
 - Admin access is not treated as "show every regular-user or organization screen"; admin gets its own workspace.

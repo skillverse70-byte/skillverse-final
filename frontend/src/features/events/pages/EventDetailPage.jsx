@@ -325,6 +325,15 @@ export default function EventDetailPage() {
                 </div>
               )}
             </div>
+            <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-4 text-sm">
+              <div className="font-medium text-foreground">Verified participation path</div>
+              <p className="mt-2 text-muted-foreground">
+                After attendance is recorded, verified organizations can issue service-credit records or participation certificates tied to this event.
+              </p>
+              <Link to="/certificates" className="mt-3 inline-flex text-sm font-medium text-teal-700 hover:text-teal-800">
+                Open certificates
+              </Link>
+            </div>
           </div>
         </div>
       </div>

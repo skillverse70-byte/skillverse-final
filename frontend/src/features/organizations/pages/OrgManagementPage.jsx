@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { TabsContent } from "@/components/ui/tabs";
 import {
@@ -12,19 +12,23 @@ import {
   GraduationCap,
   LayoutDashboard,
   Settings2,
+  ShieldCheck,
   Sparkles,
   Users,
 } from "lucide-react";
+import AILearningGuidancePanel from "@/components/shared/AILearningGuidancePanel";
 import EmptyState from "@/components/shared/EmptyState";
 import NotificationFeedPanel from "@/components/shared/NotificationFeedPanel";
 import PageLoader from "@/components/shared/PageLoader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import WorkspaceShell from "@/components/shared/WorkspaceShell";
 import DashboardStats from "@/features/dashboard/components/DashboardStats";
+import { useAILearningGuidance } from "@/hooks/ai/useAILearningGuidance";
 import FinancialAccountSetupCard from "@/features/organizations/components/FinancialAccountSetupCard";
 import OrganizationApplicantPipelinePanel from "@/features/organizations/components/OrganizationApplicantPipelinePanel";
 import OrganizationEventManagementPanel from "@/features/organizations/components/OrganizationEventManagementPanel";
 import OrganizationEnrollmentPanel from "@/features/organizations/components/OrganizationEnrollmentPanel";
+import OrganizationTrustPanel from "@/features/organizations/components/OrganizationTrustPanel";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -41,12 +45,13 @@ import { saveFinancialAccountSetup } from "@/services/organizations/organization
 import { useOrganizationDashboardData } from "@/hooks/dashboard/useOrganizationDashboardData";
 import { useWorkspaceTab } from "@/hooks/dashboard/useWorkspaceTab";
 
-const validTabs = ["overview", "setup", "courses", "events", "jobs", "learners"];
+const validTabs = ["overview", "setup", "courses", "events", "jobs", "learners", "trust"];
 
 export default function OrgManagementPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { activeTab, setActiveTab } = useWorkspaceTab(validTabs, "overview");
+  const [selectedLearnerId, setSelectedLearnerId] = useState("");
   const {
     organization,
     verification,
@@ -62,6 +67,48 @@ export default function OrgManagementPage() {
     error,
     refresh,
   } = useOrganizationDashboardData();
+  const verificationPending = Boolean(verification?.pending_request);
+  const verified = organization?.verification_status === "verified";
+  const financeReady = financialAccount?.status === "ready";
+  const topPerformers = coursePerformance.slice(0, 3);
+  const activeCourses = courses.filter((course) => course.status === "published");
+  const activeEvents = events.filter((event) => event.status !== "cancelled");
+  const openJobs = opportunities.filter((opportunity) => opportunity.status === "open");
+  const learnerOptions = useMemo(() => {
+    const seen = new Set();
+    return enrollments
+      .filter((enrollment) => enrollment.learner?.id)
+      .map((enrollment) => enrollment.learner)
+      .filter((learner) => {
+        const key = String(learner.id);
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
+  }, [enrollments]);
+  const selectedLearner = useMemo(
+    () =>
+      learnerOptions.find((learner) => String(learner.id) === String(selectedLearnerId)) || null,
+    [learnerOptions, selectedLearnerId],
+  );
+  const {
+    guidanceFeature,
+    assignmentFeature,
+    guidance,
+    loading: guidanceLoading,
+    error: guidanceError,
+  } = useAILearningGuidance({
+    enabled: Boolean(selectedLearnerId),
+    userId: selectedLearnerId || undefined,
+  });
+
+  useEffect(() => {
+    if (!selectedLearnerId && learnerOptions.length > 0) {
+      setSelectedLearnerId(String(learnerOptions[0].id));
+    }
+  }, [learnerOptions, selectedLearnerId]);
 
   if (loading) {
     return <PageLoader />;
@@ -80,14 +127,6 @@ export default function OrgManagementPage() {
       </div>
     );
   }
-
-  const verificationPending = Boolean(verification?.pending_request);
-  const verified = organization.verification_status === "verified";
-  const financeReady = financialAccount?.status === "ready";
-  const topPerformers = coursePerformance.slice(0, 3);
-  const activeCourses = courses.filter((course) => course.status === "published");
-  const activeEvents = events.filter((event) => event.status !== "cancelled");
-  const openJobs = opportunities.filter((opportunity) => opportunity.status === "open");
 
   const handleFinancialSave = async (form) => {
     try {
@@ -264,6 +303,12 @@ export default function OrgManagementPage() {
       icon: GraduationCap,
       description: "Enrollment and progress.",
     },
+    {
+      value: "trust",
+      label: "Trust",
+      icon: ShieldCheck,
+      description: "Communities, credits, and certificates.",
+    },
   ];
 
   const statCards = [
@@ -421,6 +466,12 @@ export default function OrgManagementPage() {
                 value={String(stats.total_event_rsvps ?? 0)}
                 actionLabel="Open events"
                 onAction={() => setActiveTab("events")}
+              />
+              <AttentionRow
+                label="Communities and recognition"
+                value="Manage service records and certificates"
+                actionLabel="Open trust"
+                onAction={() => setActiveTab("trust")}
               />
             </div>
           </section>
@@ -664,6 +715,59 @@ export default function OrgManagementPage() {
           courses={courses}
           enrollments={enrollments}
           onOpenCourses={() => setActiveTab("courses")}
+        />
+        <AILearningGuidancePanel
+          title="Learner guidance preview"
+          description="Inspect one learner's gaps, next actions, and assignment prep without leaving the organization workspace."
+          guidance={guidance}
+          guidanceFeature={guidanceFeature}
+          assignmentFeature={assignmentFeature}
+          loading={guidanceLoading}
+          error={guidanceError}
+          emptyTitle="No learner guidance preview available"
+          emptyDescription="Choose a learner with course activity to inspect how guidance is shaping their next steps."
+          action={
+            learnerOptions.length > 0 ? (
+              <div className="grid gap-3 md:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
+                <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Inspect learner
+                  <select
+                    value={selectedLearnerId}
+                    onChange={(event) => setSelectedLearnerId(event.target.value)}
+                    className="rounded-xl border border-border bg-background px-3 py-2 text-sm font-normal text-foreground"
+                  >
+                    {learnerOptions.map((learner) => (
+                      <option key={learner.id} value={String(learner.id)}>
+                        {learner.full_name || learner.email}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="rounded-2xl border border-border/60 bg-secondary/10 px-4 py-3 text-sm text-muted-foreground">
+                  {selectedLearner ? (
+                    <>
+                      Previewing guidance for{" "}
+                      <span className="font-medium text-foreground">
+                        {selectedLearner.full_name || selectedLearner.email}
+                      </span>
+                      . This keeps learner progress coaching visible to the organization team without exposing unrelated admin-only controls.
+                    </>
+                  ) : (
+                    "Choose a learner to inspect their guidance state."
+                  )}
+                </div>
+              </div>
+            ) : null
+          }
+          compact
+        />
+      </TabsContent>
+
+      <TabsContent value="trust" className="mt-0 space-y-6">
+        <OrganizationTrustPanel
+          organization={organization}
+          courses={courses}
+          events={events}
         />
       </TabsContent>
     </WorkspaceShell>

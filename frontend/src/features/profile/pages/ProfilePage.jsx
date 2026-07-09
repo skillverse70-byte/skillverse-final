@@ -1,14 +1,24 @@
 import React from "react";
-import { Edit2, User } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { BrainCircuit, Edit2, User } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import AIAdaptiveMonitoringPanel from "@/components/shared/AIAdaptiveMonitoringPanel";
+import AICognitiveMonitoringConsentPanel from "@/components/shared/AICognitiveMonitoringConsentPanel";
 import PageHeader from "@/components/shared/PageHeader";
 import PageLoader from "@/components/shared/PageLoader";
 import ProfileDetails from "@/features/profile/components/ProfileDetails";
 import ProfileForm from "@/features/profile/components/ProfileForm";
+import { useAIAdaptiveMonitoring } from "@/hooks/ai/useAIAdaptiveMonitoring";
+import { useAICognitiveMonitoringConsent } from "@/hooks/ai/useAICognitiveMonitoringConsent";
 import { useProfile } from "@/hooks/profile/useProfile";
 
 export default function ProfilePage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeTab = new URLSearchParams(location.search).get("tab") === "adaptive"
+    ? "adaptive"
+    : "profile";
   const {
     profile,
     editing,
@@ -27,6 +37,30 @@ export default function ProfilePage() {
     deleteFieldInterest,
   } = useProfile();
   const { toast } = useToast();
+  const {
+    feature: monitoringFeature,
+    consent: monitoringConsent,
+    loading: monitoringLoading,
+    saving: monitoringSaving,
+    error: monitoringError,
+    saveConsent,
+    revokeConsent,
+  } = useAICognitiveMonitoringConsent();
+  const {
+    adaptiveState,
+    loading: adaptiveLoading,
+    submitting: adaptiveSubmitting,
+    error: adaptiveError,
+    submitCheckIn,
+  } = useAIAdaptiveMonitoring({
+    surface: "/profile",
+  });
+
+  const setActiveTab = (tab) => {
+    navigate(tab === "adaptive" ? "/profile?tab=adaptive" : "/profile", {
+      replace: true,
+    });
+  };
 
   const handleSave = async () => {
     try {
@@ -69,12 +103,65 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <PageHeader
         title="My Profile"
         description="Your regular-user profile stays private while powering matching, recommendations, and future opportunity relevance."
       />
 
+      <div className="mb-5 inline-flex rounded-lg border border-border/60 bg-white p-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab("profile")}
+          className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium ${
+            activeTab === "profile"
+              ? "bg-teal-600 text-white"
+              : "text-muted-foreground hover:bg-secondary/30"
+          }`}
+        >
+          <User className="h-4 w-4" />
+          Profile
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("adaptive")}
+          className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium ${
+            activeTab === "adaptive"
+              ? "bg-teal-600 text-white"
+              : "text-muted-foreground hover:bg-secondary/30"
+          }`}
+        >
+          <BrainCircuit className="h-4 w-4" />
+          Adaptive
+        </button>
+      </div>
+
+      {activeTab === "adaptive" ? (
+        <div className="space-y-5">
+          <AIAdaptiveMonitoringPanel
+            title="Adaptive focus and mood mirror"
+            description="Review your current focus drift, submit check-ins, and see response suggestions from approved signals."
+            adaptiveState={adaptiveState}
+            loading={adaptiveLoading}
+            submitting={adaptiveSubmitting}
+            error={adaptiveError}
+            onSubmitCheckIn={submitCheckIn}
+            manageHref="/profile?tab=adaptive"
+          />
+          <AICognitiveMonitoringConsentPanel
+            title="Adaptive monitoring settings"
+            description="Choose the non-camera signals SkillVerse may use for focus drift, mood mirror, and adaptive response suggestions."
+            feature={monitoringFeature}
+            consentView={monitoringConsent}
+            loading={monitoringLoading}
+            saving={monitoringSaving}
+            error={monitoringError}
+            sourceSurface="/profile"
+            onSave={saveConsent}
+            onRevoke={revokeConsent}
+          />
+        </div>
+      ) : (
       <div className="rounded-2xl border border-border/50 bg-white p-6 sm:p-8">
         <div className="mb-6 flex items-center gap-4 border-b border-border/50 pb-6">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-50">
@@ -127,6 +214,7 @@ export default function ProfilePage() {
           />
         )}
       </div>
+      )}
     </div>
   );
 }

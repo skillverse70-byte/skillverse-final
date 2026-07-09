@@ -63,6 +63,7 @@ function normalizeAdminDashboard(payload = {}) {
   return {
     summary: payload.summary || {},
     oversight: payload.oversight || {},
+    adaptiveMonitoring: payload.adaptive_monitoring || {},
     organizationVerificationRequests: Array.isArray(payload.organization_verification_requests)
       ? payload.organization_verification_requests
       : [],

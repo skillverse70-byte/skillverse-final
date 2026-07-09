@@ -137,6 +137,32 @@ class RSVPStatus(models.TextChoices):
     CANCELLED = "cancelled", "Cancelled"
 
 
+class CommunityVisibility(models.TextChoices):
+    PUBLIC = "public", "Public"
+    MEMBERS_ONLY = "members_only", "Members Only"
+
+
+class CommunityMembershipRole(models.TextChoices):
+    MEMBER = "member", "Member"
+    MODERATOR = "moderator", "Moderator"
+
+
+class ServiceCreditStatus(models.TextChoices):
+    ISSUED = "issued", "Issued"
+    REVOKED = "revoked", "Revoked"
+
+
+class CertificateSourceType(models.TextChoices):
+    COURSE_COMPLETION = "course_completion", "Course Completion"
+    EVENT_PARTICIPATION = "event_participation", "Event Participation"
+    SERVICE_CREDIT = "service_credit", "Service Credit"
+
+
+class CertificateStatus(models.TextChoices):
+    ACTIVE = "active", "Active"
+    REVOKED = "revoked", "Revoked"
+
+
 class ReviewContext(models.TextChoices):
     SKILL_SWAP = "skill_swap", "Skill Swap"
     COURSE = "course", "Course"
@@ -153,6 +179,8 @@ class NotificationType(models.TextChoices):
     ENROLLMENT = "enrollment", "Enrollment"
     EVENT = "event", "Event"
     OPPORTUNITY = "opportunity", "Opportunity"
+    COMMUNITY = "community", "Community"
+    CERTIFICATE = "certificate", "Certificate"
     ADMIN = "admin", "Admin"
 
 
@@ -168,3 +196,47 @@ class TaxonomySuggestionStatus(models.TextChoices):
     PENDING = "pending", "Pending"
     APPROVED = "approved", "Approved"
     REJECTED = "rejected", "Rejected"
+
+
+class AIFeatureKey(models.TextChoices):
+    RECOMMENDATIONS = "recommendations", "Recommendations"
+    LEARNING_GUIDANCE = "learning_guidance", "Learning Guidance"
+    ASSIGNMENT_FEEDBACK = "assignment_feedback", "Assignment Feedback"
+    COGNITIVE_MONITORING = "cognitive_monitoring", "Cognitive Monitoring"
+
+
+class AIRolloutState(models.TextChoices):
+    DISABLED = "disabled", "Disabled"
+    FALLBACK_ONLY = "fallback_only", "Fallback Only"
+    READY = "ready", "Ready"
+
+
+class CognitiveMonitoringConsentStatus(models.TextChoices):
+    ACTIVE = "active", "Active"
+    REVOKED = "revoked", "Revoked"
+
+
+class CognitiveMonitoringSignalKey(models.TextChoices):
+    LESSON_PROGRESS = "lesson_progress", "Lesson Progress"
+    ENROLLMENT_ACTIVITY = "enrollment_activity", "Enrollment Activity"
+    ASSIGNMENT_ACTIVITY = "assignment_activity", "Assignment Activity"
+    SESSION_ENGAGEMENT = "session_engagement", "Session Engagement"
+    MESSAGE_RESPONSIVENESS = "message_responsiveness", "Message Responsiveness"
+    SELF_REPORTED_MOOD = "self_reported_mood", "Self Reported Mood"
+    REFLECTION_CHECKINS = "reflection_checkins", "Reflection Check-ins"
+
+
+class AdaptiveCheckInMood(models.TextChoices):
+    ENERGIZED = "energized", "Energized"
+    STEADY = "steady", "Steady"
+    TIRED = "tired", "Tired"
+    DISTRACTED = "distracted", "Distracted"
+    STUCK = "stuck", "Stuck"
+    OVERWHELMED = "overwhelmed", "Overwhelmed"
+
+
+class AdaptiveFocusDriftLevel(models.TextChoices):
+    LOW = "low", "Low"
+    MEDIUM = "medium", "Medium"
+    HIGH = "high", "High"
+    INACTIVE = "inactive", "Inactive"

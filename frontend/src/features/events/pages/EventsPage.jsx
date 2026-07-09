@@ -1,18 +1,37 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Calendar, Globe, Search, SlidersHorizontal } from "lucide-react";
+import AIRecommendationDeck from "@/components/shared/AIRecommendationDeck";
 import EmptyState from "@/components/shared/EmptyState";
 import PageLoader from "@/components/shared/PageLoader";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAIRecommendationFeed } from "@/hooks/ai/useAIRecommendationFeed";
 import EventCard from "@/features/events/components/EventCard";
+import {
+  buildCourseRecommendationItems,
+  buildEventRecommendationItems,
+} from "@/lib/ai-recommendation-items";
+import { roles } from "@/lib/domain-enums";
 import { fetchEvents } from "@/services/events/events.service";
 
 export default function EventsPage() {
+  const { isAuthenticated, actorRole, navigateToLogin } = useAuth();
   const [events, setEvents] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const shouldShowPersonalizedFeed = isAuthenticated && actorRole === roles.regularUser;
+  const {
+    feature: recommendationFeature,
+    feed: recommendationFeed,
+    loading: recommendationsLoading,
+    error: recommendationsError,
+  } = useAIRecommendationFeed({
+    enabled: shouldShowPersonalizedFeed,
+    limitPerType: 2,
+  });
 
   useEffect(() => {
     let active = true;
@@ -59,6 +78,25 @@ export default function EventsPage() {
       }),
     [events, search, statusFilter, modeFilter],
   );
+  const recommendationSections = useMemo(
+    () => [
+      {
+        key: "events",
+        title: "Recommended events",
+        icon: Calendar,
+        description: "Events aligned with your field, course, and activity signals.",
+        items: buildEventRecommendationItems(recommendationFeed.event_recommendations),
+      },
+      {
+        key: "courses",
+        title: "Courses tied to those events",
+        icon: Globe,
+        description: "Structured follow-up learning connected to what you may attend.",
+        items: buildCourseRecommendationItems(recommendationFeed.course_recommendations),
+      },
+    ],
+    [recommendationFeed],
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -91,6 +129,43 @@ export default function EventsPage() {
           </div>
         </div>
       </div>
+
+      {shouldShowPersonalizedFeed ? (
+        <div className="mb-8">
+          <AIRecommendationDeck
+            title="Events picked for your learning path"
+            description="Your event feed now connects with profile interests, course activity, and other discovery signals across the platform."
+            feature={recommendationFeature}
+            feed={recommendationFeed}
+            sections={recommendationSections}
+            loading={recommendationsLoading}
+            error={recommendationsError}
+            emptyTitle="No personalized event suggestions yet"
+            emptyDescription="Attend events, enroll in courses, and expand your profile signals so the platform can connect more relevant sessions for you."
+            compact
+          />
+        </div>
+      ) : !isAuthenticated ? (
+        <div className="mb-8 rounded-3xl border border-border/60 bg-white p-5 shadow-sm shadow-black/5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-2xl">
+              <h2 className="font-heading text-lg font-semibold text-foreground">
+                Personalized event discovery
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Log in as a regular user to see events connected to your profile, learning path, and opportunity signals.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
+              onClick={navigateToLogin}
+            >
+              Log in to personalize
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mb-8 grid gap-3 rounded-3xl border border-border/60 bg-white p-4 shadow-sm shadow-black/5 md:grid-cols-[minmax(0,1fr)_180px_180px]">
         <div className="relative">

@@ -4,6 +4,22 @@ info:
   version: 0.1.0
   description: Backend API for the SkillVerse platform.
 paths:
+  /api/admin/ai/cognitive-monitoring/overview/:
+    get:
+      operationId: admin_ai_cognitive_monitoring_overview
+      tags:
+      - ai
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AICognitiveMonitoringAdminOverview'
+          description: ''
   /api/admin/ai/provider-health/:
     get:
       operationId: admin_ai_provider_health
@@ -553,6 +569,88 @@ paths:
               schema:
                 $ref: '#/components/schemas/TaxonomySuggestion'
           description: ''
+  /api/admin/trust/certificates/{id}/revoke/:
+    post:
+      operationId: admin_revoke_certificate
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - certificates
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrustRevokeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrustRevokeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrustRevokeRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Certificate'
+          description: ''
+  /api/admin/trust/overview/:
+    get:
+      operationId: admin_trust_overview
+      tags:
+      - certificates
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTrustOverview'
+          description: ''
+  /api/admin/trust/service-credits/{id}/revoke/:
+    post:
+      operationId: admin_revoke_service_credit
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - certificates
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrustRevokeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrustRevokeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrustRevokeRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCreditRecord'
+          description: ''
   /api/admin/users/:
     get:
       operationId: admin_users_list
@@ -604,6 +702,204 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminUserModeration'
+          description: ''
+  /api/ai/capabilities/:
+    get:
+      operationId: ai_capability_snapshot
+      tags:
+      - ai
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AICapabilitySnapshot'
+          description: ''
+  /api/ai/cognitive-monitoring/adaptive-state/:
+    get:
+      operationId: ai_adaptive_monitoring_state
+      parameters:
+      - in: query
+        name: course_id
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: surface
+        schema:
+          type: string
+          maxLength: 64
+      - in: query
+        name: user_id
+        schema:
+          type: integer
+          minimum: 1
+      tags:
+      - ai
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIAdaptiveMonitoringState'
+          description: ''
+  /api/ai/cognitive-monitoring/check-in/:
+    post:
+      operationId: ai_adaptive_monitoring_check_in
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIAdaptiveMonitoringCheckInRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIAdaptiveMonitoringCheckInRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIAdaptiveMonitoringCheckInRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIAdaptiveMonitoringState'
+          description: ''
+  /api/ai/cognitive-monitoring/consent/:
+    get:
+      operationId: ai_cognitive_monitoring_consent_detail
+      tags:
+      - ai
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AICognitiveMonitoringConsentView'
+          description: ''
+    post:
+      operationId: ai_cognitive_monitoring_consent_update
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AICognitiveMonitoringConsentUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AICognitiveMonitoringConsentUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AICognitiveMonitoringConsentUpdateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AICognitiveMonitoringConsentView'
+          description: ''
+  /api/ai/cognitive-monitoring/consent/revoke/:
+    post:
+      operationId: ai_cognitive_monitoring_consent_revoke
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AICognitiveMonitoringConsentRevokeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AICognitiveMonitoringConsentRevokeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AICognitiveMonitoringConsentRevokeRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AICognitiveMonitoringConsentView'
+          description: ''
+  /api/ai/learning-guidance/:
+    get:
+      operationId: ai_learning_guidance
+      parameters:
+      - in: query
+        name: course_id
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: lesson_id
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: user_id
+        schema:
+          type: integer
+          minimum: 1
+      tags:
+      - ai
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AILearningGuidance'
+          description: ''
+  /api/ai/recommendations/:
+    get:
+      operationId: ai_recommendation_feed
+      parameters:
+      - in: query
+        name: limit_per_type
+        schema:
+          type: integer
+          maximum: 10
+          minimum: 1
+          default: 5
+      - in: query
+        name: user_id
+        schema:
+          type: integer
+          minimum: 1
+      tags:
+      - ai
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIRecommendationFeed'
           description: ''
   /api/auth/jwt/refresh/:
     post:
@@ -890,6 +1186,215 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VerifyEmailResponse'
+          description: ''
+  /api/certificates/{certificate_id}/:
+    get:
+      operationId: certificate_lookup_detail
+      parameters:
+      - in: path
+        name: certificate_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - certificates
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Certificate'
+          description: ''
+  /api/certificates/portfolio/:
+    get:
+      operationId: certificate_portfolio
+      tags:
+      - certificates
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificatePortfolio'
+          description: ''
+  /api/communities/:
+    get:
+      operationId: community_group_list
+      parameters:
+      - in: query
+        name: scope
+        schema:
+          enum:
+          - public
+          - mine
+          - managed
+          - admin
+          type: string
+          default: public
+          minLength: 1
+        description: |-
+          * `public` - public
+          * `mine` - mine
+          * `managed` - managed
+          * `admin` - admin
+      tags:
+      - communities
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommunityGroupSummary'
+          description: ''
+    post:
+      operationId: community_group_create
+      tags:
+      - communities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommunityGroupWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommunityGroupWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommunityGroupWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityGroupSummary'
+          description: ''
+  /api/communities/{id}/:
+    get:
+      operationId: community_group_detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - communities
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityGroupDetail'
+          description: ''
+  /api/communities/{id}/membership/:
+    post:
+      operationId: community_group_membership_action
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - communities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommunityMembershipActionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommunityMembershipActionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommunityMembershipActionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityGroupSummary'
+          description: ''
+  /api/communities/{id}/posts/:
+    get:
+      operationId: community_group_posts_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - communities
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommunityPost'
+          description: ''
+    post:
+      operationId: community_group_posts_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - communities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommunityPostWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommunityPostWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommunityPostWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityPost'
           description: ''
   /api/courses/:
     get:
@@ -2185,6 +2690,144 @@ paths:
               schema:
                 $ref: '#/components/schemas/OrganizationProfile'
           description: ''
+  /api/organizations/trust/certificates/:
+    post:
+      operationId: organization_issue_certificate
+      tags:
+      - certificates
+      - organizations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CertificateIssueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CertificateIssueRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CertificateIssueRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Certificate'
+          description: ''
+  /api/organizations/trust/certificates/{id}/revoke/:
+    post:
+      operationId: organization_revoke_certificate
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - certificates
+      - organizations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrustRevokeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrustRevokeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrustRevokeRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Certificate'
+          description: ''
+  /api/organizations/trust/overview/:
+    get:
+      operationId: organization_trust_overview
+      tags:
+      - certificates
+      - organizations
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationTrustOverview'
+          description: ''
+  /api/organizations/trust/service-credits/:
+    post:
+      operationId: organization_issue_service_credit
+      tags:
+      - certificates
+      - organizations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceCreditIssueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ServiceCreditIssueRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ServiceCreditIssueRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCreditRecord'
+          description: ''
+  /api/organizations/trust/service-credits/{id}/revoke/:
+    post:
+      operationId: organization_revoke_service_credit
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - certificates
+      - organizations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrustRevokeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TrustRevokeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TrustRevokeRequest'
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCreditRecord'
+          description: ''
   /api/organizations/verification/me/:
     get:
       operationId: organizations_verification_me_retrieve
@@ -3092,6 +3735,797 @@ paths:
           description: ''
 components:
   schemas:
+    AIAdaptiveFocusDrift:
+      type: object
+      properties:
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        score:
+          type: integer
+        rationale:
+          type: string
+        source_signal_keys:
+          type: array
+          items:
+            type: string
+      required:
+      - level
+      - rationale
+      - score
+      - source_signal_keys
+    AIAdaptiveMonitoringCheckInRequest:
+      type: object
+      properties:
+        course_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        surface:
+          type: string
+          maxLength: 64
+        mood_label:
+          allOf:
+          - $ref: '#/components/schemas/MoodLabelEnum'
+          default: steady
+        focus_level:
+          type: integer
+          maximum: 5
+          minimum: 1
+          nullable: true
+        energy_level:
+          type: integer
+          maximum: 5
+          minimum: 1
+          nullable: true
+        stress_level:
+          type: integer
+          maximum: 5
+          minimum: 1
+          nullable: true
+        reflection_note:
+          type: string
+          maxLength: 1000
+    AIAdaptiveMonitoringSignalSummary:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        value: {}
+        explanation:
+          type: string
+        confidence:
+          type: string
+      required:
+      - confidence
+      - explanation
+      - key
+      - label
+      - value
+    AIAdaptiveMonitoringState:
+      type: object
+      properties:
+        actor_role:
+          $ref: '#/components/schemas/RoleEnum'
+        target_user:
+          $ref: '#/components/schemas/AIAdaptiveMonitoringTargetUser'
+        policy:
+          $ref: '#/components/schemas/AICognitiveMonitoringPolicy'
+        monitoring_active:
+          type: boolean
+        fallback_active:
+          type: boolean
+        used_ai:
+          type: boolean
+        surface:
+          type: string
+        active_signal_keys:
+          type: array
+          items:
+            type: string
+        signals:
+          type: array
+          items:
+            $ref: '#/components/schemas/AIAdaptiveMonitoringSignalSummary'
+        focus_drift:
+          $ref: '#/components/schemas/AIAdaptiveFocusDrift'
+        mood_mirror:
+          $ref: '#/components/schemas/AIAdaptiveMoodMirror'
+        adaptive_responses:
+          type: array
+          items:
+            $ref: '#/components/schemas/AIAdaptiveResponse'
+        generated_at:
+          type: string
+          format: date-time
+      required:
+      - active_signal_keys
+      - actor_role
+      - adaptive_responses
+      - fallback_active
+      - focus_drift
+      - generated_at
+      - monitoring_active
+      - mood_mirror
+      - policy
+      - signals
+      - surface
+      - target_user
+      - used_ai
+    AIAdaptiveMonitoringTargetUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - full_name
+      - id
+      - role
+    AIAdaptiveMoodMirror:
+      type: object
+      properties:
+        state:
+          type: string
+        label:
+          type: string
+        confidence:
+          type: string
+        rationale:
+          type: string
+        self_report:
+          allOf:
+          - $ref: '#/components/schemas/AIAdaptiveMoodMirrorSelfReport'
+          nullable: true
+        source_signal_keys:
+          type: array
+          items:
+            type: string
+      required:
+      - confidence
+      - label
+      - rationale
+      - self_report
+      - source_signal_keys
+      - state
+    AIAdaptiveMoodMirrorSelfReport:
+      type: object
+      properties:
+        id:
+          type: integer
+        mood_label:
+          $ref: '#/components/schemas/MoodLabelEnum'
+        focus_level:
+          type: integer
+          nullable: true
+        energy_level:
+          type: integer
+          nullable: true
+        stress_level:
+          type: integer
+          nullable: true
+        reflection_note:
+          type: string
+        surface:
+          type: string
+        course_id:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - course_id
+      - created_at
+      - energy_level
+      - focus_level
+      - id
+      - mood_label
+      - reflection_note
+      - stress_level
+      - surface
+    AIAdaptiveResponse:
+      type: object
+      properties:
+        key:
+          type: string
+        priority:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        action_type:
+          type: string
+        route:
+          type: string
+        source_signal_keys:
+          type: array
+          items:
+            type: string
+      required:
+      - action_type
+      - detail
+      - key
+      - priority
+      - route
+      - source_signal_keys
+      - title
+    AIAssignmentFeedback:
+      type: object
+      properties:
+        lesson_id:
+          type: integer
+        lesson_title:
+          type: string
+        item_type:
+          $ref: '#/components/schemas/LessonItemTypeEnum'
+        readiness:
+          type: string
+        feedback:
+          type: string
+        checklist:
+          type: array
+          items:
+            type: string
+        source_signals: {}
+        used_ai:
+          type: boolean
+      required:
+      - checklist
+      - feedback
+      - item_type
+      - lesson_id
+      - lesson_title
+      - readiness
+      - source_signals
+      - used_ai
+    AICapabilitySnapshot:
+      type: object
+      properties:
+        provider:
+          type: string
+        actor_role:
+          type: string
+        global_enabled:
+          type: boolean
+        provider_configured:
+          type: boolean
+        fallback_contract: {}
+        integration_rules: {}
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/AIFeatureCapability'
+      required:
+      - actor_role
+      - fallback_contract
+      - features
+      - global_enabled
+      - integration_rules
+      - provider
+      - provider_configured
+    AICognitiveMonitoringAdminOverview:
+      type: object
+      properties:
+        policy:
+          $ref: '#/components/schemas/AICognitiveMonitoringPolicy'
+        summary:
+          $ref: '#/components/schemas/AICognitiveMonitoringAdminSummary'
+        signal_counts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AICognitiveMonitoringAdminSignalCount'
+        recent_records:
+          type: array
+          items:
+            $ref: '#/components/schemas/AICognitiveMonitoringAdminRecord'
+      required:
+      - policy
+      - recent_records
+      - signal_counts
+      - summary
+    AICognitiveMonitoringAdminRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          $ref: '#/components/schemas/CertificateStatusEnum'
+        policy_version:
+          type: string
+        allowed_signals:
+          type: array
+          items:
+            type: string
+        surfaces:
+          type: array
+          items:
+            type: string
+        source_surface:
+          type: string
+        disclosure_acknowledged:
+          type: boolean
+        granted_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_reason:
+          type: string
+        metadata: {}
+        user: {}
+      required:
+      - allowed_signals
+      - disclosure_acknowledged
+      - granted_at
+      - id
+      - metadata
+      - policy_version
+      - revoked_at
+      - revoked_reason
+      - source_surface
+      - status
+      - surfaces
+      - user
+    AICognitiveMonitoringAdminSignalCount:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        count:
+          type: integer
+      required:
+      - count
+      - key
+      - label
+    AICognitiveMonitoringAdminSummary:
+      type: object
+      properties:
+        active_consents:
+          type: integer
+        revoked_consents:
+          type: integer
+        distinct_consented_users:
+          type: integer
+        currently_monitored_users:
+          type: integer
+      required:
+      - active_consents
+      - currently_monitored_users
+      - distinct_consented_users
+      - revoked_consents
+    AICognitiveMonitoringConsentRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          $ref: '#/components/schemas/CertificateStatusEnum'
+        policy_version:
+          type: string
+        allowed_signals:
+          type: array
+          items:
+            type: string
+        surfaces:
+          type: array
+          items:
+            type: string
+        source_surface:
+          type: string
+        disclosure_acknowledged:
+          type: boolean
+        granted_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_reason:
+          type: string
+        metadata: {}
+      required:
+      - allowed_signals
+      - disclosure_acknowledged
+      - granted_at
+      - id
+      - metadata
+      - policy_version
+      - revoked_at
+      - revoked_reason
+      - source_surface
+      - status
+      - surfaces
+    AICognitiveMonitoringConsentRevokeRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 255
+    AICognitiveMonitoringConsentUpdateRequest:
+      type: object
+      properties:
+        allowed_signals:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          maxItems: 7
+        acknowledged_disclosure:
+          type: boolean
+        source_surface:
+          type: string
+          maxLength: 64
+      required:
+      - acknowledged_disclosure
+      - allowed_signals
+    AICognitiveMonitoringConsentView:
+      type: object
+      properties:
+        feature_key:
+          $ref: '#/components/schemas/FeatureKeyEnum'
+        actor_role:
+          $ref: '#/components/schemas/RoleEnum'
+        policy:
+          $ref: '#/components/schemas/AICognitiveMonitoringPolicy'
+        is_consented:
+          type: boolean
+        monitoring_active:
+          type: boolean
+        active_consent:
+          allOf:
+          - $ref: '#/components/schemas/AICognitiveMonitoringConsentRecord'
+          nullable: true
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/AICognitiveMonitoringConsentRecord'
+      required:
+      - active_consent
+      - actor_role
+      - feature_key
+      - history
+      - is_consented
+      - monitoring_active
+      - policy
+    AICognitiveMonitoringPolicy:
+      type: object
+      properties:
+        feature_key:
+          $ref: '#/components/schemas/FeatureKeyEnum'
+        policy_version:
+          type: string
+        rollout_state:
+          $ref: '#/components/schemas/AssignmentFeedbackRolloutStateEnum'
+        consent_required:
+          type: boolean
+        default_active:
+          type: boolean
+        camera_required:
+          type: boolean
+        camera_signals_enabled:
+          type: boolean
+        biometric_inference_allowed:
+          type: boolean
+        retention_days:
+          type: integer
+        surfaces:
+          type: array
+          items:
+            type: string
+        admin_surfaces:
+          type: array
+          items:
+            type: string
+        allowed_signals:
+          type: array
+          items:
+            $ref: '#/components/schemas/AICognitiveMonitoringSignal'
+        default_signal_keys:
+          type: array
+          items:
+            type: string
+        blocked_signal_keys:
+          type: array
+          items:
+            type: string
+        storage_policy:
+          type: string
+      required:
+      - admin_surfaces
+      - allowed_signals
+      - biometric_inference_allowed
+      - blocked_signal_keys
+      - camera_required
+      - camera_signals_enabled
+      - consent_required
+      - default_active
+      - default_signal_keys
+      - feature_key
+      - policy_version
+      - retention_days
+      - rollout_state
+      - storage_policy
+      - surfaces
+    AICognitiveMonitoringSignal:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        sensitivity:
+          type: string
+      required:
+      - category
+      - description
+      - key
+      - label
+      - sensitivity
+    AICourseRecommendationItem:
+      type: object
+      properties:
+        used_ai:
+          type: boolean
+        score:
+          type: integer
+        rationale:
+          type: string
+        source_signals: {}
+        course:
+          $ref: '#/components/schemas/CourseProgramSummary'
+      required:
+      - course
+      - rationale
+      - score
+      - source_signals
+      - used_ai
+    AIEventRecommendationItem:
+      type: object
+      properties:
+        used_ai:
+          type: boolean
+        score:
+          type: integer
+        rationale:
+          type: string
+        source_signals: {}
+        event:
+          $ref: '#/components/schemas/EventSummary'
+      required:
+      - event
+      - rationale
+      - score
+      - source_signals
+      - used_ai
+    AIFeatureCapability:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        rollout_state:
+          type: string
+        enabled:
+          type: boolean
+        available:
+          type: boolean
+        actor_enabled:
+          type: boolean
+        actor_roles:
+          type: array
+          items:
+            type: string
+        surfaces:
+          type: array
+          items:
+            type: string
+        fallback_behavior:
+          type: string
+        explainability_required:
+          type: boolean
+      required:
+      - actor_enabled
+      - actor_roles
+      - available
+      - enabled
+      - explainability_required
+      - fallback_behavior
+      - key
+      - label
+      - rollout_state
+      - surfaces
+    AILearningGuidance:
+      type: object
+      properties:
+        provider:
+          type: string
+        actor_role:
+          $ref: '#/components/schemas/RoleEnum'
+        target_user:
+          $ref: '#/components/schemas/AIRecommendationTargetUser'
+        guidance_feature_enabled:
+          type: boolean
+        assignment_feedback_enabled:
+          type: boolean
+        guidance_rollout_state:
+          $ref: '#/components/schemas/AssignmentFeedbackRolloutStateEnum'
+        assignment_feedback_rollout_state:
+          $ref: '#/components/schemas/AssignmentFeedbackRolloutStateEnum'
+        used_ai:
+          type: boolean
+        fallback_active:
+          type: boolean
+        course_context:
+          allOf:
+          - $ref: '#/components/schemas/CourseProgramSummary'
+          nullable: true
+        enrollment:
+          allOf:
+          - $ref: '#/components/schemas/AILearningGuidanceEnrollment'
+          nullable: true
+        lesson_focus:
+          allOf:
+          - $ref: '#/components/schemas/AILearningGuidanceLesson'
+          nullable: true
+        signals:
+          $ref: '#/components/schemas/RecommendationSignals'
+        guidance_summary:
+          type: string
+        skill_gaps:
+          type: array
+          items:
+            $ref: '#/components/schemas/AISkillGap'
+        next_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AILearningNextAction'
+        assignment_feedback:
+          type: array
+          items:
+            $ref: '#/components/schemas/AIAssignmentFeedback'
+      required:
+      - actor_role
+      - assignment_feedback
+      - assignment_feedback_enabled
+      - assignment_feedback_rollout_state
+      - course_context
+      - enrollment
+      - fallback_active
+      - guidance_feature_enabled
+      - guidance_rollout_state
+      - guidance_summary
+      - lesson_focus
+      - next_actions
+      - provider
+      - signals
+      - skill_gaps
+      - target_user
+      - used_ai
+    AILearningGuidanceEnrollment:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        progress_percent:
+          type: integer
+        completed_lessons:
+          type: integer
+        total_lessons:
+          type: integer
+        next_lesson_id:
+          type: integer
+          nullable: true
+      required:
+      - completed_lessons
+      - id
+      - next_lesson_id
+      - progress_percent
+      - status
+      - total_lessons
+    AILearningGuidanceLesson:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        item_type:
+          $ref: '#/components/schemas/LessonItemTypeEnum'
+        module_title:
+          type: string
+        description:
+          type: string
+        duration_minutes:
+          type: integer
+          nullable: true
+        is_completed:
+          type: boolean
+      required:
+      - description
+      - duration_minutes
+      - id
+      - is_completed
+      - item_type
+      - module_title
+      - title
+    AILearningNextAction:
+      type: object
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        route:
+          type: string
+        action_type:
+          type: string
+        source_signals: {}
+        used_ai:
+          type: boolean
+      required:
+      - action_type
+      - detail
+      - key
+      - route
+      - source_signals
+      - title
+      - used_ai
+    AIOpportunityRecommendationItem:
+      type: object
+      properties:
+        used_ai:
+          type: boolean
+        score:
+          type: integer
+        rationale:
+          type: string
+        source_signals: {}
+        opportunity:
+          $ref: '#/components/schemas/OpportunitySummary'
+      required:
+      - opportunity
+      - rationale
+      - score
+      - source_signals
+      - used_ai
+    AIPeerRecommendationItem:
+      type: object
+      properties:
+        used_ai:
+          type: boolean
+        score:
+          type: integer
+        rationale:
+          type: string
+        source_signals: {}
+        match:
+          $ref: '#/components/schemas/MatchSuggestion'
+      required:
+      - match
+      - rationale
+      - score
+      - source_signals
+      - used_ai
     AIProviderHealthResponse:
       type: object
       properties:
@@ -3127,6 +4561,131 @@ components:
       - provider
       - timeout_seconds
       - using_legacy_env_key
+    AIRecommendationFeed:
+      type: object
+      properties:
+        provider:
+          type: string
+        actor_role:
+          $ref: '#/components/schemas/RoleEnum'
+        target_user:
+          $ref: '#/components/schemas/AIRecommendationTargetUser'
+        feature_enabled:
+          type: boolean
+        rollout_state:
+          $ref: '#/components/schemas/AssignmentFeedbackRolloutStateEnum'
+        used_ai:
+          type: boolean
+        fallback_active:
+          type: boolean
+        signals:
+          $ref: '#/components/schemas/RecommendationSignals'
+        peer_matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/AIPeerRecommendationItem'
+        skill_recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AISkillRecommendationItem'
+        course_recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AICourseRecommendationItem'
+        event_recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AIEventRecommendationItem'
+        opportunity_recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AIOpportunityRecommendationItem'
+      required:
+      - actor_role
+      - course_recommendations
+      - event_recommendations
+      - fallback_active
+      - feature_enabled
+      - opportunity_recommendations
+      - peer_matches
+      - provider
+      - rollout_state
+      - signals
+      - skill_recommendations
+      - target_user
+      - used_ai
+    AIRecommendationTargetUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - full_name
+      - id
+      - role
+    AISkillGap:
+      type: object
+      properties:
+        skill:
+          type: string
+        priority:
+          type: string
+        rationale:
+          type: string
+        suggested_actions:
+          type: array
+          items:
+            type: string
+        source_signals: {}
+        used_ai:
+          type: boolean
+      required:
+      - priority
+      - rationale
+      - skill
+      - source_signals
+      - suggested_actions
+      - used_ai
+    AISkillRecommendationItem:
+      type: object
+      properties:
+        used_ai:
+          type: boolean
+        score:
+          type: integer
+        rationale:
+          type: string
+        source_signals: {}
+        skill:
+          $ref: '#/components/schemas/AISkillReference'
+      required:
+      - rationale
+      - score
+      - skill
+      - source_signals
+      - used_ai
+    AISkillReference:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+      required:
+      - name
+      - slug
+    ActionEnum:
+      enum:
+      - join
+      - leave
+      type: string
+      description: |-
+        * `join` - join
+        * `leave` - leave
     ActorSummary:
       type: object
       properties:
@@ -3144,6 +4703,26 @@ components:
       - email
       - full_name
       - id
+    AdminAdaptiveMonitoringSummary:
+      type: object
+      properties:
+        active_consents:
+          type: integer
+          readOnly: true
+        revoked_consents:
+          type: integer
+          readOnly: true
+        distinct_consented_users:
+          type: integer
+          readOnly: true
+        currently_monitored_users:
+          type: integer
+          readOnly: true
+      required:
+      - active_consents
+      - currently_monitored_users
+      - distinct_consented_users
+      - revoked_consents
     AdminCourseModeration:
       type: object
       properties:
@@ -3231,6 +4810,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/AdminOversightCounts'
           readOnly: true
+        adaptive_monitoring:
+          allOf:
+          - $ref: '#/components/schemas/AdminAdaptiveMonitoringSummary'
+          readOnly: true
         organization_verification_requests:
           type: array
           items:
@@ -3247,6 +4830,7 @@ components:
             $ref: '#/components/schemas/AdminEventOversight'
           readOnly: true
       required:
+      - adaptive_monitoring
       - events
       - financial_accounts
       - organization_verification_requests
@@ -3745,6 +5329,25 @@ components:
       - regular_users
       - total_users
       - verified_organizations
+    AdminTrustOverview:
+      type: object
+      properties:
+        communities:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityGroupSummary'
+        service_credits:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceCreditRecord'
+        certificates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Certificate'
+      required:
+      - certificates
+      - communities
+      - service_credits
     AdminUserModeration:
       type: object
       properties:
@@ -3904,6 +5507,16 @@ components:
       - reviewed_at
       - reviewer_notes
       - status
+    AssignmentFeedbackRolloutStateEnum:
+      enum:
+      - disabled
+      - fallback_only
+      - ready
+      type: string
+      description: |-
+        * `disabled` - Disabled
+        * `fallback_only` - Fallback Only
+        * `ready` - Ready
     AuditLog:
       type: object
       properties:
@@ -4005,6 +5618,164 @@ components:
     BlankEnum:
       enum:
       - ''
+    Certificate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        certificate_id:
+          type: string
+          maxLength: 32
+        source_type:
+          $ref: '#/components/schemas/CertificateSourceTypeEnum'
+        title:
+          type: string
+          maxLength: 255
+        summary:
+          type: string
+        signature_label:
+          type: string
+          maxLength: 255
+        status:
+          $ref: '#/components/schemas/CertificateStatusEnum'
+        issued_at:
+          type: string
+          format: date-time
+          readOnly: true
+        organization:
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/CertificateUserSummary'
+          readOnly: true
+        service_credit:
+          allOf:
+          - $ref: '#/components/schemas/ServiceCreditRecord'
+          readOnly: true
+        course_program:
+          allOf:
+          - $ref: '#/components/schemas/CourseProgramSummary'
+          readOnly: true
+        event:
+          allOf:
+          - $ref: '#/components/schemas/EventSummary'
+          readOnly: true
+      required:
+      - course_program
+      - event
+      - id
+      - issued_at
+      - organization
+      - service_credit
+      - source_type
+      - title
+      - user
+    CertificateEligibility:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/CertificateUserSummary'
+        course:
+          allOf:
+          - $ref: '#/components/schemas/CourseProgramSummary'
+          nullable: true
+        event:
+          allOf:
+          - $ref: '#/components/schemas/EventSummary'
+          nullable: true
+        service_credit:
+          allOf:
+          - $ref: '#/components/schemas/ServiceCreditRecord'
+          nullable: true
+        source_type:
+          $ref: '#/components/schemas/CertificateSourceTypeEnum'
+        certificate_already_issued:
+          type: boolean
+      required:
+      - certificate_already_issued
+      - course
+      - event
+      - service_credit
+      - source_type
+      - user
+    CertificateIssueRequest:
+      type: object
+      properties:
+        source_type:
+          $ref: '#/components/schemas/CertificateSourceTypeEnum'
+        user_id:
+          type: integer
+          minimum: 1
+        course_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        event_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        service_credit_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        title:
+          type: string
+          maxLength: 255
+        summary:
+          type: string
+      required:
+      - source_type
+      - user_id
+    CertificatePortfolio:
+      type: object
+      properties:
+        certificates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Certificate'
+        service_credits:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceCreditRecord'
+      required:
+      - certificates
+      - service_credits
+    CertificateSourceTypeEnum:
+      enum:
+      - course_completion
+      - event_participation
+      - service_credit
+      type: string
+      description: |-
+        * `course_completion` - Course Completion
+        * `event_participation` - Event Participation
+        * `service_credit` - Service Credit
+    CertificateStatusEnum:
+      enum:
+      - active
+      - revoked
+      type: string
+      description: |-
+        * `active` - Active
+        * `revoked` - Revoked
+    CertificateUserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+      - full_name
+      - id
+      - role
     ChapaCallbackRequestRequest:
       type: object
       properties:
@@ -4038,6 +5809,269 @@ components:
           type: boolean
       required:
       - received
+    CommunityActorSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+      - full_name
+      - id
+      - role
+    CommunityGroupDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 120
+        tags: {}
+        visibility:
+          $ref: '#/components/schemas/CommunityVisibilityEnum'
+        organization:
+          readOnly: true
+        related_course:
+          allOf:
+          - $ref: '#/components/schemas/CourseProgramSummary'
+          readOnly: true
+        related_event:
+          allOf:
+          - $ref: '#/components/schemas/EventSummary'
+          readOnly: true
+        membership_count:
+          type: integer
+          readOnly: true
+        post_count:
+          type: integer
+          readOnly: true
+        is_member:
+          type: boolean
+          readOnly: true
+        member_role:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        recent_posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityPost'
+          readOnly: true
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityMembership'
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - is_member
+      - member_role
+      - members
+      - membership_count
+      - organization
+      - post_count
+      - recent_posts
+      - related_course
+      - related_event
+      - slug
+      - title
+      - updated_at
+    CommunityGroupSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 120
+        tags: {}
+        visibility:
+          $ref: '#/components/schemas/CommunityVisibilityEnum'
+        organization:
+          readOnly: true
+        related_course:
+          allOf:
+          - $ref: '#/components/schemas/CourseProgramSummary'
+          readOnly: true
+        related_event:
+          allOf:
+          - $ref: '#/components/schemas/EventSummary'
+          readOnly: true
+        membership_count:
+          type: integer
+          readOnly: true
+        post_count:
+          type: integer
+          readOnly: true
+        is_member:
+          type: boolean
+          readOnly: true
+        member_role:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - is_member
+      - member_role
+      - membership_count
+      - organization
+      - post_count
+      - related_course
+      - related_event
+      - slug
+      - title
+      - updated_at
+    CommunityGroupWriteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        category:
+          type: string
+          maxLength: 120
+        tags: {}
+        visibility:
+          $ref: '#/components/schemas/CommunityVisibilityEnum'
+        related_course_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        related_event_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+      required:
+      - title
+    CommunityMembership:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/CommunityMembershipRoleEnum'
+        joined_at:
+          type: string
+          format: date-time
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/CommunityActorSummary'
+          readOnly: true
+      required:
+      - id
+      - joined_at
+      - user
+    CommunityMembershipActionRequest:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+      required:
+      - action
+    CommunityMembershipRoleEnum:
+      enum:
+      - member
+      - moderator
+      type: string
+      description: |-
+        * `member` - Member
+        * `moderator` - Moderator
+    CommunityPost:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        author:
+          allOf:
+          - $ref: '#/components/schemas/CommunityActorSummary'
+          readOnly: true
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - author
+      - body
+      - created_at
+      - id
+      - updated_at
+    CommunityPostWriteRequest:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+      required:
+      - body
+    CommunityVisibilityEnum:
+      enum:
+      - public
+      - members_only
+      type: string
+      description: |-
+        * `public` - Public
+        * `members_only` - Members Only
     ContextEnum:
       enum:
       - skill_swap
@@ -5088,6 +7122,18 @@ components:
         * `early_career` - Early Career
         * `mid_career` - Mid Career
         * `experienced` - Experienced
+    FeatureKeyEnum:
+      enum:
+      - recommendations
+      - learning_guidance
+      - assignment_feedback
+      - cognitive_monitoring
+      type: string
+      description: |-
+        * `recommendations` - Recommendations
+        * `learning_guidance` - Learning Guidance
+        * `assignment_feedback` - Assignment Feedback
+        * `cognitive_monitoring` - Cognitive Monitoring
     FieldInterest:
       type: object
       properties:
@@ -5639,6 +7685,18 @@ components:
       required:
       - title
       - type
+    LevelEnum:
+      enum:
+      - low
+      - medium
+      - high
+      - inactive
+      type: string
+      description: |-
+        * `low` - Low
+        * `medium` - Medium
+        * `high` - High
+        * `inactive` - Inactive
     LogoutRequest:
       type: object
       properties:
@@ -5865,6 +7923,22 @@ components:
       - full_name
       - id
       - interests_summary
+    MoodLabelEnum:
+      enum:
+      - energized
+      - steady
+      - tired
+      - distracted
+      - stuck
+      - overwhelmed
+      type: string
+      description: |-
+        * `energized` - Energized
+        * `steady` - Steady
+        * `tired` - Tired
+        * `distracted` - Distracted
+        * `stuck` - Stuck
+        * `overwhelmed` - Overwhelmed
     Notification:
       type: object
       properties:
@@ -5952,6 +8026,8 @@ components:
       - enrollment
       - event
       - opportunity
+      - community
+      - certificate
       - admin
       type: string
       description: |-
@@ -5964,6 +8040,8 @@ components:
         * `enrollment` - Enrollment
         * `event` - Event
         * `opportunity` - Opportunity
+        * `community` - Community
+        * `certificate` - Certificate
         * `admin` - Admin
     OpportunityDetail:
       type: object
@@ -6656,6 +8734,40 @@ components:
       - type
       - verification_status
       - website_url
+    OrganizationTrustOverview:
+      type: object
+      properties:
+        communities:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityGroupSummary'
+        service_credits:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceCreditRecord'
+        certificates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Certificate'
+        eligible_course_completions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CertificateEligibility'
+        eligible_event_attendances:
+          type: array
+          items:
+            $ref: '#/components/schemas/CertificateEligibility'
+        eligible_service_credit_certificates:
+          type: array
+          items:
+            $ref: '#/components/schemas/CertificateEligibility'
+      required:
+      - certificates
+      - communities
+      - eligible_course_completions
+      - eligible_event_attendances
+      - eligible_service_credit_certificates
+      - service_credits
     OrganizationTypeEnum:
       enum:
       - company
@@ -7584,6 +9696,98 @@ components:
         * `regular_user` - Regular User
         * `organization` - Organization
         * `admin` - Admin
+    ServiceCreditIssueRequest:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          minimum: 1
+        event_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        course_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        community_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+        credit_hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        evidence_note:
+          type: string
+      required:
+      - credit_hours
+      - title
+      - user_id
+    ServiceCreditRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        credit_hours:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/ServiceCreditStatusEnum'
+        evidence_note:
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+          readOnly: true
+        organization:
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/CertificateUserSummary'
+          readOnly: true
+        community_group:
+          allOf:
+          - $ref: '#/components/schemas/CommunityGroupSummary'
+          readOnly: true
+        event:
+          allOf:
+          - $ref: '#/components/schemas/EventSummary'
+          readOnly: true
+        course_program:
+          allOf:
+          - $ref: '#/components/schemas/CourseProgramSummary'
+          readOnly: true
+      required:
+      - community_group
+      - course_program
+      - event
+      - id
+      - issued_at
+      - organization
+      - title
+      - user
+    ServiceCreditStatusEnum:
+      enum:
+      - issued
+      - revoked
+      type: string
+      description: |-
+        * `issued` - Issued
+        * `revoked` - Revoked
     SessionParticipant:
       type: object
       properties:
@@ -8093,6 +10297,12 @@ components:
           minLength: 1
       required:
       - refresh
+    TrustRevokeRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 500
     UserFieldInterest:
       type: object
       properties:

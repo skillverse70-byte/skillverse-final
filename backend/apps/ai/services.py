@@ -4,6 +4,14 @@ from urllib.request import Request, urlopen
 
 from django.conf import settings
 
+from apps.ai.contracts import (
+    AI_FEATURE_CATALOG,
+    AI_FALLBACK_CONTRACT,
+    AI_INTEGRATION_RULES,
+)
+from apps.common.enums import AIRolloutState
+from apps.common.permissions import normalize_actor_role
+
 
 class AIProviderError(Exception):
     pass
@@ -33,6 +41,7 @@ class OpenRouterProvider:
             "feature_flags": {
                 "ai_features_enabled": settings.AI_FEATURES_ENABLED,
                 "ai_recommendations_enabled": settings.AI_RECOMMENDATIONS_ENABLED,
+                "ai_learning_guidance_enabled": settings.AI_LEARNING_GUIDANCE_ENABLED,
                 "ai_assignment_feedback_enabled": settings.AI_ASSIGNMENT_FEEDBACK_ENABLED,
                 "ai_cognitive_monitoring_enabled": settings.AI_COGNITIVE_MONITORING_ENABLED,
             },
@@ -146,3 +155,53 @@ def get_default_ai_provider():
     if provider_name == "openrouter":
         return OpenRouterProvider()
     raise AIProviderConfigurationError(f"Unsupported AI provider: {provider_name}")
+
+
+def get_ai_feature_rollout_state(*, feature_enabled, provider_configured, global_enabled):
+    if not global_enabled or not feature_enabled:
+        return AIRolloutState.DISABLED
+    if provider_configured:
+        return AIRolloutState.READY
+    return AIRolloutState.FALLBACK_ONLY
+
+
+def build_ai_capability_snapshot(*, user):
+    actor_role = normalize_actor_role(user)
+    provider = get_default_ai_provider()
+    configuration = provider.configuration()
+    global_enabled = bool(settings.AI_FEATURES_ENABLED)
+    provider_configured = bool(configuration["configured"])
+
+    features = []
+    for feature_key, feature_config in AI_FEATURE_CATALOG.items():
+        feature_enabled = bool(getattr(settings, feature_config["setting"], False))
+        actor_enabled = actor_role in feature_config["actor_roles"]
+        rollout_state = get_ai_feature_rollout_state(
+            feature_enabled=feature_enabled,
+            provider_configured=provider_configured,
+            global_enabled=global_enabled,
+        )
+        features.append(
+            {
+                "key": feature_key,
+                "label": feature_config["label"],
+                "rollout_state": rollout_state,
+                "enabled": feature_enabled,
+                "available": rollout_state == AIRolloutState.READY and actor_enabled,
+                "actor_enabled": actor_enabled,
+                "actor_roles": feature_config["actor_roles"],
+                "surfaces": feature_config["surfaces"],
+                "fallback_behavior": feature_config["fallback_behavior"],
+                "explainability_required": feature_config["explainability_required"],
+            }
+        )
+
+    return {
+        "provider": configuration["provider"],
+        "actor_role": actor_role,
+        "global_enabled": global_enabled,
+        "provider_configured": provider_configured,
+        "fallback_contract": AI_FALLBACK_CONTRACT,
+        "integration_rules": AI_INTEGRATION_RULES,
+        "features": features,
+    }

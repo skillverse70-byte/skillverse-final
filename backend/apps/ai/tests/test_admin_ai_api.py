@@ -60,6 +60,7 @@ class AdminAIProviderHealthApiTests(APITestCase):
             "feature_flags": {
                 "ai_features_enabled": True,
                 "ai_recommendations_enabled": True,
+                "ai_learning_guidance_enabled": True,
                 "ai_assignment_feedback_enabled": False,
                 "ai_cognitive_monitoring_enabled": False,
             },
@@ -79,6 +80,18 @@ class AdminAIProviderHealthApiTests(APITestCase):
         self.assertTrue(response.data["healthy"])
         self.assertEqual(response.data["details"]["models_returned"], 12)
         provider.verify.assert_called_once_with(mode="live")
+
+    def test_authenticated_user_can_read_ai_capability_snapshot(self):
+        self.authenticate(self.regular_user)
+
+        response = self.client.get(reverse("ai-capability-snapshot"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["provider"], "openrouter")
+        self.assertEqual(response.data["actor_role"], Role.REGULAR_USER)
+        self.assertIn("fallback_contract", response.data)
+        self.assertIn("integration_rules", response.data)
+        self.assertGreaterEqual(len(response.data["features"]), 1)
 
     def test_non_admin_cannot_access_ai_provider_health(self):
         self.authenticate(self.regular_user)

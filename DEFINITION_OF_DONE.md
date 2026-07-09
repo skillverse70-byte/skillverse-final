@@ -24,5 +24,6 @@ Read together with:
 - For new backend endpoints, CORS expectations were checked.
 - For auth-sensitive or abuse-sensitive new endpoints, rate-limiting needs were considered and noted if not yet implemented.
 - If a task sends email, it uses the configured Django email backend and remains compatible with the project's Resend email setup.
+- If a task introduces adaptive monitoring, AI privacy, or sensitive learner-signal handling, explicit consent, signal-minimization, and audit logging were reviewed.
 - If docs or planning state changed, the relevant governance file or [Agent Tasks.md](./Agent%20Tasks.md) section was updated.
 - If blocked, [BLOCKERS.md](./BLOCKERS.md) was updated instead of silently skipping work.

@@ -96,8 +96,36 @@ env = environ.Env(
     AI_DEFAULT_PROVIDER=(str, "openrouter"),
     AI_FEATURES_ENABLED=(bool, False),
     AI_RECOMMENDATIONS_ENABLED=(bool, False),
+    AI_LEARNING_GUIDANCE_ENABLED=(bool, False),
     AI_ASSIGNMENT_FEEDBACK_ENABLED=(bool, False),
     AI_COGNITIVE_MONITORING_ENABLED=(bool, False),
+    AI_COGNITIVE_POLICY_VERSION=(str, "2026-07-v1"),
+    AI_COGNITIVE_ALLOWED_SIGNALS=(
+        list,
+        [
+            "lesson_progress",
+            "enrollment_activity",
+            "assignment_activity",
+            "session_engagement",
+            "message_responsiveness",
+            "self_reported_mood",
+            "reflection_checkins",
+        ],
+    ),
+    AI_COGNITIVE_DEFAULT_SIGNALS=(
+        list,
+        [
+            "lesson_progress",
+            "enrollment_activity",
+            "assignment_activity",
+            "session_engagement",
+            "message_responsiveness",
+            "self_reported_mood",
+            "reflection_checkins",
+        ],
+    ),
+    AI_COGNITIVE_CAMERA_SIGNALS_ENABLED=(bool, False),
+    AI_COGNITIVE_RETENTION_DAYS=(int, 30),
     OPENROUTER_API_KEY=(str, ""),
     Openrouter_api_key=(str, ""),
     OPENROUTER_BASE_URL=(str, "https://openrouter.ai"),
@@ -134,6 +162,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.audit",
     "apps.common",
+    "apps.communities",
     "apps.organizations",
     "apps.payments",
     "apps.skills",
@@ -146,6 +175,7 @@ INSTALLED_APPS = [
     "apps.courses",
     "apps.events",
     "apps.opportunities",
+    "apps.certificates",
     "apps.reviews",
     "corsheaders",
     "rest_framework",
@@ -235,6 +265,7 @@ ENABLE_AUTH_THROTTLING = env.bool("ENABLE_AUTH_THROTTLING", default=False)
 AI_DEFAULT_PROVIDER = env("AI_DEFAULT_PROVIDER", default="openrouter")
 AI_FEATURES_ENABLED = env.bool("AI_FEATURES_ENABLED", default=False)
 AI_RECOMMENDATIONS_ENABLED = env.bool("AI_RECOMMENDATIONS_ENABLED", default=False)
+AI_LEARNING_GUIDANCE_ENABLED = env.bool("AI_LEARNING_GUIDANCE_ENABLED", default=False)
 AI_ASSIGNMENT_FEEDBACK_ENABLED = env.bool(
     "AI_ASSIGNMENT_FEEDBACK_ENABLED",
     default=False,
@@ -242,6 +273,42 @@ AI_ASSIGNMENT_FEEDBACK_ENABLED = env.bool(
 AI_COGNITIVE_MONITORING_ENABLED = env.bool(
     "AI_COGNITIVE_MONITORING_ENABLED",
     default=False,
+)
+AI_COGNITIVE_POLICY_VERSION = env(
+    "AI_COGNITIVE_POLICY_VERSION",
+    default="2026-07-v1",
+)
+AI_COGNITIVE_ALLOWED_SIGNALS = env.list(
+    "AI_COGNITIVE_ALLOWED_SIGNALS",
+    default=[
+        "lesson_progress",
+        "enrollment_activity",
+        "assignment_activity",
+        "session_engagement",
+        "message_responsiveness",
+        "self_reported_mood",
+        "reflection_checkins",
+    ],
+)
+AI_COGNITIVE_DEFAULT_SIGNALS = env.list(
+    "AI_COGNITIVE_DEFAULT_SIGNALS",
+    default=[
+        "lesson_progress",
+        "enrollment_activity",
+        "assignment_activity",
+        "session_engagement",
+        "message_responsiveness",
+        "self_reported_mood",
+        "reflection_checkins",
+    ],
+)
+AI_COGNITIVE_CAMERA_SIGNALS_ENABLED = env.bool(
+    "AI_COGNITIVE_CAMERA_SIGNALS_ENABLED",
+    default=False,
+)
+AI_COGNITIVE_RETENTION_DAYS = env.int(
+    "AI_COGNITIVE_RETENTION_DAYS",
+    default=30,
 )
 OPENROUTER_API_KEY = env(
     "OPENROUTER_API_KEY",
@@ -352,6 +419,13 @@ SPECTACULAR_SETTINGS = {
         "OpportunityStatusEnum": "apps.common.enums.OpportunityStatus",
         "JobApplicationStatusEnum": "apps.common.enums.JobApplicationStatus",
         "NotificationTypeEnum": "apps.common.enums.NotificationType",
+        "CommunityVisibilityEnum": "apps.common.enums.CommunityVisibility",
+        "CommunityMembershipRoleEnum": "apps.common.enums.CommunityMembershipRole",
+        "ServiceCreditStatusEnum": "apps.common.enums.ServiceCreditStatus",
+        "CertificateSourceTypeEnum": "apps.common.enums.CertificateSourceType",
+        "CertificateStatusEnum": "apps.common.enums.CertificateStatus",
+        "AssignmentFeedbackRolloutStateEnum": "apps.common.enums.AIRolloutState",
+        "RoleEnum": "apps.common.enums.Role",
     },
 }
 

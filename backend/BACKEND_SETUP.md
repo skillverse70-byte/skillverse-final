@@ -16,6 +16,7 @@ This document records the backend foundation scaffolded from `PRD.md` and `Agent
 - Celery and Redis configuration for background jobs
 - Channels and Redis channel-layer support for future realtime chat/session flows
 - Daphne ASGI server dependency for websocket runtime and realtime test coverage
+- OpenRouter-backed AI provider foundation with server-side rollout and verification hooks
 - `.env.example` with local defaults
 - `requirements.txt` pinned to the package versions verified during setup
 
@@ -72,6 +73,14 @@ Chosen to back Django Channels with Redis when realtime messaging is enabled bey
 ### `daphne==4.2.2`
 
 Chosen as the ASGI server/runtime dependency that pairs with Channels for websocket delivery and enables the project's websocket communicator test coverage for realtime messaging.
+
+## AI provider foundation note
+
+No extra Python SDK was added yet for OpenRouter. The initial AI provider layer in `backend/apps/ai/` uses the standard library HTTP client so the project can:
+
+- keep provider secrets server-side only,
+- standardize rollout and fallback contracts before feature-specific AI work lands,
+- avoid unnecessary dependency growth until recommendation and adaptive features prove they need a heavier provider SDK.
 
 ## Authentication decision
 

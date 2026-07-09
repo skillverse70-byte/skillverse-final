@@ -4,15 +4,24 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeftRight,
+  BookOpen,
   Calendar,
   Filter,
   Heart,
+  Lightbulb,
   Search,
   Sparkles,
 } from "lucide-react";
+import AIRecommendationDeck from "@/components/shared/AIRecommendationDeck";
 import EmptyState from "@/components/shared/EmptyState";
 import PageLoader from "@/components/shared/PageLoader";
 import StatusBadge from "@/components/shared/StatusBadge";
+import { useAIRecommendationFeed } from "@/hooks/ai/useAIRecommendationFeed";
+import {
+  buildCourseRecommendationItems,
+  buildPeerRecommendationItems,
+  buildSkillRecommendationItems,
+} from "@/lib/ai-recommendation-items";
 import MatchSuggestionCard from "@/features/skills/components/MatchSuggestionCard";
 import SwapRequestCard from "@/features/skills/components/SwapRequestCard";
 import { useSkillSwapHub } from "@/hooks/skills/useSkillSwapHub";
@@ -40,6 +49,14 @@ export default function SkillSwap() {
     rejectRequest,
     cancelRequest,
   } = useSkillSwapHub(initialSearch);
+  const {
+    feature: recommendationFeature,
+    feed: recommendationFeed,
+    loading: recommendationsLoading,
+    error: recommendationsError,
+  } = useAIRecommendationFeed({
+    limitPerType: 2,
+  });
 
   const defaultTab = useMemo(() => {
     if (!highlightedRequestId) {
@@ -65,6 +82,32 @@ export default function SkillSwap() {
     }
     return "history";
   }, [highlightedRequestId, requestGroups]);
+  const recommendationSections = useMemo(
+    () => [
+      {
+        key: "peers",
+        title: "Peer matches",
+        icon: ArrowLeftRight,
+        description: "Suggested exchange partners grounded in your current profile.",
+        items: buildPeerRecommendationItems(recommendationFeed.peer_matches),
+      },
+      {
+        key: "skills",
+        title: "Skills to unlock better swaps",
+        icon: Lightbulb,
+        description: "Strengthen your portfolio with skills that expand reciprocal options.",
+        items: buildSkillRecommendationItems(recommendationFeed.skill_recommendations),
+      },
+      {
+        key: "courses",
+        title: "Courses that support your swaps",
+        icon: BookOpen,
+        description: "Structured learning paths tied to the same signals behind your matches.",
+        items: buildCourseRecommendationItems(recommendationFeed.course_recommendations),
+      },
+    ],
+    [recommendationFeed],
+  );
 
   React.useEffect(() => {
     setActiveTab(defaultTab);
@@ -189,6 +232,21 @@ export default function SkillSwap() {
           </div>
         </div>
       )}
+
+      <div className="mb-8">
+        <AIRecommendationDeck
+          title="Swap-adjacent recommendations"
+          description="Use these signals to find better partners, fill skill gaps, and move from discovery into a stronger exchange."
+          feature={recommendationFeature}
+          feed={recommendationFeed}
+          sections={recommendationSections}
+          loading={recommendationsLoading}
+          error={recommendationsError}
+          emptyTitle="Build stronger swap signals"
+          emptyDescription="Add more offered and requested skills, then keep using swaps and courses so the recommendation layer can sharpen your next best matches."
+          compact
+        />
+      </div>
 
       {loading ? (
         <PageLoader />

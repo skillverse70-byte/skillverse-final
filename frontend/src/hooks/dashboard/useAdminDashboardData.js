@@ -5,6 +5,7 @@ export function useAdminDashboardData() {
   const [state, setState] = useState({
     summary: {},
     oversight: {},
+    adaptiveMonitoring: {},
     organizationVerificationRequests: [],
     financialAccounts: [],
     events: [],

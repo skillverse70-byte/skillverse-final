@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { TabsContent } from "@/components/ui/tabs";
 import {
+  Award,
   ArrowLeftRight,
   BellRing,
   BookOpen,
@@ -13,26 +14,42 @@ import {
   LayoutDashboard,
   Link2,
   MessageCircle,
+  ShieldCheck,
   Sparkles,
+  Users,
 } from "lucide-react";
+import AIAdaptiveMonitoringPanel from "@/components/shared/AIAdaptiveMonitoringPanel";
+import AILearningGuidancePanel from "@/components/shared/AILearningGuidancePanel";
+import AIRecommendationDeck from "@/components/shared/AIRecommendationDeck";
 import StatusBadge from "@/components/shared/StatusBadge";
 import EmptyState from "@/components/shared/EmptyState";
 import NotificationFeedPanel from "@/components/shared/NotificationFeedPanel";
 import PageLoader from "@/components/shared/PageLoader";
 import WorkspaceShell from "@/components/shared/WorkspaceShell";
 import DashboardStats from "@/features/dashboard/components/DashboardStats";
+import { useAIAdaptiveMonitoring } from "@/hooks/ai/useAIAdaptiveMonitoring";
+import { useAILearningGuidance } from "@/hooks/ai/useAILearningGuidance";
+import { useAIRecommendationFeed } from "@/hooks/ai/useAIRecommendationFeed";
 import LearningEnrollmentCard from "@/features/courses/components/LearningEnrollmentCard";
 import ParticipationReviewDialog from "@/features/reviews/components/ParticipationReviewDialog";
 import SwapRequestCard from "@/features/skills/components/SwapRequestCard";
 import { useToast } from "@/components/ui/use-toast";
 import { useDashboardData } from "@/hooks/dashboard/useDashboardData";
 import { useWorkspaceTab } from "@/hooks/dashboard/useWorkspaceTab";
+import {
+  buildCourseRecommendationItems,
+  buildEventRecommendationItems,
+  buildOpportunityRecommendationItems,
+  buildPeerRecommendationItems,
+} from "@/lib/ai-recommendation-items";
 import { ensureSwapConversation } from "@/services/messages/swap-messaging.service";
 import {
   acceptSwapRequest,
   cancelSwapRequest,
   rejectSwapRequest,
 } from "@/services/skills/skills.service";
+import { fetchCertificatePortfolio } from "@/services/certificates/certificates.service";
+import { fetchCommunities } from "@/services/communities/communities.service";
 import moment from "moment";
 
 const validTabs = ["overview", "learning", "sessions", "swaps", "applications", "events"];
@@ -55,6 +72,70 @@ export default function DashboardPage() {
   } = useDashboardData();
   const [actingId, setActingId] = useState(null);
   const [swapError, setSwapError] = useState("");
+  const [trustLoading, setTrustLoading] = useState(true);
+  const [trustError, setTrustError] = useState("");
+  const [certificatePortfolio, setCertificatePortfolio] = useState({
+    certificates: [],
+    service_credits: [],
+  });
+  const [myCommunities, setMyCommunities] = useState([]);
+  const {
+    adaptiveState,
+    loading: adaptiveLoading,
+    submitting: adaptiveSubmitting,
+    error: adaptiveError,
+    submitCheckIn,
+  } = useAIAdaptiveMonitoring({
+    surface: "/dashboard",
+  });
+  const {
+    feature: recommendationFeature,
+    feed: recommendationFeed,
+    loading: recommendationsLoading,
+    error: recommendationsError,
+  } = useAIRecommendationFeed({
+    limitPerType: 2,
+  });
+  const {
+    guidanceFeature,
+    assignmentFeature,
+    guidance,
+    loading: guidanceLoading,
+    error: guidanceError,
+  } = useAILearningGuidance();
+
+  useEffect(() => {
+    let active = true;
+    const loadTrust = async () => {
+      setTrustLoading(true);
+      setTrustError("");
+      const [portfolioResult, communitiesResult] = await Promise.allSettled([
+        fetchCertificatePortfolio(),
+        fetchCommunities("mine"),
+      ]);
+      if (!active) {
+        return;
+      }
+      if (portfolioResult.status === "fulfilled") {
+        setCertificatePortfolio(portfolioResult.value);
+      }
+      if (communitiesResult.status === "fulfilled") {
+        setMyCommunities(communitiesResult.value);
+      }
+      const nextError =
+        portfolioResult.status === "rejected"
+          ? portfolioResult.reason?.message || "Unable to load your certificate records."
+          : communitiesResult.status === "rejected"
+            ? communitiesResult.reason?.message || "Unable to load your communities."
+            : "";
+      setTrustError(nextError);
+      setTrustLoading(false);
+    };
+    loadTrust();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const requestGroups = useMemo(() => {
     const incoming = [];
@@ -125,6 +206,41 @@ export default function DashboardPage() {
     ...requestGroups.incoming.slice(0, 2),
     ...requestGroups.active.slice(0, 2),
   ];
+  const recommendationSections = useMemo(
+    () => [
+      {
+        key: "courses",
+        title: "Courses",
+        icon: BookOpen,
+        description: "Next learning paths connected to your current signals.",
+        items: buildCourseRecommendationItems(recommendationFeed.course_recommendations),
+      },
+      {
+        key: "events",
+        title: "Events",
+        icon: Calendar,
+        description: "Live sessions and workshops relevant to your field activity.",
+        items: buildEventRecommendationItems(recommendationFeed.event_recommendations),
+      },
+      {
+        key: "jobs",
+        title: "Opportunities",
+        icon: Briefcase,
+        description: "Openings that overlap with your skills and participation history.",
+        items: buildOpportunityRecommendationItems(
+          recommendationFeed.opportunity_recommendations,
+        ),
+      },
+      {
+        key: "peers",
+        title: "Peer matches",
+        icon: ArrowLeftRight,
+        description: "People your current profile and skill signals align with.",
+        items: buildPeerRecommendationItems(recommendationFeed.peer_matches),
+      },
+    ],
+    [recommendationFeed],
+  );
 
   if (loading) {
     return <PageLoader />;
@@ -348,55 +464,155 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)]">
-          {priorityItems.length > 0 ? (
-            <section className="space-y-4 rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <BellRing className="h-5 w-5 text-amber-600" />
-                  <h2 className="font-heading text-xl font-semibold text-foreground">
-                    Swap updates
-                  </h2>
+          <div className="space-y-4">
+            {priorityItems.length > 0 ? (
+              <section className="space-y-4 rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <BellRing className="h-5 w-5 text-amber-600" />
+                    <h2 className="font-heading text-xl font-semibold text-foreground">
+                      Swap updates
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-teal-700"
+                    onClick={() => setActiveTab("swaps")}
+                  >
+                    Open swap workspace
+                    <ArrowLeftRight className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-teal-700"
-                  onClick={() => setActiveTab("swaps")}
-                >
-                  Open swap workspace
-                  <ArrowLeftRight className="h-4 w-4" />
-                </button>
-              </div>
 
-              <div className="space-y-4">
-                {priorityItems.map((request) => (
-                  <SwapRequestCard
-                    key={`priority-${request.id}`}
-                    request={request}
-                    acting={actingId === request.id}
-                    onAccept={(id, note) =>
-                      runSwapAction(id, () => acceptSwapRequest(id, note), "Swap accepted")
-                    }
-                    onReject={(id, note) =>
-                      runSwapAction(id, () => rejectSwapRequest(id, note), "Swap rejected")
-                    }
-                    onCancel={(id, note) =>
-                      runSwapAction(id, () => cancelSwapRequest(id, note), "Swap updated")
-                    }
-                    onOpenDetails={openDetails}
-                    onOpenMessage={openMessages}
-                  />
-                ))}
+                <div className="space-y-4">
+                  {priorityItems.map((request) => (
+                    <SwapRequestCard
+                      key={`priority-${request.id}`}
+                      request={request}
+                      acting={actingId === request.id}
+                      onAccept={(id, note) =>
+                        runSwapAction(id, () => acceptSwapRequest(id, note), "Swap accepted")
+                      }
+                      onReject={(id, note) =>
+                        runSwapAction(id, () => rejectSwapRequest(id, note), "Swap rejected")
+                      }
+                      onCancel={(id, note) =>
+                        runSwapAction(id, () => cancelSwapRequest(id, note), "Swap updated")
+                      }
+                      onOpenDetails={openDetails}
+                      onOpenMessage={openMessages}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : (
+              <EmptyState
+                icon={ArrowLeftRight}
+                title="Your swap queue is clear"
+                description="New swap requests and active exchanges will show up here."
+                actionLabel="Open skill swap"
+                onAction={() => navigate("/skill-swap")}
+              />
+            )}
+
+            <AIRecommendationDeck
+              title="Recommended next steps"
+              description="Discovery now links your learning, swaps, events, and opportunity activity so you can move naturally between them."
+              feature={recommendationFeature}
+              feed={recommendationFeed}
+              sections={recommendationSections}
+              loading={recommendationsLoading}
+              error={recommendationsError}
+              emptyTitle="Keep building your learning signals"
+              emptyDescription="As you enroll in courses, join events, and expand your skills, smarter next-step suggestions will show up here."
+              compact
+            />
+
+            <AILearningGuidancePanel
+              title="AI learning guidance"
+              description="Skill gaps, assignment prep, and next actions now sit beside your live dashboard activity instead of living in a separate tool."
+              guidance={guidance}
+              guidanceFeature={guidanceFeature}
+              assignmentFeature={assignmentFeature}
+              loading={guidanceLoading}
+              error={guidanceError}
+              emptyTitle="Learning guidance is warming up"
+              emptyDescription="As your course progress, profile goals, and practice checkpoints grow, richer guidance will show up here."
+              compact
+            />
+
+            <AIAdaptiveMonitoringPanel
+              title="Adaptive focus"
+              description="Focus drift, mood mirror, and next-step suggestions based on your approved learning signals."
+              adaptiveState={adaptiveState}
+              loading={adaptiveLoading}
+              submitting={adaptiveSubmitting}
+              error={adaptiveError}
+              onSubmitCheckIn={submitCheckIn}
+              manageHref="/profile?tab=adaptive"
+              compact
+            />
+
+            <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                    <h2 className="font-heading text-lg font-semibold text-foreground">
+                      Trust and recognition
+                    </h2>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Certificates, service-credit records, and community participation now live beside your learning flow.
+                  </p>
+                </div>
+                <Link to="/certificates" className="text-sm font-medium text-teal-700">
+                  Open certificate workspace
+                </Link>
+              </div>
+              {trustError ? (
+                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {trustError}
+                </div>
+              ) : null}
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                <TrustMetric
+                  icon={Award}
+                  label="Certificates"
+                  value={certificatePortfolio.certificates.length}
+                  loading={trustLoading}
+                />
+                <TrustMetric
+                  icon={Users}
+                  label="Communities"
+                  value={myCommunities.length}
+                  loading={trustLoading}
+                />
+                <TrustMetric
+                  icon={BookOpen}
+                  label="Service credits"
+                  value={certificatePortfolio.service_credits.length}
+                  loading={trustLoading}
+                />
+              </div>
+              <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                <TrustPreview
+                  title="Latest certificate"
+                  item={certificatePortfolio.certificates[0]}
+                  emptyText="No certificates issued yet."
+                  linkForItem={(item) => `/certificates/${item.certificate_id}`}
+                  subtitleForItem={(item) => item.organization?.name || "Organization"}
+                />
+                <TrustPreview
+                  title="Active communities"
+                  item={myCommunities[0]}
+                  emptyText="You have not joined any communities yet."
+                  linkForItem={() => "/communities"}
+                  subtitleForItem={(item) => item.organization?.name || "Community"}
+                />
               </div>
             </section>
-          ) : (
-            <EmptyState
-              icon={ArrowLeftRight}
-              title="Your swap queue is clear"
-              description="New swap requests and active exchanges will show up here."
-              actionLabel="Open skill swap"
-              onAction={() => navigate("/skill-swap")}
-            />
-          )}
+          </div>
 
           <section className="rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
             <div className="flex items-center gap-2">
@@ -911,6 +1127,38 @@ function SignalGroup({ title, items = [] }) {
           ))
         )}
       </div>
+    </div>
+  );
+}
+
+function TrustMetric({ icon: Icon, label, value, loading }) {
+  return (
+    <div className="rounded-2xl bg-secondary/15 p-4">
+      <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+        <Icon className="h-4 w-4" />
+        <span>{label}</span>
+      </div>
+      <div className="mt-2 font-heading text-3xl font-bold text-foreground">
+        {loading ? "..." : value}
+      </div>
+    </div>
+  );
+}
+
+function TrustPreview({ title, item, emptyText, linkForItem, subtitleForItem }) {
+  return (
+    <div className="rounded-2xl border border-border/50 bg-secondary/10 p-4">
+      <div className="text-sm font-medium text-foreground">{title}</div>
+      {item ? (
+        <Link to={linkForItem(item)} className="mt-3 block rounded-2xl bg-white px-4 py-4">
+          <div className="font-medium text-foreground">
+            {item.title || item.certificate_id || "Open item"}
+          </div>
+          <div className="mt-1 text-sm text-muted-foreground">{subtitleForItem(item)}</div>
+        </Link>
+      ) : (
+        <p className="mt-3 text-sm text-muted-foreground">{emptyText}</p>
+      )}
     </div>
   );
 }

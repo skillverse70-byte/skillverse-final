@@ -27,6 +27,7 @@ DOMAIN_ENTITIES = {
     "CategorySuggestion": "Requested addition to a controlled category list.",
     "Notification": "System alert, reminder, or workflow update.",
     "AuditLog": "Important admin or security-sensitive event record.",
+    "AIFeatureCapability": "Shared rollout and fallback contract for an AI-enabled product capability.",
 }
 
 CORE_DOMAIN_STATUS_FIELDS = {
@@ -39,6 +40,10 @@ CORE_DOMAIN_STATUS_FIELDS = {
     "Opportunity.status": "Lifecycle state of an opportunity listing.",
     "JobApplication.status": "Candidate pipeline state for in-platform applications.",
     "Event.status": "Lifecycle state of an event.",
+    "CommunityGroup.visibility": "Access level for public or member-only collaboration spaces.",
+    "ServiceCredit.status": "Verification state for contribution or impact records.",
+    "Certificate.status": "Trust state for verifiable certificate records.",
     "RatingReview.context": "Source context for participation-based review workflows.",
     "Notification.type": "Workflow or system event category for alerts.",
+    "AIFeatureCapability.rollout_state": "Whether a feature is disabled, AI-ready, or operating in fallback-only mode.",
 }

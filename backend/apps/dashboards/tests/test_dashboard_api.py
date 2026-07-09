@@ -266,6 +266,8 @@ class DashboardApiTests(APITestCase):
         self.assertEqual(response.data["oversight"]["pending_verification_requests"], 1)
         self.assertEqual(response.data["oversight"]["pending_financial_accounts"], 1)
         self.assertEqual(response.data["oversight"]["events_from_unverified_organizations"], 1)
+        self.assertIn("adaptive_monitoring", response.data)
+        self.assertEqual(response.data["adaptive_monitoring"]["active_consents"], 0)
         self.assertEqual(
             response.data["organization_verification_requests"][0]["id"],
             self.verification_request.id,
@@ -284,4 +286,3 @@ class DashboardApiTests(APITestCase):
         self.authenticate(self.regular_user)
         organization_response = self.client.get(reverse("dashboard-organization"))
         self.assertEqual(organization_response.status_code, status.HTTP_403_FORBIDDEN)
-

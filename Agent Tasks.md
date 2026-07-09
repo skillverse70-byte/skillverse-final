@@ -1099,6 +1099,7 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 
 ### TASK-1001: Establish AI Provider Foundation with OpenRouter
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
 - **Owner:** Both
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/dashboard`, `/discover`, `/skill-swap`, `/courses/:id`, `/org`, `/admin`
@@ -1113,6 +1114,7 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 
 ### TASK-1002: Build AI-Assisted Recommendation and Matching Backend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
 - **Owner:** Backend
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/discover`, `/dashboard`, `/skill-swap`, `/courses/:id`, `/jobs/:id`, `/events/:id`, `/admin`
@@ -1127,6 +1129,7 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 
 ### TASK-1003: Surface AI Recommendations and Cross-Module Discovery in Frontend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
 - **Owner:** Frontend
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/discover`, `/dashboard`, `/skill-swap`, `/courses/:id`, `/jobs`, `/events`, `/admin`
@@ -1141,6 +1144,7 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 
 ### TASK-1004: Add AI Learning Guidance, Skill-Gap Analysis, and Assignment Feedback
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
 - **Owner:** Both
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/courses/:id`, `/dashboard`, `/org`, `/admin`
@@ -1169,6 +1173,7 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 
 ### TASK-1006: Build Community, Service-Credit, and Certificate Systems
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
 - **Owner:** Both
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/communities`, `/events`, `/events/:id`, `/courses/:id`, `/dashboard`, `/org`, `/admin`, `/certificates`, `/certificates/:id`
@@ -1181,65 +1186,125 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 - **Blockers:** None
 - **Description:** Deliver the deferred collaboration and trust-signal areas from the PRD. This includes community spaces beyond one-to-one swaps, organization-run service or participation records, stronger organization-side verification and trust workflows where needed, and verified certificates with lookup paths and governance.
 
-### TASK-1007: Build Cognitive Monitoring Foundation, Consent, and Privacy Controls
+### TASK-1007: Build Cognitive Monitoring Foundation, Consent, and Privacy Controls Backend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
-- **Owner:** Both
+- **Owner:** Backend
+- **Status:** Complete
 - **Actor(s):** Regular User, Admin
 - **Route(s):** `/dashboard`, `/courses/:id`, `/messages`, `/admin`
-- **Files touched:** `backend/apps/ai/`, `backend/apps/common/`, `backend/apps/dashboards/`, `frontend/src/features/dashboard/`, `frontend/src/features/courses/`, `frontend/src/components/shared/`, `ROLE_ACCESS_MATRIX.md`, `schema.yaml`, `DEFINITION_OF_DONE.md`
+- **Files touched:** `backend/apps/ai/`, `backend/apps/common/`, `backend/apps/dashboards/`, `backend/config/settings/`, `schema.yaml`, `DEFINITION_OF_DONE.md`
 - **Depends on:** `TASK-1001`, `TASK-503`, `TASK-506`
 - **Spec:** `PRD.md` Sections `4.3`, `6.7`, `6.11`
 - **Setup reference:** Use `Agents/future improvements.md` section `Cognitive Monitoring Guardrails`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Adaptive monitoring has an explicit, privacy-preserving foundation with consent, disclosure, signal transparency, and non-camera-dependent defaults
+- **Definition of Done:** Adaptive monitoring has an explicit backend foundation with consent records, disclosure-ready contracts, signal-policy limits, auditability, and non-camera-dependent defaults
 - **Blockers:** None
-- **Description:** Build the governance and product foundation required before adaptive monitoring features are activated. This task should define how focus drift and mood features are disclosed, how users opt in, what signals are permitted, and how sensitive data is minimized and protected.
+- **Description:** Build the backend governance and contract foundation required before adaptive monitoring features are activated. This task should define what signals are permitted, how users opt in, how sensitive data is minimized and protected, how consent is stored and revoked, and what schema/API surface later frontend work must consume.
 
-### TASK-1008: Implement Focus Drift, Mood Mirror, and Adaptive Responses
+### TASK-1007-FE: Build Cognitive Monitoring Consent and Privacy Frontend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
-- **Owner:** Both
+- **Owner:** Frontend
+- **Status:** Complete
 - **Actor(s):** Regular User, Admin
 - **Route(s):** `/dashboard`, `/courses/:id`, `/messages`, `/admin`
-- **Files touched:** `backend/apps/ai/`, `backend/apps/dashboards/`, `backend/apps/courses/`, `frontend/src/features/dashboard/`, `frontend/src/features/courses/`, `frontend/src/services/`, `frontend/src/hooks/`, `schema.yaml`
+- **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/features/courses/`, `frontend/src/components/shared/`, `frontend/src/services/`, `ROLE_ACCESS_MATRIX.md`
+- **Depends on:** `TASK-1007`
+- **Spec:** `PRD.md` Sections `4.3`, `6.7`, `6.11`; `schema.yaml` cognitive-monitoring consent endpoints when added
+- **Setup reference:** Use `Agents/future improvements.md` section `Cognitive Monitoring Guardrails`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Users can see disclosure, consent, transparency, and privacy controls for adaptive monitoring without hidden assumptions about camera analysis
+- **Blockers:** None
+- **Description:** Build the frontend disclosure and consent experience on top of `TASK-1007`. This includes opt-in UI, signal transparency, revocation controls, and admin-safe visibility that matches the backend privacy contract rather than inventing new behavior in the client.
+
+### TASK-1008: Implement Focus Drift, Mood Mirror, and Adaptive Responses Backend
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Backend
+- **Status:** Complete
+- **Actor(s):** Regular User, Admin
+- **Route(s):** `/dashboard`, `/courses/:id`, `/messages`, `/admin`
+- **Files touched:** `backend/apps/ai/`, `backend/apps/dashboards/`, `backend/apps/courses/`, `backend/apps/common/`, `schema.yaml`
 - **Depends on:** `TASK-1007`
 - **Spec:** `PRD.md` Sections `4.3`, `6.7`
 - **Setup reference:** Use `Agents/future improvements.md` section `Cognitive Monitoring Guardrails`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Focus drift detection and the learning mood mirror are implemented as opt-in adaptive tools with understandable user-facing behavior
+- **Definition of Done:** The backend can generate opt-in focus drift, mood mirror, and adaptive-response outputs using approved signals with explainable state and safe fallback behavior
 - **Blockers:** None
-- **Description:** Deliver the actual adaptive learning experience after the privacy foundation exists. The behavior should help users re-focus, reflect on learning state, or adjust the learning experience without making camera analysis a hidden assumption.
+- **Description:** Deliver the backend adaptive learning engine after the privacy foundation exists. This task should implement the actual signal processing, bounded inference, explainable outputs, and API contracts that help users re-focus or reflect without making camera analysis a hidden assumption.
 
-### TASK-1009: Deliver Advanced Analytics, Matching-Quality Monitoring, and System Health Views
+### TASK-1008-FE: Implement Focus Drift, Mood Mirror, and Adaptive Responses Frontend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
-- **Owner:** Both
+- **Owner:** Frontend
+- **Status:** Complete
+- **Actor(s):** Regular User, Admin
+- **Route(s):** `/dashboard`, `/courses/:id`, `/messages`, `/admin`
+- **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/features/courses/`, `frontend/src/services/`, `frontend/src/hooks/`, `frontend/src/components/shared/`
+- **Depends on:** `TASK-1008`, `TASK-1007-FE`
+- **Spec:** `PRD.md` Sections `4.3`, `6.7`; `schema.yaml` adaptive-monitoring endpoints when added
+- **Setup reference:** Use `Agents/future improvements.md` section `Cognitive Monitoring Guardrails`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Focus drift detection and the learning mood mirror are surfaced as understandable, opt-in adaptive tools with clear user-facing behavior
+- **Blockers:** None
+- **Description:** Deliver the user-facing adaptive learning experience after the backend engine and consent surfaces exist. This includes in-product prompts, adaptive-response UI, explanation copy, and safe empty/error states that match the backend outputs.
+
+### TASK-1009: Deliver Advanced Analytics, Matching-Quality Monitoring, and System Health Backend
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Backend
 - **Actor(s):** Organization, Admin
 - **Route(s):** `/dashboard`, `/org`, `/admin`, `/discover`
-- **Files touched:** `backend/apps/dashboards/`, `backend/apps/ai/`, `backend/apps/common/`, `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/dashboard/`, `schema.yaml`
+- **Files touched:** `backend/apps/dashboards/`, `backend/apps/ai/`, `backend/apps/common/`, `schema.yaml`
 - **Depends on:** `TASK-901`, `TASK-908`, `TASK-1002`, `TASK-1007`
 - **Spec:** `PRD.md` Sections `4.3`, `6.6`, `6.7`, `6.11`
 - **Setup reference:** Use `Agents/future improvements.md` sections `Recommendation and Matching Expansion` and `Remaining Deferred Product Areas`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Organization and admin analytics include stronger reporting, matching-quality visibility, adaptive-signal visibility, and system-health style monitoring required by the PRD roadmap
+- **Definition of Done:** Organization and admin analytics APIs include stronger reporting, matching-quality visibility, adaptive-signal visibility, and system-health style monitoring required by the PRD roadmap
 - **Blockers:** None
-- **Description:** Deliver the broader intelligence and oversight analytics that turn recommendations and adaptive behavior into measurable, governable system capabilities rather than opaque background logic. This task should explicitly cover social impact heatmaps, active video-session analytics where applicable, global knowledge analytics, matching-quality monitoring, and broader automation or predictive-insight surfaces required by the PRD roadmap.
+- **Description:** Deliver the backend intelligence and oversight analytics that turn recommendations and adaptive behavior into measurable, governable system capabilities rather than opaque background logic. This task should explicitly cover social impact heatmaps, active video-session analytics where applicable, global knowledge analytics, matching-quality monitoring, and broader automation or predictive-insight contracts required by the PRD roadmap.
 
-### TASK-1010: Add Community-Service Monetization and Advanced Payment Automation
+### TASK-1009-FE: Deliver Advanced Analytics, Matching-Quality Monitoring, and System Health Frontend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
-- **Owner:** Both
+- **Owner:** Frontend
+- **Actor(s):** Organization, Admin
+- **Route(s):** `/dashboard`, `/org`, `/admin`, `/discover`
+- **Files touched:** `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/dashboard/`, `frontend/src/components/shared/`
+- **Depends on:** `TASK-1009`
+- **Spec:** `PRD.md` Sections `4.3`, `6.6`, `6.7`, `6.11`; `schema.yaml` analytics endpoints when added
+- **Setup reference:** Use `Agents/future improvements.md` sections `Recommendation and Matching Expansion` and `Remaining Deferred Product Areas`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Organization and admin dashboards expose the analytics, matching-quality monitoring, adaptive-signal visibility, and system-health views required by the PRD roadmap
+- **Blockers:** None
+- **Description:** Build the frontend analytics surfaces on top of `TASK-1009` so operators can actually use the new reporting and monitoring layer. This includes charts, summaries, drill-downs, explanation states, and actor-safe visibility rules.
+
+### TASK-1010: Add Community-Service Monetization and Advanced Payment Automation Backend
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Backend
 - **Actor(s):** Regular User, Organization, Admin
 - **Route(s):** `/courses/:id`, `/dashboard`, `/org`, `/admin`, `/payments`
-- **Files touched:** `backend/apps/payments/`, `backend/apps/courses/`, `backend/apps/events/`, `backend/apps/organizations/`, `frontend/src/features/courses/`, `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/payments/`, `schema.yaml`
+- **Files touched:** `backend/apps/payments/`, `backend/apps/courses/`, `backend/apps/events/`, `backend/apps/organizations/`, `backend/apps/common/`, `schema.yaml`
 - **Depends on:** `TASK-703`, `TASK-704`, `TASK-1006`
 - **Spec:** `PRD.md` Sections `4.3`, `6.8`, `6.9`, `6.10`
 - **Setup reference:** Use `Agents/future improvements.md` sections `Remaining Deferred Product Areas` and `Extra Requested Ideas Outside Current PRD Core`
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Paid community-service offerings and their advanced payment or monetization workflow requirements are explicitly supported instead of left implied
+- **Definition of Done:** Paid community-service offerings and their advanced payment or monetization workflow requirements are explicitly supported in backend rules, contracts, and automation flows
 - **Blockers:** None
-- **Description:** Deliver the PRD roadmap area where community-service offerings intersect with payments. This task should cover paid community-service course support, advanced monetization automation needed for those offerings, and the required operator visibility for organizations and admins.
+- **Description:** Deliver the backend PRD roadmap area where community-service offerings intersect with payments. This task should cover paid community-service course support, advanced monetization automation needed for those offerings, and the required operator/audit visibility for organizations and admins.
 
-### TASK-1011: Run Final PRD Coverage Audit and Deferred-Feature Closure
+### TASK-1010-FE: Add Community-Service Monetization and Advanced Payment Automation Frontend
 - **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
-- **Owner:** Both
+- **Owner:** Frontend
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/courses/:id`, `/dashboard`, `/org`, `/admin`, `/payments`
+- **Files touched:** `frontend/src/features/courses/`, `frontend/src/features/dashboard/`, `frontend/src/features/organizations/`, `frontend/src/services/payments/`
+- **Depends on:** `TASK-1010`
+- **Spec:** `PRD.md` Sections `4.3`, `6.8`, `6.9`, `6.10`; `schema.yaml` payment and community-service monetization endpoints when added
+- **Setup reference:** Use `Agents/future improvements.md` sections `Remaining Deferred Product Areas` and `Extra Requested Ideas Outside Current PRD Core`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Users, organizations, and admins can operate the paid community-service workflow through frontend surfaces that match the backend monetization rules
+- **Blockers:** None
+- **Description:** Build the frontend operator and learner experience on top of `TASK-1010`. This includes checkout-adjacent UI, payment state visibility, organization/admin workflow surfaces, and actor-safe messaging for community-service monetization behavior.
+
+### TASK-1011: Run Final PRD Coverage Audit and Deferred-Feature Closure Backend
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Backend
 - **Actor(s):** Guest, Regular User, Organization, Admin
 - **Route(s):** All routes in `ROLE_ACCESS_MATRIX.md` plus future additions that must be added there first
 - **Files touched:** `Agent Tasks.md`, `Agents/future improvements.md`, `BLOCKERS.md`, `ROLE_ACCESS_MATRIX.md`, `schema.yaml`, `DEFINITION_OF_DONE.md`
@@ -1247,14 +1312,28 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 - **Spec:** `PRD.md` Sections `3` through `7`
 - **Setup reference:** Use `Agents/future improvements.md` as the companion source for Phase 10 deferred and advanced features
 - **Conventions:** Follow `CONVENTIONS.md`
-- **Definition of Done:** Every remaining PRD feature is either implemented in this phase or explicitly re-mapped with no silent omissions, and the coverage checklist stays accurate
+- **Definition of Done:** Every remaining backend/API contract in the PRD is either implemented in this phase or explicitly re-mapped with no silent omissions, and the coverage checklist stays accurate
 - **Blockers:** None
-- **Description:** Close the PRD loop after the remaining roadmap work lands. This task should update the task map, route matrix, blockers, schema, and governance docs so the project can claim complete PRD coverage without ambiguous leftovers.
+- **Description:** Close the backend and contract side of the PRD loop after the remaining roadmap work lands. This task should update the task map, route matrix, blockers, schema, and governance docs so backend/system coverage can be claimed without ambiguous leftovers.
+
+### TASK-1011-FE: Run Final PRD Coverage Audit and Deferred-Feature Closure Frontend
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Owner:** Frontend
+- **Actor(s):** Guest, Regular User, Organization, Admin
+- **Route(s):** All routes in `ROLE_ACCESS_MATRIX.md` plus future additions that must be added there first
+- **Files touched:** `Agent Tasks.md`, `Agents/future improvements.md`, `BLOCKERS.md`, `ROLE_ACCESS_MATRIX.md`, `DEFINITION_OF_DONE.md`
+- **Depends on:** `TASK-1011`, `TASK-1007-FE`, `TASK-1008-FE`, `TASK-1009-FE`, `TASK-1010-FE`
+- **Spec:** `PRD.md` Sections `3` through `7`
+- **Setup reference:** Use `Agents/future improvements.md` as the companion source for Phase 10 deferred and advanced features
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Every remaining frontend or actor-surface PRD requirement is either implemented in this phase or explicitly re-mapped with no silent omissions, and the coverage checklist stays accurate
+- **Blockers:** None
+- **Description:** Close the frontend and actor-surface side of the PRD loop after the remaining roadmap work lands. This task should reconcile the task map, role matrix, blockers, and governance docs so UI/route coverage can be claimed without ambiguous leftovers.
 
 ### Phase 10 Definition of Done
 
 - AI provider setup, recommendation features, and learning-guidance features are explicitly planned through implementation-ready tasks rather than vague future hooks.
-- Cognitive monitoring features are split into privacy foundation work and adaptive experience work so sensitive behavior is not implemented blindly.
+- Cognitive monitoring, analytics, monetization, and final-closure work are sequenced backend-first and frontend-second so implementation does not drift across layers.
 - Regular-user course creation, community/service systems, certificates, and advanced analytics all have explicit task coverage.
 - The PRD-to-task coverage checklist remains complete and no deferred PRD feature is left unmapped.
 
@@ -1290,7 +1369,7 @@ Every PRD feature or rule below maps to at least one task ID.
 - Access rules enforced server-side: `TASK-104`, `TASK-206`
 - Frontend protected route enforcement: `TASK-104`, `TASK-203`, `TASK-206`
 - Stronger admin security baseline: `TASK-206`
-- MFA future path: `TASK-1011`
+- MFA future path: `TASK-1011`, `TASK-1011-FE`
 
 ### Profile and skill graph
 
@@ -1324,7 +1403,7 @@ Every PRD feature or rule below maps to at least one task ID.
 - Session scheduling/planning: `TASK-505`, `TASK-506`
 - Planned and completed session records: `TASK-505`, `TASK-506`
 - Demo-ready session delivery with external link fallback: `TASK-506`
-- In-platform video left extensible but not required for V1: `TASK-503`, `TASK-506`, `TASK-1009`
+- In-platform video left extensible but not required for V1: `TASK-503`, `TASK-506`, `TASK-1009`, `TASK-1009-FE`
 
 ### Courses, programs, and learning content
 
@@ -1345,7 +1424,7 @@ Every PRD feature or rule below maps to at least one task ID.
 - Currency-aware pricing: `TASK-703`, `TASK-704`
 - Chapa-oriented payment flow: `TASK-703`, `TASK-704`
 - Enrollment reconciliation and payment follow-up: `TASK-703`, `TASK-705`
-- Paid community-service courses and advanced payment automation: `TASK-1010`
+- Paid community-service courses and advanced payment automation: `TASK-1010`, `TASK-1010-FE`
 
 ### AI assistance and recommendation layer
 
@@ -1359,7 +1438,7 @@ Every PRD feature or rule below maps to at least one task ID.
 ### Community, service, and collaboration
 
 - Community interaction beyond one-to-one swaps preserved for later: `TASK-1006`
-- Volunteer/social-impact/community-service initiatives preserved for later: `TASK-1006`, `TASK-1010`
+- Volunteer/social-impact/community-service initiatives preserved for later: `TASK-1006`, `TASK-1010`, `TASK-1010-FE`
 - Field-based communities preserved for later: `TASK-1006`
 - Only verified organizations create communities initially: `TASK-1006`
 - Events can be created by organizations regardless of verification state: `TASK-801`, `TASK-807`, `TASK-808`
@@ -1385,7 +1464,7 @@ Every PRD feature or rule below maps to at least one task ID.
 - Verified digital certificates preserved for later: `TASK-1006`
 - Verified-org-only issuance rule preserved: `TASK-1006`
 - Unique certificate ID and verification lookup path preserved: `TASK-1006`
-- Extensible verification workflows: `TASK-601`, `TASK-1006`, `TASK-1011`
+- Extensible verification workflows: `TASK-601`, `TASK-1006`, `TASK-1011`, `TASK-1011-FE`
 
 ### Dashboards and analytics
 
@@ -1394,9 +1473,9 @@ Every PRD feature or rule below maps to at least one task ID.
 - Applicant pipeline visibility in org dashboards: `TASK-805`, `TASK-902`
 - Event management visibility and event analytics in org surfaces: `TASK-808`, `TASK-809`, `TASK-902`
 - Admin dashboard: `TASK-901`, `TASK-902`, `TASK-908`
-- Advanced analytics and reporting preserved for later: `TASK-1009`
-- Social impact heatmaps, global knowledge analytics, and broader predictive insights: `TASK-1009`
-- System health and matching-quality monitoring: `TASK-1009`
+- Advanced analytics and reporting preserved for later: `TASK-1009`, `TASK-1009-FE`
+- Social impact heatmaps, global knowledge analytics, and broader predictive insights: `TASK-1009`, `TASK-1009-FE`
+- System health and matching-quality monitoring: `TASK-1009`, `TASK-1009-FE`
 
 ### Administration and moderation
 
@@ -1405,16 +1484,16 @@ Every PRD feature or rule below maps to at least one task ID.
 - Admin management of fixed category lists: `TASK-905`, `TASK-906`
 - User/org category suggestions with approval before activation: `TASK-905`, `TASK-906`
 - Audit-friendly important action records: `TASK-907`, `TASK-908`
-- Future identity/compliance workflows preserved: `TASK-1011`
+- Future identity/compliance workflows preserved: `TASK-1011`, `TASK-1011-FE`
 
 ### Non-functional requirements
 
 - Responsive web experience across mobile and desktop: `TASK-102`, `TASK-201`, `TASK-302`, `TASK-402`, `TASK-604`, `TASK-902`
 - Secure auth, authorization, and session management: `TASK-101`, `TASK-104`, `TASK-202`, `TASK-206`
 - Sensitive data protected in transit and trust-sensitive flows protected: `TASK-101`, `TASK-206`, `TASK-601`, `TASK-703`
-- Privacy-preserving handling and limited unnecessary exposure: `TASK-305`, `TASK-602`, `TASK-1007`, `TASK-1008`
+- Privacy-preserving handling and limited unnecessary exposure: `TASK-305`, `TASK-602`, `TASK-1007`, `TASK-1007-FE`, `TASK-1008`, `TASK-1008-FE`
 - Reliability of core records despite optional service failure: `TASK-503`, `TASK-505`, `TASK-705`, `TASK-907`
-- Maintainable modular architecture for V2/V3: `TASK-103`, `TASK-1000`, `TASK-1001`, `TASK-1002`, `TASK-1005`, `TASK-1006`, `TASK-1007`, `TASK-1009`, `TASK-1011`
+- Maintainable modular architecture for V2/V3: `TASK-103`, `TASK-1000`, `TASK-1001`, `TASK-1002`, `TASK-1005`, `TASK-1006`, `TASK-1007`, `TASK-1007-FE`, `TASK-1009`, `TASK-1009-FE`, `TASK-1011`, `TASK-1011-FE`
 - Accessibility considered from V1: `TASK-102`, `TASK-201`, `TASK-302`, `TASK-604`, `TASK-902`
 
 ### Explicitly deferred but still tracked
@@ -1425,11 +1504,11 @@ Every PRD feature or rule below maps to at least one task ID.
 - Discussion forums and community groups: `TASK-1006`
 - Verified digital certificates: `TASK-1006`
 - Organization-side verification workflow expansion: `TASK-601`, `TASK-1006`
-- Stronger analytics/reporting: `TASK-1009`
-- Focus drift detection and mood mirror: `TASK-1007`, `TASK-1008`
-- Advanced career matching and ecosystem intelligence: `TASK-1002`, `TASK-1009`
-- Social impact heatmaps, active video-session analytics, and global knowledge analytics: `TASK-1009`
-- Paid community-service courses and broader monetization automation: `TASK-1010`
+- Stronger analytics/reporting: `TASK-1009`, `TASK-1009-FE`
+- Focus drift detection and mood mirror: `TASK-1007`, `TASK-1007-FE`, `TASK-1008`, `TASK-1008-FE`
+- Advanced career matching and ecosystem intelligence: `TASK-1002`, `TASK-1009`, `TASK-1009-FE`
+- Social impact heatmaps, active video-session analytics, and global knowledge analytics: `TASK-1009`, `TASK-1009-FE`
+- Paid community-service courses and broader monetization automation: `TASK-1010`, `TASK-1010-FE`
 
 ## Unmapped PRD Items
 

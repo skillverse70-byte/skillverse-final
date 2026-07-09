@@ -128,13 +128,20 @@ class AdminOversightCountsSerializer(serializers.Serializer):
     reviewed_events = serializers.IntegerField(read_only=True)
 
 
+class AdminAdaptiveMonitoringSummarySerializer(serializers.Serializer):
+    active_consents = serializers.IntegerField(read_only=True)
+    revoked_consents = serializers.IntegerField(read_only=True)
+    distinct_consented_users = serializers.IntegerField(read_only=True)
+    currently_monitored_users = serializers.IntegerField(read_only=True)
+
+
 class AdminDashboardSerializer(serializers.Serializer):
     summary = AdminPlatformSummarySerializer(read_only=True)
     oversight = AdminOversightCountsSerializer(read_only=True)
+    adaptive_monitoring = AdminAdaptiveMonitoringSummarySerializer(read_only=True)
     organization_verification_requests = OrganizationVerificationRequestSerializer(
         many=True,
         read_only=True,
     )
     financial_accounts = AdminFinancialAccountSerializer(many=True, read_only=True)
     events = AdminEventOversightSerializer(many=True, read_only=True)
-

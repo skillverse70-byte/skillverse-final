@@ -3,11 +3,13 @@ import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link2, MessageCircle, Send } from "lucide-react";
+import AIAdaptiveMonitoringPanel from "@/components/shared/AIAdaptiveMonitoringPanel";
 import EmptyState from "@/components/shared/EmptyState";
 import PageLoader from "@/components/shared/PageLoader";
 import PageHeader from "@/components/shared/PageHeader";
 import ConversationList from "@/features/messages/components/ConversationList";
 import MessageThread from "@/features/messages/components/MessageThread";
+import { useAIAdaptiveMonitoring } from "@/hooks/ai/useAIAdaptiveMonitoring";
 import { useMessages } from "@/hooks/messages/useMessages";
 import { useSwapSessions } from "@/hooks/messages/useSwapSessions";
 import SessionPlannerPanel from "@/features/messages/components/SessionPlannerPanel";
@@ -17,6 +19,15 @@ export default function MessagesPage() {
   const searchParams = new URLSearchParams(location.search);
   const initialConversationId =
     searchParams.get("conversation") || searchParams.get("thread") || "";
+  const {
+    adaptiveState,
+    loading: adaptiveLoading,
+    submitting: adaptiveSubmitting,
+    error: adaptiveError,
+    submitCheckIn,
+  } = useAIAdaptiveMonitoring({
+    surface: "/messages",
+  });
   const {
     me,
     conversations,
@@ -86,6 +97,20 @@ export default function MessagesPage() {
         title="Messages"
         description="Coordinate accepted swaps, share useful links, and keep each exchange moving."
       />
+
+      <div className="mb-6">
+        <AIAdaptiveMonitoringPanel
+          title="Messaging focus"
+          description="A quick mirror for focus and coordination signals while you manage swap conversations."
+          adaptiveState={adaptiveState}
+          loading={adaptiveLoading}
+          submitting={adaptiveSubmitting}
+          error={adaptiveError}
+          onSubmitCheckIn={submitCheckIn}
+          manageHref="/profile?tab=adaptive"
+          compact
+        />
+      </div>
 
       <div
         className="overflow-hidden rounded-2xl border border-border/50 bg-white"

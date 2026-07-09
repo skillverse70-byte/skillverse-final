@@ -17,15 +17,26 @@ import {
   ListChecks,
   NotebookPen,
 } from "lucide-react";
+import AIAdaptiveMonitoringPanel from "@/components/shared/AIAdaptiveMonitoringPanel";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import AILearningGuidancePanel from "@/components/shared/AILearningGuidancePanel";
+import AIRecommendationDeck from "@/components/shared/AIRecommendationDeck";
 import BookmarkButton from "@/components/shared/BookmarkButton";
 import PageLoader from "@/components/shared/PageLoader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import PaidEnrollmentStatus from "@/features/courses/components/PaidEnrollmentStatus";
 import ParticipationReviewDialog from "@/features/reviews/components/ParticipationReviewDialog";
+import { useAIAdaptiveMonitoring } from "@/hooks/ai/useAIAdaptiveMonitoring";
+import { useAILearningGuidance } from "@/hooks/ai/useAILearningGuidance";
+import { useAIRecommendationFeed } from "@/hooks/ai/useAIRecommendationFeed";
+import {
+  buildCourseRecommendationItems,
+  buildEventRecommendationItems,
+  buildOpportunityRecommendationItems,
+} from "@/lib/ai-recommendation-items";
 import { paymentTransactionStatuses, roles } from "@/lib/domain-enums";
 import { ApiError } from "@/lib/http-client";
 import { getPaidCourseEnrollmentGate } from "@/lib/trust-state";
@@ -100,8 +111,37 @@ export default function CourseDetailPage() {
   const [enrolling, setEnrolling] = useState(false);
   const [completingLessonId, setCompletingLessonId] = useState(null);
   const handledPaymentReturn = useRef(null);
-
   const isLearner = actorRole === roles.regularUser;
+  const {
+    adaptiveState,
+    loading: adaptiveLoading,
+    submitting: adaptiveSubmitting,
+    error: adaptiveError,
+    submitCheckIn,
+  } = useAIAdaptiveMonitoring({
+    enabled: isAuthenticated && isLearner,
+    courseId: id,
+    surface: "/courses/:id",
+  });
+  const {
+    feature: recommendationFeature,
+    feed: recommendationFeed,
+    loading: recommendationsLoading,
+    error: recommendationsError,
+  } = useAIRecommendationFeed({
+    enabled: isAuthenticated && isLearner,
+    limitPerType: 2,
+  });
+  const {
+    guidanceFeature,
+    assignmentFeature,
+    guidance,
+    loading: guidanceLoading,
+    error: guidanceError,
+  } = useAILearningGuidance({
+    enabled: isAuthenticated && isLearner,
+    courseId: id,
+  });
   const returnedPaymentReference = searchParams.get("payment_tx_ref");
 
   const scrollToLesson = (lessonId) => {
@@ -258,6 +298,37 @@ export default function CourseDetailPage() {
         enrollmentOpen: course?.enrollment_open,
       }),
     [course, organization],
+  );
+  const recommendationSections = useMemo(
+    () => [
+      {
+        key: "courses",
+        title: "Related courses",
+        icon: BookOpen,
+        description: "Adjacent learning paths connected to the same signals.",
+        items: buildCourseRecommendationItems(
+          recommendationFeed.course_recommendations,
+          { excludeIds: [Number(id)] },
+        ),
+      },
+      {
+        key: "events",
+        title: "Relevant events",
+        icon: Users,
+        description: "Live sessions that reinforce this learning path.",
+        items: buildEventRecommendationItems(recommendationFeed.event_recommendations),
+      },
+      {
+        key: "jobs",
+        title: "Opportunities",
+        icon: Clipboard,
+        description: "Where this learning path could lead next.",
+        items: buildOpportunityRecommendationItems(
+          recommendationFeed.opportunity_recommendations,
+        ),
+      },
+    ],
+    [id, recommendationFeed],
   );
 
   const handlePaidEnrollment = async () => {
@@ -811,7 +882,8 @@ export default function CourseDetailPage() {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="sticky top-24 bg-white rounded-2xl border border-border/50 p-6">
+          <div className="sticky top-24 space-y-4">
+            <div className="bg-white rounded-2xl border border-border/50 p-6">
             <div className="text-center mb-5">
               {course.is_free ? (
                 <div className="font-heading font-bold text-3xl text-teal-600">Free</div>
@@ -895,6 +967,57 @@ export default function CourseDetailPage() {
                 </div>
               </div>
             )}
+
+            <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-4 text-sm">
+              <div className="font-medium text-foreground">Verification and certificate path</div>
+              <p className="mt-2 text-muted-foreground">
+                Verified organizations can issue completion certificates after you finish eligible courses. Any certificate or related service record will appear in your certificate workspace.
+              </p>
+              <Link to="/certificates" className="mt-3 inline-flex text-sm font-medium text-teal-700 hover:text-teal-800">
+                Open certificates
+              </Link>
+            </div>
+            </div>
+
+            {isAuthenticated && isLearner ? (
+              <div className="space-y-4">
+                <AIRecommendationDeck
+                  title="Recommended next moves"
+                  description="These suggestions connect this course to related events, opportunities, and nearby learning paths."
+                  feature={recommendationFeature}
+                  feed={recommendationFeed}
+                  sections={recommendationSections}
+                  loading={recommendationsLoading}
+                  error={recommendationsError}
+                  emptyTitle="More related suggestions will appear here"
+                  emptyDescription="As you progress through this and other activities, SkillVerse will surface stronger next-step recommendations."
+                  compact
+                />
+                <AILearningGuidancePanel
+                  title="Course learning guidance"
+                  description="This guidance uses your current progress, lesson focus, and skill goals to suggest what to do next inside this course."
+                  guidance={guidance}
+                  guidanceFeature={guidanceFeature}
+                  assignmentFeature={assignmentFeature}
+                  loading={guidanceLoading}
+                  error={guidanceError}
+                  emptyTitle="Course guidance will appear here"
+                  emptyDescription="Enroll and build progress to unlock stronger lesson-by-lesson coaching."
+                  compact
+                />
+                <AIAdaptiveMonitoringPanel
+                  title="Course focus mirror"
+                  description="Adaptive check-ins and response suggestions for this course, using only approved signals."
+                  adaptiveState={adaptiveState}
+                  loading={adaptiveLoading}
+                  submitting={adaptiveSubmitting}
+                  error={adaptiveError}
+                  onSubmitCheckIn={submitCheckIn}
+                  manageHref="/profile?tab=adaptive"
+                  compact
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
