@@ -1,8 +1,16 @@
+from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from apps.common.enums import EnrollmentStatus
-from apps.courses.models import Enrollment, EnrollmentLessonProgress
+from apps.common.email import render_email_html, send_platform_email
+from apps.common.enums import CourseInstructorInvitationStatus, EnrollmentStatus, Role
+from apps.courses.models import (
+    CourseInstructorInvitation,
+    Enrollment,
+    EnrollmentLessonProgress,
+)
+
+User = get_user_model()
 
 
 def ordered_modules(course_program):
@@ -117,6 +125,10 @@ def sync_enrollment_state(enrollment):
 def activate_paid_enrollment(payment_transaction):
     if payment_transaction.status != "succeeded":
         raise ValueError("A payment must be verified before enrollment activation.")
+    assert_user_can_enroll_as_learner(
+        payment_transaction.user,
+        payment_transaction.course_program,
+    )
 
     try:
         with transaction.atomic():
@@ -168,6 +180,376 @@ def complete_lesson_for_enrollment(enrollment, lesson_item):
     return sync_enrollment_state(enrollment)
 
 
+def sync_course_instructor_invitation(invitation):
+    invitation.sync_expired_status()
+    return invitation
+
+
+def sync_course_instructor_invitations_for_course(course_program):
+    invitations = list(course_program.instructor_invitations.all())
+    for invitation in invitations:
+        sync_course_instructor_invitation(invitation)
+    return invitations
+
+
+def accepted_course_instructors(course_program):
+    invitations = getattr(course_program, "_prefetched_objects_cache", {}).get(
+        "instructor_invitations"
+    )
+    if invitations is None:
+        invitations = list(
+            course_program.instructor_invitations.select_related("user").all()
+        )
+
+    accepted = []
+    for invitation in invitations:
+        if invitation.status != CourseInstructorInvitationStatus.ACCEPTED:
+            continue
+        if invitation.user is None:
+            continue
+        accepted.append(invitation.user)
+    return accepted
+
+
+def regular_user_instructor_invitations_queryset(user):
+    normalized_email = _normalize_invited_email(getattr(user, "email", ""))
+    if not normalized_email:
+        return CourseInstructorInvitation.objects.none()
+
+    return (
+        CourseInstructorInvitation.objects.select_related(
+            "user",
+            "invited_by",
+            "course_program",
+            "course_program__organization",
+        )
+        .filter(user=user)
+        .order_by("-last_sent_at", "-created_at", "-id")
+    )
+
+
+def _normalize_invited_email(invited_email):
+    return str(invited_email or "").strip().lower()
+
+
+def get_course_instructor_invitation_by_token(token):
+    normalized_token = str(token or "").strip()
+    if not normalized_token:
+        return None
+
+    invitation = (
+        CourseInstructorInvitation.objects.select_related(
+            "user",
+            "invited_by",
+            "course_program",
+            "course_program__organization",
+            "course_program__organization__owner",
+        )
+        .filter(token=normalized_token)
+        .first()
+    )
+    if invitation is None:
+        return None
+    return sync_course_instructor_invitation(invitation)
+
+
+def is_user_assigned_course_instructor(user, course_program):
+    if not getattr(user, "is_authenticated", False):
+        return False
+
+    return CourseInstructorInvitation.objects.filter(
+        course_program=course_program,
+        user=user,
+        status=CourseInstructorInvitationStatus.ACCEPTED,
+    ).exists()
+
+
+def assert_user_can_enroll_as_learner(user, course_program):
+    if is_user_assigned_course_instructor(user, course_program):
+        raise PermissionError(
+            "Assigned instructors cannot enroll in or track progress for their own course as learners."
+        )
+
+
+def _validate_invitation_actor(invitation, user):
+    if user is None:
+        return
+
+    if user.role != Role.REGULAR_USER:
+        raise PermissionError("Only regular-user accounts can respond to instructor invitations.")
+
+    if not user.email or _normalize_invited_email(user.email) != invitation.invited_email:
+        raise PermissionError("This invitation was sent to a different email address.")
+
+    if invitation.user_id and invitation.user_id != user.id:
+        raise PermissionError("This invitation is already tied to a different account.")
+
+
+def respond_to_course_instructor_invitation(invitation, *, user, action):
+    invitation = sync_course_instructor_invitation(invitation)
+    _validate_invitation_actor(invitation, user)
+
+    if invitation.status == CourseInstructorInvitationStatus.REVOKED:
+        raise ValueError("This instructor invitation was revoked.")
+    if invitation.status == CourseInstructorInvitationStatus.EXPIRED:
+        raise ValueError("This instructor invitation has expired.")
+    if invitation.status == CourseInstructorInvitationStatus.ACCEPTED:
+        raise ValueError("This instructor invitation has already been accepted.")
+    if invitation.status == CourseInstructorInvitationStatus.DECLINED:
+        raise ValueError("This instructor invitation has already been declined.")
+
+    update_fields = ["status", "updated_at"]
+    if user is not None and invitation.user_id != user.id:
+        invitation.user = user
+        update_fields.append("user")
+
+    if action == "accept":
+        invitation.status = CourseInstructorInvitationStatus.ACCEPTED
+        invitation.accepted_at = timezone.now()
+        invitation.declined_at = None
+        invitation.revoked_at = None
+        update_fields.extend(["accepted_at", "declined_at", "revoked_at"])
+    elif action == "decline":
+        invitation.status = CourseInstructorInvitationStatus.DECLINED
+        invitation.declined_at = timezone.now()
+        invitation.accepted_at = None
+        update_fields.extend(["declined_at", "accepted_at"])
+    else:
+        raise ValueError("Unsupported instructor invitation action.")
+
+    invitation.save(update_fields=update_fields)
+    transaction.on_commit(
+        lambda: notify_course_instructor_response(invitation.id, action=action)
+    )
+    return invitation
+
+
+def attach_course_invitations_to_user(user):
+    if getattr(user, "role", None) != Role.REGULAR_USER:
+        return []
+
+    normalized_email = _normalize_invited_email(getattr(user, "email", ""))
+    if not normalized_email:
+        return []
+
+    invitations = list(
+        CourseInstructorInvitation.objects.select_related(
+            "course_program",
+            "course_program__organization",
+        )
+        .filter(
+            invited_email__iexact=normalized_email,
+            user__isnull=True,
+        )
+        .order_by("-last_sent_at", "-created_at", "-id")
+    )
+    if not invitations:
+        return []
+
+    linked_invitations = []
+    pending_notification_ids = []
+    for invitation in invitations:
+        sync_course_instructor_invitation(invitation)
+        invitation.user = user
+        invitation.save(update_fields=["user", "updated_at"])
+        linked_invitations.append(invitation)
+        if invitation.status == CourseInstructorInvitationStatus.PENDING and not invitation.is_expired:
+            pending_notification_ids.append(invitation.id)
+
+    if pending_notification_ids:
+        def notify_linked_pending_invitations():
+            from apps.notifications.services import notify_course_instructor_invited
+
+            for invitation_id in pending_notification_ids:
+                invitation = (
+                    CourseInstructorInvitation.objects.select_related(
+                        "user",
+                        "course_program",
+                        "course_program__organization",
+                    )
+                    .filter(id=invitation_id)
+                    .first()
+                )
+                if invitation is not None:
+                    notify_course_instructor_invited(invitation)
+
+        transaction.on_commit(notify_linked_pending_invitations)
+
+    return linked_invitations
+
+
+def _resolve_invited_user(invited_email):
+    user = User.objects.filter(email__iexact=invited_email).first()
+    if user is None:
+        return None
+    if user.role != Role.REGULAR_USER:
+        raise ValueError(
+            "Instructor invitations can only be sent to regular-user accounts."
+        )
+    return user
+
+
+def build_course_instructor_invitation_action_url(invitation):
+    from apps.notifications.services import build_frontend_url
+
+    return build_frontend_url(
+        f"/instructor-invitations/accept?token={invitation.token}"
+    )
+
+
+def send_course_instructor_invitation_email(invitation):
+    greeting_name = (
+        invitation.user.full_name
+        if invitation.user and invitation.user.full_name
+        else invitation.invited_email
+    )
+    course_program = invitation.course_program
+    organization_name = course_program.organization.name
+    accept_url = build_course_instructor_invitation_action_url(invitation)
+    expiry_text = "This invitation expires in 24 hours."
+    html_context = {
+        "subject": f"You were invited to instruct {course_program.title}",
+        "greeting_name": greeting_name,
+        "organization_name": organization_name,
+        "course_title": course_program.title,
+        "accept_url": accept_url,
+        "expiry_text": expiry_text,
+        "invitation_token": invitation.token,
+    }
+    send_platform_email(
+        subject=html_context["subject"],
+        message=(
+            f"Hello {greeting_name},\n\n"
+            f"{organization_name} invited you to be an instructor for "
+            f"{course_program.title} on SkillVerse.\n\n"
+            f"Use this link to accept the invitation:\n{accept_url}\n\n"
+            f"{expiry_text}"
+        ),
+        html_message=render_email_html(
+            "emails/course_instructor_invitation_email.html",
+            html_context,
+        ),
+        recipient_list=[invitation.invited_email],
+        fail_silently=False,
+    )
+
+
+def dispatch_course_instructor_invitation(invitation_id):
+    invitation = (
+        CourseInstructorInvitation.objects.select_related(
+            "user",
+            "course_program",
+            "course_program__organization",
+        )
+        .filter(id=invitation_id)
+        .first()
+    )
+    if invitation is None:
+        return
+
+    send_course_instructor_invitation_email(invitation)
+
+    if invitation.user_id:
+        from apps.notifications.services import notify_course_instructor_invited
+
+        notify_course_instructor_invited(invitation)
+
+
+def create_course_instructor_invitation(
+    *,
+    course_program,
+    invited_by,
+    invited_email,
+):
+    normalized_email = _normalize_invited_email(invited_email)
+    if not normalized_email:
+        raise ValueError("Instructor email is required.")
+
+    invited_user = _resolve_invited_user(normalized_email)
+
+    existing_invitations = CourseInstructorInvitation.objects.filter(
+        course_program=course_program,
+        invited_email__iexact=normalized_email,
+    ).order_by("-created_at", "-id")
+    for invitation in existing_invitations:
+        sync_course_instructor_invitation(invitation)
+
+    if existing_invitations.filter(
+        status=CourseInstructorInvitationStatus.ACCEPTED
+    ).exists():
+        raise ValueError("This instructor is already assigned to the course.")
+
+    if existing_invitations.filter(
+        status=CourseInstructorInvitationStatus.PENDING,
+        expires_at__gt=timezone.now(),
+    ).exists():
+        raise ValueError(
+            "An active instructor invitation already exists for this email."
+        )
+
+    invitation = CourseInstructorInvitation.objects.create(
+        course_program=course_program,
+        user=invited_user,
+        invited_by=invited_by,
+        invited_email=normalized_email,
+        token=CourseInstructorInvitation.issue_token(),
+        expires_at=CourseInstructorInvitation.default_expiry(),
+    )
+    transaction.on_commit(
+        lambda: dispatch_course_instructor_invitation(invitation.id)
+    )
+    return invitation
+
+
+def resend_course_instructor_invitation(invitation, *, resent_by):
+    invitation = sync_course_instructor_invitation(invitation)
+    if invitation.status == CourseInstructorInvitationStatus.ACCEPTED:
+        raise ValueError("Accepted instructors do not need a new invitation.")
+    if invitation.status == CourseInstructorInvitationStatus.REVOKED:
+        raise ValueError("Revoked invitations cannot be resent.")
+
+    invitation.user = _resolve_invited_user(invitation.invited_email)
+    invitation.invited_by = resent_by
+    invitation.status = CourseInstructorInvitationStatus.PENDING
+    invitation.token = CourseInstructorInvitation.issue_token()
+    invitation.expires_at = CourseInstructorInvitation.default_expiry()
+    invitation.last_sent_at = timezone.now()
+    invitation.sent_count += 1
+    invitation.declined_at = None
+    invitation.revoked_at = None
+    invitation.save(
+        update_fields=[
+            "user",
+            "invited_by",
+            "status",
+            "token",
+            "expires_at",
+            "last_sent_at",
+            "sent_count",
+            "declined_at",
+            "revoked_at",
+            "updated_at",
+        ]
+    )
+    transaction.on_commit(
+        lambda: dispatch_course_instructor_invitation(invitation.id)
+    )
+    return invitation
+
+
+def revoke_course_instructor_invitation(invitation):
+    invitation = sync_course_instructor_invitation(invitation)
+    if invitation.status == CourseInstructorInvitationStatus.ACCEPTED:
+        raise ValueError("Accepted instructors must be managed through assignment controls.")
+    if invitation.status == CourseInstructorInvitationStatus.REVOKED:
+        return invitation
+
+    invitation.status = CourseInstructorInvitationStatus.REVOKED
+    invitation.revoked_at = timezone.now()
+    invitation.save(update_fields=["status", "revoked_at", "updated_at"])
+    return invitation
+
+
 def notify_paid_enrollment_activated(enrollment_id, payment_transaction_id):
     enrollment = (
         Enrollment.objects.select_related(
@@ -187,6 +569,25 @@ def notify_paid_enrollment_activated(enrollment_id, payment_transaction_id):
 
     payment_transaction = PaymentTransaction.objects.filter(id=payment_transaction_id).first()
     notify_enrollment_activated(enrollment, payment_transaction=payment_transaction)
+
+
+def notify_course_instructor_response(invitation_id, *, action):
+    invitation = (
+        CourseInstructorInvitation.objects.select_related(
+            "user",
+            "course_program",
+            "course_program__organization",
+            "course_program__organization__owner",
+        )
+        .filter(id=invitation_id)
+        .first()
+    )
+    if invitation is None:
+        return
+
+    from apps.notifications.services import notify_course_instructor_response
+
+    notify_course_instructor_response(invitation, action=action)
 
 
 def notify_course_completed(enrollment_id):

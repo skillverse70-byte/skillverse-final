@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import permissions, status
@@ -9,9 +10,10 @@ from apps.audit.services import record_audit_log
 from apps.common.permissions import IsAdminActor
 from apps.courses.admin_serializers import (
     AdminCourseModerationDecisionSerializer,
+    AdminCourseInstructorInvitationSerializer,
     AdminCourseModerationSerializer,
 )
-from apps.courses.models import CourseProgram
+from apps.courses.models import CourseInstructorInvitation, CourseProgram
 
 
 @extend_schema_view(
@@ -95,3 +97,45 @@ class AdminCourseModerationDecisionView(GenericAPIView):
         )
 
         return Response(AdminCourseModerationSerializer(course_program).data, status=status.HTTP_200_OK)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["courses", "admin"],
+        operation_id="admin_course_instructor_invitation_list",
+        responses={200: AdminCourseInstructorInvitationSerializer(many=True)},
+    )
+)
+class AdminCourseInstructorInvitationListView(ListAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdminActor]
+    serializer_class = AdminCourseInstructorInvitationSerializer
+
+    def get_queryset(self):
+        queryset = CourseInstructorInvitation.objects.select_related(
+            "user",
+            "invited_by",
+            "course_program",
+            "course_program__organization",
+        ).order_by("-created_at", "-id")
+
+        status_value = self.request.query_params.get("status")
+        if status_value:
+            queryset = queryset.filter(status=status_value)
+
+        course_program_id = self.request.query_params.get("course_program_id")
+        if course_program_id:
+            queryset = queryset.filter(course_program_id=course_program_id)
+
+        organization_id = self.request.query_params.get("organization_id")
+        if organization_id:
+            queryset = queryset.filter(course_program__organization_id=organization_id)
+
+        search_value = (self.request.query_params.get("search") or "").strip()
+        if search_value:
+            queryset = queryset.filter(
+                Q(course_program__title__icontains=search_value)
+                | Q(course_program__organization__name__icontains=search_value)
+                | Q(invited_email__icontains=search_value)
+                | Q(user__email__icontains=search_value)
+            )
+        return queryset.distinct()

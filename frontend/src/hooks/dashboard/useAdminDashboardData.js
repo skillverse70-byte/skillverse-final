@@ -11,6 +11,7 @@ export function useAdminDashboardData() {
     events: [],
     users: [],
     moderatedOrganizations: [],
+    instructorInvitations: [],
     courses: [],
     jobs: [],
     taxonomySuggestions: [],

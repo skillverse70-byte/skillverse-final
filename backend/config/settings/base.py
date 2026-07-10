@@ -409,6 +409,7 @@ SPECTACULAR_SETTINGS = {
         "SkillSwapStatusEnum": "apps.common.enums.SkillSwapStatus",
         "LearningSessionStatusEnum": "apps.common.enums.LearningSessionStatus",
         "CourseProgramStatusEnum": "apps.common.enums.CourseProgramStatus",
+        "CourseInstructorInvitationStatusEnum": "apps.common.enums.CourseInstructorInvitationStatus",
         "LessonItemTypeEnum": "apps.common.enums.LessonItemType",
         "EnrollmentStatusEnum": "apps.common.enums.EnrollmentStatus",
         "EventStatusEnum": "apps.common.enums.EventStatus",

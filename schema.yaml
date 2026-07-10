@@ -127,6 +127,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuditLog'
           description: ''
+  /api/admin/course-instructor-invitations/:
+    get:
+      operationId: admin_course_instructor_invitation_list
+      tags:
+      - courses
+      - admin
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminCourseInstructorInvitation'
+          description: ''
   /api/admin/courses/:
     get:
       operationId: admin_courses_list
@@ -1543,6 +1561,56 @@ paths:
                 items:
                   $ref: '#/components/schemas/EnrollmentSummary'
           description: ''
+  /api/courses/instructor-invitations/respond/:
+    get:
+      operationId: courses_instructor_invitation_preview
+      parameters:
+      - in: query
+        name: token
+        schema:
+          type: string
+          minLength: 1
+        required: true
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseInstructorInvitationPreview'
+          description: ''
+    post:
+      operationId: courses_instructor_invitation_respond
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseInstructorInvitationRespondRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseInstructorInvitationRespondRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseInstructorInvitationRespondRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseInstructorInvitationPreview'
+          description: ''
   /api/courses/manage/:
     get:
       operationId: courses_manage_list
@@ -1675,6 +1743,108 @@ paths:
       parameters:
       - in: path
         name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/courses/manage/{id}/instructors/:
+    get:
+      operationId: courses_manage_instructor_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CourseInstructorInvitation'
+          description: ''
+    post:
+      operationId: courses_manage_instructor_invite
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseInstructorInvitationCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CourseInstructorInvitationCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CourseInstructorInvitationCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseInstructorInvitation'
+          description: ''
+  /api/courses/manage/{id}/instructors/{invitation_id}/:
+    post:
+      operationId: courses_manage_instructor_resend
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: invitation_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - courses
+      security:
+      - cookieAuth: []
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseInstructorInvitation'
+          description: ''
+    delete:
+      operationId: courses_manage_instructor_revoke
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: invitation_id
         schema:
           type: integer
         required: true
@@ -4730,14 +4900,6 @@ components:
       required:
       - name
       - slug
-    ActionEnum:
-      enum:
-      - join
-      - leave
-      type: string
-      description: |-
-        * `join` - join
-        * `leave` - leave
     ActorSummary:
       type: object
       properties:
@@ -4891,6 +5053,102 @@ components:
       - total_adaptive_checkins
       - total_match_suggestions
       - tracked_sessions
+    AdminCourseInstructorInvitation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        course_program:
+          type: integer
+          readOnly: true
+        course_title:
+          type: string
+          readOnly: true
+        organization_id:
+          type: integer
+          readOnly: true
+        organization_name:
+          type: string
+          readOnly: true
+        invited_email:
+          type: string
+          format: email
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/CourseInstructorInvitationStatusEnum'
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+        sent_count:
+          type: integer
+          readOnly: true
+        accepted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        declined_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        invited_by_email:
+          type: string
+          format: email
+          readOnly: true
+        invited_by_name:
+          type: string
+          readOnly: true
+        invited_user_email:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+        invited_user_name:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - accepted_at
+      - course_program
+      - course_title
+      - created_at
+      - declined_at
+      - expires_at
+      - id
+      - invited_by_email
+      - invited_by_name
+      - invited_email
+      - invited_user_email
+      - invited_user_name
+      - last_sent_at
+      - organization_id
+      - organization_name
+      - revoked_at
+      - sent_count
+      - status
+      - updated_at
     AdminCourseModeration:
       type: object
       properties:
@@ -6427,11 +6685,19 @@ components:
       - id
       - joined_at
       - user
+    CommunityMembershipActionActionEnum:
+      enum:
+      - join
+      - leave
+      type: string
+      description: |-
+        * `join` - join
+        * `leave` - leave
     CommunityMembershipActionRequest:
       type: object
       properties:
         action:
-          $ref: '#/components/schemas/ActionEnum'
+          $ref: '#/components/schemas/CommunityMembershipActionActionEnum'
       required:
       - action
     CommunityMembershipRoleEnum:
@@ -6494,6 +6760,182 @@ components:
         * `skill_swap` - Skill Swap
         * `course` - Course
         * `event` - Event
+    CourseInstructorInvitation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invited_email:
+          type: string
+          format: email
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/CourseInstructorInvitationStatusEnum'
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+        sent_count:
+          type: integer
+          readOnly: true
+        accepted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        declined_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        invited_user:
+          allOf:
+          - $ref: '#/components/schemas/CourseInstructorInvitationUser'
+          nullable: true
+          readOnly: true
+        is_expired:
+          type: boolean
+          readOnly: true
+        is_public:
+          type: boolean
+          readOnly: true
+      required:
+      - accepted_at
+      - created_at
+      - declined_at
+      - expires_at
+      - id
+      - invited_email
+      - invited_user
+      - is_expired
+      - is_public
+      - last_sent_at
+      - revoked_at
+      - sent_count
+      - status
+      - updated_at
+    CourseInstructorInvitationCreateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+    CourseInstructorInvitationPreview:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invited_email:
+          type: string
+          format: email
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_expired:
+          type: boolean
+          readOnly: true
+        course_program:
+          readOnly: true
+        invited_user:
+          allOf:
+          - $ref: '#/components/schemas/CourseInstructorInvitationUser'
+          nullable: true
+          readOnly: true
+        can_respond:
+          type: boolean
+          readOnly: true
+        response_actor_matches:
+          type: boolean
+          readOnly: true
+      required:
+      - can_respond
+      - course_program
+      - expires_at
+      - id
+      - invited_email
+      - invited_user
+      - is_expired
+      - response_actor_matches
+      - status
+    CourseInstructorInvitationRespondActionEnum:
+      enum:
+      - accept
+      - decline
+      type: string
+      description: |-
+        * `accept` - accept
+        * `decline` - decline
+    CourseInstructorInvitationRespondRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+        action:
+          $ref: '#/components/schemas/CourseInstructorInvitationRespondActionEnum'
+      required:
+      - action
+      - token
+    CourseInstructorInvitationStatusEnum:
+      enum:
+      - pending
+      - accepted
+      - declined
+      - revoked
+      - expired
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `accepted` - Accepted
+        * `declined` - Declined
+        * `revoked` - Revoked
+        * `expired` - Expired
+    CourseInstructorInvitationUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+      required:
+      - email
+      - full_name
+      - id
+      - role
     CourseModule:
       type: object
       properties:
@@ -6608,7 +7050,11 @@ components:
           maxLength: 32
         instructor_name:
           type: string
-          maxLength: 255
+          readOnly: true
+        instructors:
+          type: array
+          items: {}
+          readOnly: true
         tags: {}
         offering_type:
           $ref: '#/components/schemas/OfferingTypeEnum'
@@ -6659,6 +7105,8 @@ components:
       - enrolled_count
       - financial_account
       - id
+      - instructor_name
+      - instructors
       - modules
       - organization_id
       - organization_name
@@ -6707,7 +7155,11 @@ components:
           maxLength: 32
         instructor_name:
           type: string
-          maxLength: 255
+          readOnly: true
+        instructors:
+          type: array
+          items: {}
+          readOnly: true
         tags: {}
         offering_type:
           $ref: '#/components/schemas/OfferingTypeEnum'
@@ -6754,6 +7206,8 @@ components:
       - enrolled_count
       - financial_account
       - id
+      - instructor_name
+      - instructors
       - organization_id
       - organization_name
       - organization_verification_status
@@ -6813,6 +7267,54 @@ components:
             $ref: '#/components/schemas/CourseModuleWriteRequest'
       required:
       - title
+    DashboardInstructorInvitation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        invited_email:
+          type: string
+          format: email
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+        accepted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        declined_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_expired:
+          type: boolean
+          readOnly: true
+        action_url:
+          type: string
+          readOnly: true
+        course_program:
+          readOnly: true
+      required:
+      - accepted_at
+      - action_url
+      - course_program
+      - declined_at
+      - expires_at
+      - id
+      - invited_email
+      - is_expired
+      - last_sent_at
+      - status
     DashboardUserSummary:
       type: object
       properties:
@@ -6908,7 +7410,11 @@ components:
           maxLength: 32
         instructor_name:
           type: string
-          maxLength: 255
+          readOnly: true
+        instructors:
+          type: array
+          items: {}
+          readOnly: true
         tags: {}
         offering_type:
           $ref: '#/components/schemas/OfferingTypeEnum'
@@ -6955,6 +7461,8 @@ components:
       - enrolled_count
       - financial_account
       - id
+      - instructor_name
+      - instructors
       - organization_id
       - organization_name
       - organization_verification_status
@@ -6977,9 +7485,6 @@ components:
           type: string
           minLength: 1
           maxLength: 32
-        instructor_name:
-          type: string
-          maxLength: 255
         tags: {}
         offering_type:
           $ref: '#/components/schemas/OfferingTypeEnum'
@@ -10344,6 +10849,11 @@ components:
           items:
             $ref: '#/components/schemas/EnrollmentSummary'
           readOnly: true
+        instructor_invitations:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardInstructorInvitation'
+          readOnly: true
         sessions:
           type: array
           items:
@@ -10367,6 +10877,7 @@ components:
       required:
       - applications
       - enrollments
+      - instructor_invitations
       - recommendation_signals
       - rsvps
       - sessions

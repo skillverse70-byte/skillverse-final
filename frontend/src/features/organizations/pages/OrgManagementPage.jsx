@@ -1123,6 +1123,27 @@ function ManagedCourseCard({ course }) {
       <p className="mt-2 text-sm text-muted-foreground">
         {course.category || "General"} · {course.enrolled_count || 0} enrollments
       </p>
+      {course.instructors?.length ? (
+        <div className="mt-3">
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Active instructors
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {course.instructors.map((instructor) => (
+              <span
+                key={instructor.id || instructor.email || instructor.full_name}
+                className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm shadow-black/5"
+              >
+                {instructor.full_name || instructor.email}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 rounded-2xl border border-dashed border-border/60 bg-white/80 px-4 py-3 text-sm text-muted-foreground">
+          No accepted instructors are attached yet. Invite them from the course builder.
+        </div>
+      )}
       {course.description ? (
         <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{course.description}</p>
       ) : null}
@@ -1139,6 +1160,12 @@ function ManagedCourseCard({ course }) {
           className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium text-foreground"
         >
           Edit in builder
+        </Link>
+        <Link
+          to={`/course-builder?course=${course.id}&tab=instructors`}
+          className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium text-foreground"
+        >
+          Manage instructors
         </Link>
       </div>
     </div>

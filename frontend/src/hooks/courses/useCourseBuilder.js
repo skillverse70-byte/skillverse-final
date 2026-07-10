@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchCourseBuilderData } from "@/services/courses/courses.service";
 
-export function useCourseBuilder() {
+export function useCourseBuilder({ courseId = "" } = {}) {
   const [organization, setOrganization] = useState(null);
   const [courses, setCourses] = useState([]);
   const [editing, setEditing] = useState(null);
@@ -33,6 +33,19 @@ export function useCourseBuilder() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!courseId || editing) {
+      return;
+    }
+
+    const targetCourse = courses.find(
+      (course) => String(course.id) === String(courseId),
+    );
+    if (targetCourse) {
+      setEditing(targetCourse);
+    }
+  }, [courseId, courses, editing]);
 
   const handleSaved = (course) => {
     setCourses((current) => {

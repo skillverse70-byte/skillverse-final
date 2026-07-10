@@ -125,11 +125,22 @@ These are useful future directions but should not silently replace the PRD prior
 - Generate certeficate document if issued
 - On organization when issuing certeficate it should only select courses, or events or others that they completed , the list should be filtered based on the user. 
 
+-------------
+
+- Instructor side , the current workflow for regular user is assuming he is only learner but on PRD we need him to act as course instructor too. so take out tasks where we adjust current course structure to assign a real instructors via email not a generic Name input. and it will send invitation that expires in 24 hours to the instructor. if instructor accepts regular users see him as instructor and also he will be assigned successfully to the course, if not he is won't be visible. so admins can see the invitations sent. 
+
+Add guards where nessessary like an instructor cannot enroll to his own assigned course (if they accepts)
+Make sure the UI follows the tabs and card approach 
+Make sure it slides in with the current system smoothly
+Lets discuss it and you will proceed to layout tasks
+
+
 
 - Add AI navigation helper since this project have a lot of features and alot of routes m a lot of things present in dashboard of each user role we need to add an AI assitant to help them go to pages just by typing like, Take me to a page where my certefication is found and it shows them suggestions then the user manually clicks, or regular user says how many courses an I enrolled to then it tells them, or says show me event listing tailered to my profile and it suggests links and the user manually clicks but when they open the chatbot it should suggest them 3 questions atilered to there user role to get them started , this should be applied for all user roles and the AI assistant should use open router and also visible at all times and at all screen types like in bottom right corner just floating there. When implementing this take out multiple tasks to handle this feature.  And the system should make sure it is using the current up to date information, I don't know if we should create a file that references the routes and there functionality with the current database information but it should be very effective.
 
 - Have a flow like i dont have to go to other page to find learners for a course i should see a link that says learners besides of every course or see attendees for every event , or see cereticate issued for course inside or besides a course or event or something similar. while current is good but finding connected things shouldn't be hard or complicated
--1, Adaptive monitoring should have all turned on by default and I should find that customization on there own link not embedded in other pages maybe in my profile on its own tab
+
+
 - Make sure you have check .env file to make sure you have enabled nessessary once like AI_FEATURES_ENABLED
 
 - Notify regualr users when courses, events , jobs or communities that matches gets published especially jobs

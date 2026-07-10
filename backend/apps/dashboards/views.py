@@ -24,6 +24,10 @@ from apps.common.enums import (
 )
 from apps.common.permissions import IsAdminActor, IsOrganizationActor, IsRegularUser
 from apps.courses.models import CourseModule, CourseProgram, Enrollment
+from apps.courses.services import (
+    regular_user_instructor_invitations_queryset,
+    sync_course_instructor_invitation,
+)
 from apps.dashboards.serializers import (
     AdminAnalyticsSerializer,
     AdminDashboardSerializer,
@@ -180,6 +184,9 @@ class RegularUserDashboardView(GenericAPIView):
 
     def get(self, request):
         enrollments = list(learner_dashboard_enrollment_queryset(request.user))
+        instructor_invitations = list(regular_user_instructor_invitations_queryset(request.user))
+        for invitation in instructor_invitations:
+            sync_course_instructor_invitation(invitation)
         sessions = list(regular_user_session_queryset(request.user))
         swap_requests = list(regular_user_swap_queryset(request.user))
         applications = list(regular_user_application_queryset(request.user))
@@ -214,6 +221,7 @@ class RegularUserDashboardView(GenericAPIView):
                 sessions=sessions,
             ),
             "enrollments": enrollments,
+            "instructor_invitations": instructor_invitations,
             "sessions": sessions,
             "swap_requests": swap_requests,
             "applications": applications,

@@ -1,5 +1,8 @@
 import { authenticatedApiRequest } from "@/services/auth/backend-auth-client";
-import { normalizeCourse } from "@/services/courses/courses.service";
+import {
+  normalizeCourse,
+  normalizeInstructorInvitation,
+} from "@/services/courses/courses.service";
 import { normalizeOpportunity } from "@/services/jobs/jobs.service";
 
 function buildSearchParams(params = {}) {
@@ -136,6 +139,20 @@ export function normalizeAdminAuditLog(log = {}) {
   };
 }
 
+export function normalizeAdminCourseInstructorInvitation(invitation = {}) {
+  return {
+    ...normalizeInstructorInvitation(invitation),
+    course_program: invitation.course_program ?? null,
+    course_title: invitation.course_title || "",
+    organization_id: invitation.organization_id ?? null,
+    organization_name: invitation.organization_name || "",
+    invited_by_email: invitation.invited_by_email || "",
+    invited_by_name: invitation.invited_by_name || "",
+    invited_user_email: invitation.invited_user_email || "",
+    invited_user_name: invitation.invited_user_name || "",
+  };
+}
+
 export async function fetchAdminUsers(params = {}) {
   const query = buildSearchParams({
     role: params.role,
@@ -206,6 +223,22 @@ export async function fetchAdminCourses(params = {}) {
     { method: "GET" },
   );
   return Array.isArray(courses) ? courses.map(normalizeAdminCourse) : [];
+}
+
+export async function fetchAdminCourseInstructorInvitations(params = {}) {
+  const query = buildSearchParams({
+    status: params.status,
+    organization_id: params.organizationId,
+    course_program_id: params.courseProgramId,
+    search: params.search,
+  });
+  const invitations = await authenticatedApiRequest(
+    `/admin/course-instructor-invitations/${query ? `?${query}` : ""}`,
+    { method: "GET" },
+  );
+  return Array.isArray(invitations)
+    ? invitations.map(normalizeAdminCourseInstructorInvitation)
+    : [];
 }
 
 export async function decideAdminCourse(

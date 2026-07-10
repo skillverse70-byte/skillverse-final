@@ -36,6 +36,59 @@ function normalizeLesson(lesson, index = 0) {
   };
 }
 
+function normalizeInstructor(invitationOrInstructor) {
+  if (!invitationOrInstructor) {
+    return null;
+  }
+
+  return {
+    id: invitationOrInstructor.id,
+    full_name:
+      invitationOrInstructor.full_name ||
+      invitationOrInstructor.name ||
+      invitationOrInstructor.email ||
+      "",
+    email: invitationOrInstructor.email || "",
+    role: invitationOrInstructor.role || "",
+  };
+}
+
+function normalizeInstructorInvitation(invitation) {
+  return {
+    ...invitation,
+    invited_email: invitation.invited_email || "",
+    status: invitation.status || "pending",
+    expires_at: invitation.expires_at || null,
+    last_sent_at: invitation.last_sent_at || null,
+    sent_count: invitation.sent_count ?? 0,
+    accepted_at: invitation.accepted_at || null,
+    declined_at: invitation.declined_at || null,
+    revoked_at: invitation.revoked_at || null,
+    created_at: invitation.created_at || null,
+    updated_at: invitation.updated_at || null,
+    invited_user: normalizeInstructor(invitation.invited_user),
+    is_expired: Boolean(invitation.is_expired),
+    is_public: Boolean(invitation.is_public),
+  };
+}
+
+function normalizeInstructorInvitationPreview(preview) {
+  return {
+    ...normalizeInstructorInvitation(preview),
+    course_program: preview.course_program
+      ? {
+          id: preview.course_program.id ?? null,
+          title: preview.course_program.title || "",
+          organization_id: preview.course_program.organization_id ?? null,
+          organization_name: preview.course_program.organization_name || "",
+        }
+      : null,
+    can_respond: Boolean(preview.can_respond),
+    response_actor_matches: Boolean(preview.response_actor_matches),
+    action_url: preview.action_url || "",
+  };
+}
+
 function normalizeModule(module, index = 0) {
   const lessons = Array.isArray(module.lessons) ? module.lessons : [];
 
@@ -87,6 +140,11 @@ export function normalizeCourse(course) {
     category: course.category || "",
     difficulty: course.difficulty || "beginner",
     instructor_name: course.instructor_name || "",
+    instructors: Array.isArray(course.instructors)
+      ? course.instructors
+          .map((instructor) => normalizeInstructor(instructor))
+          .filter(Boolean)
+      : [],
     tags: Array.isArray(course.tags) ? course.tags : [],
     is_free: course.is_free ?? true,
     price_amount: course.price_amount ?? "0.00",
@@ -348,3 +406,68 @@ export async function saveCourse({ course, payload, isNew }) {
 
   return normalizeCourse(result);
 }
+
+export async function fetchCourseInstructorInvitations(courseId) {
+  const invitations = await authenticatedApiRequest(
+    `/courses/manage/${courseId}/instructors/`,
+    { method: "GET" },
+  );
+  return invitations.map(normalizeInstructorInvitation);
+}
+
+export async function inviteCourseInstructor(courseId, email) {
+  const invitation = await authenticatedApiRequest(
+    `/courses/manage/${courseId}/instructors/`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    },
+  );
+  return normalizeInstructorInvitation(invitation);
+}
+
+export async function resendCourseInstructorInvitation(courseId, invitationId) {
+  const invitation = await authenticatedApiRequest(
+    `/courses/manage/${courseId}/instructors/${invitationId}/`,
+    { method: "POST" },
+  );
+  return normalizeInstructorInvitation(invitation);
+}
+
+export async function revokeCourseInstructorInvitation(courseId, invitationId) {
+  await authenticatedApiRequest(
+    `/courses/manage/${courseId}/instructors/${invitationId}/`,
+    { method: "DELETE" },
+  );
+}
+
+export async function fetchCourseInstructorInvitationPreview(token) {
+  const searchParams = new URLSearchParams({ token: String(token || "") });
+  const preview = await apiRequest(
+    `/courses/instructor-invitations/respond/?${searchParams.toString()}`,
+    { method: "GET" },
+  );
+  return normalizeInstructorInvitationPreview(preview);
+}
+
+export async function respondToCourseInstructorInvitation(token, action) {
+  const preview = await apiRequest(
+    "/courses/instructor-invitations/respond/",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        token,
+        action,
+      }),
+    },
+  );
+  return normalizeInstructorInvitationPreview(preview);
+}
+
+export { normalizeInstructorInvitation, normalizeInstructorInvitationPreview };

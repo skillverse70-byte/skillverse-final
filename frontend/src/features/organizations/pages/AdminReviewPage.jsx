@@ -50,6 +50,7 @@ import {
   AnalyticsSystemHealthPanel,
 } from "@/components/shared/AnalyticsWorkspacePanels";
 import DashboardStats from "@/features/dashboard/components/DashboardStats";
+import AdminInstructorInvitationsPanel from "@/features/organizations/components/AdminInstructorInvitationsPanel";
 import AdminTrustPanel from "@/features/organizations/components/AdminTrustPanel";
 import { useToast } from "@/components/ui/use-toast";
 import { useAIAdaptiveMonitoring } from "@/hooks/ai/useAIAdaptiveMonitoring";
@@ -91,6 +92,7 @@ const validTabs = [
   "users",
   "organizations",
   "courses",
+  "instructors",
   "jobs",
   "events",
   "trust",
@@ -180,6 +182,7 @@ export default function AdminReviewPage() {
     events,
     users,
     moderatedOrganizations,
+    instructorInvitations,
     courses,
     jobs,
     taxonomySuggestions,
@@ -212,6 +215,12 @@ export default function AdminReviewPage() {
   const archivedCourseCount = useMemo(
     () => courses.filter((course) => course.status === "archived").length,
     [courses],
+  );
+  const pendingInstructorInvitationCount = useMemo(
+    () =>
+      instructorInvitations.filter((invitation) => invitation.status === "pending")
+        .length,
+    [instructorInvitations],
   );
   const closedJobCount = useMemo(
     () => jobs.filter((job) => job.status === "closed").length,
@@ -675,6 +684,12 @@ export default function AdminReviewPage() {
       description: "Course controls.",
     },
     {
+      value: "instructors",
+      label: `Instructors (${instructorInvitations.length})`,
+      icon: Users,
+      description: "Invitation oversight.",
+    },
+    {
       value: "jobs",
       label: `Jobs (${jobs.length})`,
       icon: Briefcase,
@@ -738,6 +753,14 @@ export default function AdminReviewPage() {
       description: "User and org taxonomy requests.",
       color: "bg-teal-50 text-teal-600",
       onClick: () => setActiveTab("taxonomy"),
+    },
+    {
+      icon: Users,
+      label: "Instructor queue",
+      count: pendingInstructorInvitationCount,
+      description: "Pending instructor invitation responses.",
+      color: "bg-violet-50 text-violet-600",
+      onClick: () => setActiveTab("instructors"),
     },
     {
       icon: Activity,
@@ -2033,6 +2056,13 @@ export default function AdminReviewPage() {
             ))}
           </div>
         )}
+      </TabsContent>
+
+      <TabsContent value="instructors" className="mt-0 space-y-6">
+        <AdminInstructorInvitationsPanel
+          invitations={instructorInvitations}
+          onOpenCoursesTab={() => setActiveTab("courses")}
+        />
       </TabsContent>
 
       <TabsContent value="jobs" className="mt-0 space-y-4">

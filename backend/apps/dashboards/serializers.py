@@ -4,6 +4,7 @@ from apps.accounts.models import User
 from apps.common.enums import SkillDirection
 from apps.courses.serializers import (
     CourseProgramSummarySerializer,
+    DashboardInstructorInvitationSerializer,
     EnrollmentSummarySerializer,
     OrganizationEnrollmentSerializer,
 )
@@ -67,6 +68,7 @@ class RegularUserDashboardSerializer(serializers.Serializer):
     stats = RegularUserDashboardStatsSerializer(read_only=True)
     recommendation_signals = RecommendationSignalsSerializer(read_only=True)
     enrollments = EnrollmentSummarySerializer(many=True, read_only=True)
+    instructor_invitations = DashboardInstructorInvitationSerializer(many=True, read_only=True)
     sessions = LearningSessionSerializer(many=True, read_only=True)
     swap_requests = SkillSwapRequestSerializer(many=True, read_only=True)
     applications = JobApplicationSummarySerializer(many=True, read_only=True)

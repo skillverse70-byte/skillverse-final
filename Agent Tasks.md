@@ -1484,11 +1484,71 @@ At the end of this phase, the remaining deferred PRD features are no longer trea
 - **Blockers:** None
 - **Description:** Frontend follow-up created by `TASK-1011` to make the MFA contract usable in product flows after `TASK-1013` lands. This includes setup, challenge, recovery messaging, and actor-safe navigation behavior for the elevated-auth rollout.
 
+### TASK-1014: Add Instructor Invitation and Assignment Backend for Organization Courses
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
+- **Owner:** Backend
+- **Actor(s):** Organization, Regular User, Admin
+- **Route(s):** `/course-builder`, `/org`, `/courses/:id`, future instructor-invitation acceptance routes that must be added to `ROLE_ACCESS_MATRIX.md` first
+- **Files touched:** `backend/apps/courses/`, `backend/apps/accounts/`, `backend/apps/notifications/`, `backend/apps/common/email.py`, `backend/config/urls.py`, `schema.yaml`, `ROLE_ACCESS_MATRIX.md`, `Agent Tasks.md`
+- **Depends on:** `TASK-603`, `TASK-604`, `TASK-903`, `TASK-1011`
+- **Spec:** `PRD.md` Sections `4.2`, `5.3`, `6.5`, `6.11`
+- **Setup reference:** Reuse the shared Resend-backed email helper in `backend/apps/common/email.py`; keep course-authoring and actor-boundary decisions aligned with `backend/BACKEND_SETUP.md`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Organization-owned courses can send real instructor invitations by email, invitations expire after 24 hours, only accepted instructors become publicly attached to the course, and the backend contract does not enable regular-user course ownership as part of this task
+- **Blockers:** None
+- **Description:** Backend-first instructor workflow task created after Phase 10 planning discussion. Replace generic instructor-name handling with an invitation-backed assignment model tied to real user accounts or invited email recipients. This task should add instructor invitation records, invitation statuses, 24-hour expiration rules, accept/decline-ready tokens or equivalent secure flow, outbound email delivery through the shared Resend helper, course-side public visibility rules for accepted instructors only, and audit-friendly persistence that later admin and frontend flows can consume. Keep course ownership with organizations; this task is about assigning instructors to organization-managed courses, not turning on regular-user course creation.
+
+### TASK-1014-FE: Add Organization Instructor Assignment Workspace
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
+- **Owner:** Frontend
+- **Actor(s):** Organization
+- **Route(s):** `/course-builder`, `/org`
+- **Files touched:** `frontend/src/features/courses/`, `frontend/src/features/organizations/`, `frontend/src/services/courses/`, `frontend/src/components/shared/`, `ROLE_ACCESS_MATRIX.md`
+- **Depends on:** `TASK-1014`, `TASK-1008-FE-A`
+- **Spec:** `PRD.md` Sections `4.2`, `5.3`, `6.5`; `schema.yaml` instructor invitation endpoints added by `TASK-1014`
+- **Setup reference:** Reuse the tabs/cards progressive-disclosure rules established under `TASK-1008-FE-A` and the existing course-builder/workspace foundations
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Organization operators can invite, review, resend where allowed, and remove pending instructor assignments from structured tabs or card-based workflow surfaces without relying on a generic free-text instructor field
+- **Blockers:** None
+- **Description:** Frontend follow-up for the organization-side instructor workflow. Add a real instructor-management area inside existing organization course flows so operators can assign instructors by email, understand invitation status, and see who is actively attached to a course. The UI must follow the project’s navigation rule: use tabs, cards, and clear drill-downs instead of stacking assignment controls into already dense course-builder pages.
+
+### TASK-1015: Add Instructor Acceptance, Admin Oversight, and Enrollment Guards Backend
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
+- **Owner:** Backend
+- **Actor(s):** Regular User, Organization, Admin
+- **Route(s):** `/courses/:id`, `/login`, `/admin`, `/instructor-invitations/accept`
+- **Files touched:** `backend/apps/courses/`, `backend/apps/accounts/`, `backend/apps/audit/`, `backend/apps/common/permissions.py`, `backend/config/urls.py`, `schema.yaml`, `ROLE_ACCESS_MATRIX.md`
+- **Depends on:** `TASK-1014`, `TASK-1013`
+- **Spec:** `PRD.md` Sections `4.2`, `5.4`, `6.1`, `6.5`, `6.11`
+- **Setup reference:** Build on the invitation model from `TASK-1014` and the admin/audit patterns already established in `TASK-905` through `TASK-908`
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Invited instructors can securely accept or decline within the 24-hour window, admins can inspect invitation history and states, and assigned instructors are prevented server-side from enrolling in or otherwise consuming their own assigned course as a learner
+- **Blockers:** None
+- **Description:** Complete the backend governance and guardrail side of instructor assignment. This task should finalize the acceptance lifecycle, expired/declined/revoked behavior, admin oversight endpoints, and course participation rules that prevent self-enrollment or similar learner-side conflicts for accepted instructors. Keep the rules actor-safe and explicit in the schema so frontend flows do not invent their own eligibility logic.
+
+### TASK-1015-FE: Add Instructor Acceptance Flow and Admin Invitation Oversight UI
+- **Phase:** Phase 10: Intelligence, Adaptive Features, and Remaining PRD Delivery
+- **Status:** Complete
+- **Owner:** Frontend
+- **Actor(s):** Regular User, Admin
+- **Route(s):** `/login`, `/admin`, `/instructor-invitations/accept`
+- **Files touched:** `frontend/src/features/auth/`, `frontend/src/features/organizations/`, `frontend/src/services/courses/`, `frontend/src/services/admin/`, `frontend/src/services/dashboard/`, `frontend/src/hooks/dashboard/`, `ROLE_ACCESS_MATRIX.md`
+- **Depends on:** `TASK-1015`, `TASK-1008-FE-A`
+- **Spec:** `PRD.md` Sections `4.2`, `5.4`, `6.1`, `6.5`; `schema.yaml` instructor acceptance and admin oversight endpoints added by `TASK-1015`
+- **Setup reference:** Reuse the actor-safe routing, auth, and tabs/cards navigation conventions already established in the frontend
+- **Conventions:** Follow `CONVENTIONS.md`
+- **Definition of Done:** Invited instructors have a clear accept/decline path, admins can inspect invitation records from structured oversight surfaces, and the related UI remains easy to scan through tabs, cards, and focused tables instead of long stacked admin panels
+- **Blockers:** None
+- **Description:** Frontend completion task for the instructor-invitation workflow. Build the invitation acceptance experience for instructors and the oversight experience for admins, keeping both inside the existing actor-specific navigation model. Acceptance should feel like a real workflow tied to the user account, and admin review should expose invitation status, timing, and course context without mixing in unrelated governance tools.
+
 ### Phase 10 Definition of Done
 
 - AI provider setup, recommendation features, and learning-guidance features are explicitly planned through implementation-ready tasks rather than vague future hooks.
 - Cognitive monitoring, analytics, monetization, and final-closure work are sequenced backend-first and frontend-second so implementation does not drift across layers.
-- Regular-user course creation, community/service systems, certificates, and advanced analytics all have explicit task coverage.
+- Regular-user course creation, instructor assignment flows, community/service systems, certificates, and advanced analytics all have explicit task coverage.
 - The PRD-to-task coverage checklist remains complete and no deferred PRD feature is left unmapped.
 
 ### Phase 10 Known Blockers / Risks
@@ -1562,6 +1622,10 @@ Every PRD feature or rule below maps to at least one task ID.
 ### Courses, programs, and learning content
 
 - Organization-created courses/programs: `TASK-603`, `TASK-604`
+- Organization-owned courses can assign real instructors by invitation instead of generic text fields: `TASK-1014`, `TASK-1014-FE`
+- Instructor invitations expire after 24 hours and only accepted instructors become visible on the course: `TASK-1014`, `TASK-1015`, `TASK-1015-FE`
+- Assigned instructors are attached to organization-managed courses without enabling regular-user course ownership: `TASK-1014`, `TASK-1015`
+- Assigned instructors cannot enroll in their own assigned course as learners: `TASK-1015`, `TASK-1015-FE`
 - Modules, lessons, videos, resources, checklists, assessments: `TASK-603`, `TASK-604`
 - Progression-gated assessments and advancement: `TASK-605`, `TASK-705`, `TASK-706`
 - Regular users browse and enroll in eligible programs: `TASK-704`, `TASK-705`, `TASK-706`
@@ -1634,6 +1698,7 @@ Every PRD feature or rule below maps to at least one task ID.
 ### Administration and moderation
 
 - Admin management of users, organizations, content, roles, reports, moderation: `TASK-905`, `TASK-906`
+- Admin can inspect instructor invitation history and status for organization-managed courses: `TASK-1015`, `TASK-1015-FE`
 - Admin oversight of published events: `TASK-810`
 - Admin management of fixed category lists: `TASK-905`, `TASK-906`
 - User/org category suggestions with approval before activation: `TASK-905`, `TASK-906`
@@ -1647,12 +1712,13 @@ Every PRD feature or rule below maps to at least one task ID.
 - Sensitive data protected in transit and trust-sensitive flows protected: `TASK-101`, `TASK-206`, `TASK-601`, `TASK-703`
 - Privacy-preserving handling and limited unnecessary exposure: `TASK-305`, `TASK-602`, `TASK-1007`, `TASK-1007-FE`, `TASK-1008`, `TASK-1008-FE`
 - Reliability of core records despite optional service failure: `TASK-503`, `TASK-505`, `TASK-705`, `TASK-907`
-- Maintainable modular architecture for V2/V3: `TASK-103`, `TASK-1000`, `TASK-1001`, `TASK-1002`, `TASK-1006`, `TASK-1007`, `TASK-1007-FE`, `TASK-1009`, `TASK-1009-FE`, `TASK-1011`, `TASK-1011-FE`, `TASK-1012`, `TASK-1012-FE`, `TASK-1013`, `TASK-1013-FE`
+- Maintainable modular architecture for V2/V3: `TASK-103`, `TASK-1000`, `TASK-1001`, `TASK-1002`, `TASK-1006`, `TASK-1007`, `TASK-1007-FE`, `TASK-1009`, `TASK-1009-FE`, `TASK-1011`, `TASK-1011-FE`, `TASK-1012`, `TASK-1012-FE`, `TASK-1013`, `TASK-1013-FE`, `TASK-1014`, `TASK-1014-FE`, `TASK-1015`, `TASK-1015-FE`
 - Accessibility considered from V1: `TASK-102`, `TASK-201`, `TASK-302`, `TASK-604`, `TASK-902`
 
 ### Explicitly deferred but still tracked
 
 - Regular-user course creation: `TASK-1012`, `TASK-1012-FE`
+- Instructor assignment for organization-owned courses without enabling regular-user course creation: `TASK-1014`, `TASK-1014-FE`, `TASK-1015`, `TASK-1015-FE`
 - Richer content management: `TASK-1012`, `TASK-1012-FE`
 - AI-assisted recommendations and assignment feedback: `TASK-1002`, `TASK-1003`, `TASK-1004`
 - Discussion forums and community groups: `TASK-1006`

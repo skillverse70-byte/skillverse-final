@@ -68,6 +68,14 @@ class CourseProgramStatus(models.TextChoices):
     ARCHIVED = "archived", "Archived"
 
 
+class CourseInstructorInvitationStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    ACCEPTED = "accepted", "Accepted"
+    DECLINED = "declined", "Declined"
+    REVOKED = "revoked", "Revoked"
+    EXPIRED = "expired", "Expired"
+
+
 class CourseOfferingType(models.TextChoices):
     STANDARD = "standard", "Standard"
     COMMUNITY_SERVICE = "community_service", "Community Service"

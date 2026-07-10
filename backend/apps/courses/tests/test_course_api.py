@@ -1,14 +1,31 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.common.enums import CourseOfferingType, CourseProgramStatus, OrganizationType, Role
-from apps.courses.models import CourseModule, CourseProgram, Enrollment, LessonItem
+from apps.audit.models import AuditLog
+from apps.common.enums import (
+    CourseInstructorInvitationStatus,
+    CourseOfferingType,
+    CourseProgramStatus,
+    OrganizationType,
+    Role,
+)
+from apps.courses.models import (
+    CourseInstructorInvitation,
+    CourseModule,
+    CourseProgram,
+    Enrollment,
+    LessonItem,
+)
+from apps.notifications.models import Notification
 from apps.organizations.models import Organization
 from apps.payments.models import FinancialAccount
 
@@ -663,3 +680,451 @@ class CourseApiTests(APITestCase):
         response = self.client.post(reverse("course-enroll", args=[course_program.id]))
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_organization_can_create_instructor_invitation_for_existing_regular_user(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Instructor Ready Course",
+            status=CourseProgramStatus.DRAFT,
+        )
+        self.authenticate("org-courses@example.com", "StrongPass123!")
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse("course-manage-instructor-list-create", args=[course_program.id]),
+                {"email": self.regular_user.email},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        invitation = CourseInstructorInvitation.objects.get(course_program=course_program)
+        self.assertEqual(invitation.user, self.regular_user)
+        self.assertEqual(
+            invitation.status,
+            CourseInstructorInvitationStatus.PENDING,
+        )
+        self.assertEqual(invitation.sent_count, 1)
+        self.assertEqual(response.data["invited_user"]["email"], self.regular_user.email)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Instructor Ready Course", mail.outbox[0].body)
+        self.assertIn("instructor-invitations/accept?token=", mail.outbox[0].body)
+        self.assertNotIn("Invitation token:", mail.outbox[0].body)
+        self.assertTrue(
+            Notification.objects.filter(
+                user=self.regular_user,
+                metadata__invitation_id=invitation.id,
+            ).exists()
+        )
+
+    def test_organization_can_create_instructor_invitation_for_email_without_account(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="External Instructor Course",
+            status=CourseProgramStatus.DRAFT,
+        )
+        self.authenticate("org-courses@example.com", "StrongPass123!")
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse("course-manage-instructor-list-create", args=[course_program.id]),
+                {"email": "external-instructor@example.com"},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        invitation = CourseInstructorInvitation.objects.get(course_program=course_program)
+        self.assertIsNone(invitation.user)
+        self.assertEqual(invitation.invited_email, "external-instructor@example.com")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["external-instructor@example.com"])
+
+    def test_organization_cannot_invite_admin_or_organization_account_as_course_instructor(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Restricted Instructor Course",
+            status=CourseProgramStatus.DRAFT,
+        )
+        admin_user = User.objects.create_user(
+            email="admin-invite@example.com",
+            password="StrongPass123!",
+            full_name="Admin Invite",
+            role=Role.ADMIN,
+            email_verified_at="2026-07-06T00:00:00Z",
+        )
+        self.authenticate("org-courses@example.com", "StrongPass123!")
+
+        response = self.client.post(
+            reverse("course-manage-instructor-list-create", args=[course_program.id]),
+            {"email": admin_user.email},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", response.data)
+
+    def test_organization_can_resend_and_revoke_course_instructor_invitation(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Instructor Lifecycle Course",
+            status=CourseProgramStatus.DRAFT,
+        )
+        invitation = CourseInstructorInvitation.objects.create(
+            course_program=course_program,
+            user=self.regular_user,
+            invited_by=self.organization_user,
+            invited_email=self.regular_user.email,
+            status=CourseInstructorInvitationStatus.EXPIRED,
+            token="old-token",
+            expires_at=timezone.now() - timedelta(hours=1),
+        )
+        self.authenticate("org-courses@example.com", "StrongPass123!")
+
+        with self.captureOnCommitCallbacks(execute=True):
+            resend_response = self.client.post(
+                reverse("course-manage-instructor-detail", args=[course_program.id, invitation.id]),
+                format="json",
+            )
+
+        self.assertEqual(resend_response.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, CourseInstructorInvitationStatus.PENDING)
+        self.assertNotEqual(invitation.token, "old-token")
+        self.assertEqual(invitation.sent_count, 2)
+        self.assertEqual(len(mail.outbox), 1)
+
+        revoke_response = self.client.delete(
+            reverse("course-manage-instructor-detail", args=[course_program.id, invitation.id]),
+            format="json",
+        )
+
+        self.assertEqual(revoke_response.status_code, status.HTTP_204_NO_CONTENT)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, CourseInstructorInvitationStatus.REVOKED)
+
+    def test_regular_user_can_preview_and_accept_matching_instructor_invitation(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Acceptance Flow Course",
+            status=CourseProgramStatus.PUBLISHED,
+            enrollment_open=True,
+        )
+        invitation = CourseInstructorInvitation.objects.create(
+            course_program=course_program,
+            user=self.regular_user,
+            invited_by=self.organization_user,
+            invited_email=self.regular_user.email,
+            status=CourseInstructorInvitationStatus.PENDING,
+            token="preview-accept-token",
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
+
+        preview_response = self.client.get(
+            reverse("course-instructor-invitation-respond"),
+            {"token": invitation.token},
+        )
+        self.assertEqual(preview_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(preview_response.data["status"], CourseInstructorInvitationStatus.PENDING)
+        self.assertEqual(preview_response.data["course_program"]["title"], course_program.title)
+        self.assertTrue(preview_response.data["can_respond"])
+
+        self.authenticate("learner@example.com", "StrongPass123!")
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse("course-instructor-invitation-respond"),
+                {"token": invitation.token, "action": "accept"},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, CourseInstructorInvitationStatus.ACCEPTED)
+        self.assertIsNotNone(invitation.accepted_at)
+        self.assertTrue(
+            Notification.objects.filter(
+                user=self.organization_user,
+                metadata__invitation_id=invitation.id,
+                metadata__action="accept",
+            ).exists()
+        )
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor=self.regular_user,
+                action="course.instructor_invitation.accept",
+                target_id=invitation.id,
+            ).exists()
+        )
+
+    def test_guest_can_accept_unregistered_instructor_invitation_and_later_link_account(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Guest Acceptance Course",
+            status=CourseProgramStatus.PUBLISHED,
+        )
+        invitation = CourseInstructorInvitation.objects.create(
+            course_program=course_program,
+            invited_by=self.organization_user,
+            invited_email="future-instructor@example.com",
+            status=CourseInstructorInvitationStatus.PENDING,
+            token="guest-accept-token",
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse("course-instructor-invitation-respond"),
+                {"token": invitation.token, "action": "accept"},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, CourseInstructorInvitationStatus.ACCEPTED)
+        self.assertIsNone(invitation.user)
+        self.assertTrue(
+            Notification.objects.filter(
+                user=self.organization_user,
+                metadata__invitation_id=invitation.id,
+                metadata__action="accept",
+            ).exists()
+        )
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor__isnull=True,
+                action="course.instructor_invitation.accept",
+                target_id=invitation.id,
+                metadata__responded_with_link_only=True,
+            ).exists()
+        )
+
+        register_response = self.client.post(
+            reverse("auth-register"),
+            {
+                "email": "future-instructor@example.com",
+                "password": "StrongPass123!",
+                "full_name": "Future Instructor",
+            },
+            format="json",
+        )
+
+        self.assertEqual(register_response.status_code, status.HTTP_201_CREATED)
+        invitation.refresh_from_db()
+        self.assertIsNotNone(invitation.user)
+        self.assertEqual(invitation.user.email, "future-instructor@example.com")
+
+    def test_different_logged_in_user_can_respond_but_invitation_stays_unlinked(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Token Response Course",
+            status=CourseProgramStatus.PUBLISHED,
+        )
+        other_regular_user = User.objects.create_user(
+            email="other-learner@example.com",
+            password="StrongPass123!",
+            full_name="Other Learner",
+            role=Role.REGULAR_USER,
+            email_verified_at="2026-07-06T00:00:00Z",
+        )
+        invitation = CourseInstructorInvitation.objects.create(
+            course_program=course_program,
+            invited_by=self.organization_user,
+            invited_email=self.regular_user.email,
+            status=CourseInstructorInvitationStatus.PENDING,
+            token="wrong-user-token",
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
+        self.authenticate(other_regular_user.email, "StrongPass123!")
+
+        response = self.client.post(
+            reverse("course-instructor-invitation-respond"),
+            {"token": invitation.token, "action": "accept"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, CourseInstructorInvitationStatus.ACCEPTED)
+        self.assertIsNone(invitation.user)
+
+    def test_regular_user_can_decline_matching_instructor_invitation(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Decline Flow Course",
+            status=CourseProgramStatus.PUBLISHED,
+        )
+        invitation = CourseInstructorInvitation.objects.create(
+            course_program=course_program,
+            user=self.regular_user,
+            invited_by=self.organization_user,
+            invited_email=self.regular_user.email,
+            status=CourseInstructorInvitationStatus.PENDING,
+            token="decline-token",
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
+        self.authenticate("learner@example.com", "StrongPass123!")
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse("course-instructor-invitation-respond"),
+                {"token": invitation.token, "action": "decline"},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, CourseInstructorInvitationStatus.DECLINED)
+        self.assertIsNotNone(invitation.declined_at)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor=self.regular_user,
+                action="course.instructor_invitation.decline",
+                target_id=invitation.id,
+            ).exists()
+        )
+
+    def test_assigned_instructor_cannot_enroll_or_use_learner_progress_endpoints(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Instructor Guard Course",
+            status=CourseProgramStatus.PUBLISHED,
+            is_free=True,
+            enrollment_open=True,
+        )
+        module = CourseModule.objects.create(
+            course_program=course_program,
+            title="Guarded Module",
+            sort_order=0,
+        )
+        lesson = LessonItem.objects.create(
+            module=module,
+            title="Guarded Lesson",
+            item_type="reading",
+            sort_order=0,
+        )
+        CourseInstructorInvitation.objects.create(
+            course_program=course_program,
+            user=self.regular_user,
+            invited_by=self.organization_user,
+            invited_email=self.regular_user.email,
+            status=CourseInstructorInvitationStatus.ACCEPTED,
+            token="assigned-token",
+            expires_at=timezone.now() + timedelta(hours=24),
+            accepted_at=timezone.now(),
+        )
+        Enrollment.objects.create(
+            user=self.regular_user,
+            course_program=course_program,
+            status="active",
+        )
+        self.authenticate("learner@example.com", "StrongPass123!")
+
+        enroll_response = self.client.post(reverse("course-enroll", args=[course_program.id]))
+        progress_response = self.client.get(reverse("course-progress-detail", args=[course_program.id]))
+        complete_response = self.client.post(
+            reverse("course-lesson-complete", args=[course_program.id, lesson.id])
+        )
+        list_response = self.client.get(reverse("course-enrollment-list"))
+
+        self.assertEqual(enroll_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(progress_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(complete_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(list_response.data, [])
+
+    def test_admin_can_list_and_filter_course_instructor_invitations(self):
+        admin_user = User.objects.create_user(
+            email="admin-course-review@example.com",
+            password="StrongPass123!",
+            full_name="Course Admin",
+            role=Role.ADMIN,
+            email_verified_at="2026-07-06T00:00:00Z",
+        )
+        first_course = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Admin Invitation Course",
+            status=CourseProgramStatus.DRAFT,
+        )
+        second_course = CourseProgram.objects.create(
+            organization=self.other_organization,
+            title="Other Admin Invitation Course",
+            status=CourseProgramStatus.DRAFT,
+        )
+        first_invitation = CourseInstructorInvitation.objects.create(
+            course_program=first_course,
+            user=self.regular_user,
+            invited_by=self.organization_user,
+            invited_email=self.regular_user.email,
+            status=CourseInstructorInvitationStatus.ACCEPTED,
+            token="admin-first-token",
+            expires_at=timezone.now() + timedelta(hours=24),
+            accepted_at=timezone.now(),
+        )
+        CourseInstructorInvitation.objects.create(
+            course_program=second_course,
+            invited_by=self.other_organization_user,
+            invited_email="external-invite@example.com",
+            status=CourseInstructorInvitationStatus.PENDING,
+            token="admin-second-token",
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
+        self.authenticate(admin_user.email, "StrongPass123!")
+
+        response = self.client.get(
+            reverse("admin-course-instructor-invitation-list"),
+            {
+                "status": CourseInstructorInvitationStatus.ACCEPTED,
+                "search": "Admin Invitation Course",
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], first_invitation.id)
+        self.assertEqual(response.data[0]["organization_name"], self.organization.name)
+        self.assertEqual(response.data[0]["course_title"], first_course.title)
+
+    def test_public_course_payload_only_exposes_accepted_instructors(self):
+        course_program = CourseProgram.objects.create(
+            organization=self.organization,
+            title="Accepted Instructors Course",
+            status=CourseProgramStatus.PUBLISHED,
+            instructor_name="Legacy Instructor",
+        )
+        accepted_user = User.objects.create_user(
+            email="accepted-instructor@example.com",
+            password="StrongPass123!",
+            full_name="Accepted Instructor",
+            role=Role.REGULAR_USER,
+            email_verified_at="2026-07-06T00:00:00Z",
+        )
+        CourseInstructorInvitation.objects.create(
+            course_program=course_program,
+            user=accepted_user,
+            invited_by=self.organization_user,
+            invited_email=accepted_user.email,
+            status=CourseInstructorInvitationStatus.ACCEPTED,
+            token="accepted-token",
+            expires_at=timezone.now() + timedelta(hours=24),
+            accepted_at=timezone.now(),
+        )
+        CourseInstructorInvitation.objects.create(
+            course_program=course_program,
+            user=self.regular_user,
+            invited_by=self.organization_user,
+            invited_email=self.regular_user.email,
+            status=CourseInstructorInvitationStatus.PENDING,
+            token="pending-token",
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
+
+        response = self.client.get(reverse("course-detail", args=[course_program.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["instructors"]), 1)
+        self.assertEqual(
+            response.data["instructors"][0]["full_name"],
+            "Accepted Instructor",
+        )
+        self.assertEqual(
+            response.data["instructor_name"],
+            "Accepted Instructor",
+        )

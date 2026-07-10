@@ -52,6 +52,49 @@ export default function JobDetailPage() {
   const [coverLetter, setCoverLetter] = useState("");
   const { toast } = useToast();
   const { isAuthenticated, actorRole, navigateToLogin } = useAuth();
+  const isRegularUser = actorRole === roles.regularUser;
+  const alreadyApplied = Boolean(job?.viewer_application_status);
+  const canApply = job?.status === "open";
+  const applicationSummary = useMemo(() => {
+    if (!isAuthenticated) {
+      return "Sign in as a regular user to apply.";
+    }
+    if (!isRegularUser) {
+      return "Only regular users can apply in V1.";
+    }
+    if (alreadyApplied && job?.viewer_application_status) {
+      return `Application status: ${job.viewer_application_status.replace("_", " ")}.`;
+    }
+    return "Send your application directly through the platform.";
+  }, [alreadyApplied, isAuthenticated, isRegularUser, job?.viewer_application_status]);
+  const jobTabs = useMemo(
+    () => [
+      {
+        value: "overview",
+        label: "Opportunity detail",
+        description: "Overview, company context, and high-level opportunity summary.",
+        icon: Briefcase,
+      },
+      {
+        value: "requirements",
+        label: "Requirements",
+        description: "Skills, field signals, and fit expectations for this role.",
+        icon: CheckCircle,
+        badge: job?.required_skills?.length ?? 0,
+      },
+      {
+        value: "apply",
+        label: "Apply",
+        description: "Application status and submission flow for regular users.",
+        icon: Send,
+      },
+    ],
+    [job?.required_skills?.length],
+  );
+  const { activeTab, setActiveTab } = useDetailPageTab(
+    jobTabs.map((tab) => tab.value),
+    "overview",
+  );
 
   useEffect(() => {
     let active = true;
@@ -137,50 +180,6 @@ export default function JobDetailPage() {
       </div>
     );
   }
-
-  const canApply = job.status === "open";
-  const alreadyApplied = Boolean(job.viewer_application_status);
-  const isRegularUser = actorRole === roles.regularUser;
-  const applicationSummary = useMemo(() => {
-    if (!isAuthenticated) {
-      return "Sign in as a regular user to apply.";
-    }
-    if (!isRegularUser) {
-      return "Only regular users can apply in V1.";
-    }
-    if (alreadyApplied) {
-      return `Application status: ${job.viewer_application_status.replace("_", " ")}.`;
-    }
-    return "Send your application directly through the platform.";
-  }, [alreadyApplied, isAuthenticated, isRegularUser, job.viewer_application_status]);
-  const jobTabs = useMemo(
-    () => [
-      {
-        value: "overview",
-        label: "Opportunity detail",
-        description: "Overview, company context, and high-level opportunity summary.",
-        icon: Briefcase,
-      },
-      {
-        value: "requirements",
-        label: "Requirements",
-        description: "Skills, field signals, and fit expectations for this role.",
-        icon: CheckCircle,
-        badge: job.required_skills.length,
-      },
-      {
-        value: "apply",
-        label: "Apply",
-        description: "Application status and submission flow for regular users.",
-        icon: Send,
-      },
-    ],
-    [job.required_skills.length],
-  );
-  const { activeTab, setActiveTab } = useDetailPageTab(
-    jobTabs.map((tab) => tab.value),
-    "overview",
-  );
 
   return (
     <ModuleDetailShell

@@ -65,15 +65,6 @@ export default function CourseDetailsForm({
       </div>
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <Label>Instructor</Label>
-          <Input
-            value={form.instructor_name}
-            onChange={(e) => set("instructor_name", e.target.value)}
-            className="mt-1.5"
-            placeholder="Instructor name"
-          />
-        </div>
-        <div>
           <Label>Status</Label>
           <Select value={form.status} onValueChange={(v) => set("status", v)}>
             <SelectTrigger className="mt-1.5">
@@ -85,6 +76,11 @@ export default function CourseDetailsForm({
               <SelectItem value="archived">Archived</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-secondary/15 px-4 py-3 text-sm text-muted-foreground">
+          Instructor names now come from accepted email invitations in the
+          <span className="font-medium text-foreground"> Instructors </span>
+          workspace, not from a manual text field.
         </div>
       </div>
       <div>

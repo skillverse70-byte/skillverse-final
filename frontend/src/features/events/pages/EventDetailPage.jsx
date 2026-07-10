@@ -32,6 +32,54 @@ export default function EventDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
   const { isAuthenticated, actorRole, navigateToLogin } = useAuth();
+  const isRegularUser = actorRole === roles.regularUser;
+  const currentRsvpStatus = event?.viewer_rsvp_status || null;
+  const spotsLeft = event?.spots_remaining ?? null;
+  const canShowRsvpActions = !isAuthenticated || isRegularUser;
+  const eventLocationLabel = event?.is_online
+    ? "Online event"
+    : event?.location || "Location to be announced";
+  const meetingAccessMessage =
+    event?.is_online && !event?.meeting_url
+      ? "RSVP with Going to unlock the session link."
+      : null;
+  const actionSummary = useMemo(() => {
+    if (!isAuthenticated) {
+      return "Sign in as a regular user to RSVP.";
+    }
+    if (!isRegularUser) {
+      return "Only regular users can RSVP in V1.";
+    }
+    if (currentRsvpStatus === rsvpStatuses.going) {
+      return "You're marked as going.";
+    }
+    if (currentRsvpStatus === rsvpStatuses.interested) {
+      return "You're following this event.";
+    }
+    return "Reserve your spot or save your interest.";
+  }, [currentRsvpStatus, isAuthenticated, isRegularUser]);
+  const eventTabs = useMemo(
+    () => [
+      {
+        value: "overview",
+        label: "Event detail",
+        description: "Overview, host information, format, and event context.",
+        icon: Calendar,
+      },
+      {
+        value: "rsvp",
+        label: "RSVP and access",
+        description: "Participation status, spot availability, and access actions.",
+        icon: Users,
+        badge: event?.current_attendees || 0,
+      },
+    ],
+    [event?.current_attendees],
+  );
+  const { activeTab, setActiveTab } = useDetailPageTab(
+    eventTabs.map((tab) => tab.value),
+    "overview",
+  );
 
   useEffect(() => {
     let active = true;
@@ -125,55 +173,6 @@ export default function EventDetailPage() {
       </div>
     );
   }
-
-  const isRegularUser = actorRole === roles.regularUser;
-  const currentRsvpStatus = event.viewer_rsvp_status;
-  const spotsLeft = event.spots_remaining;
-  const canShowRsvpActions = !isAuthenticated || isRegularUser;
-  const eventLocationLabel = event.is_online
-    ? "Online event"
-    : event.location || "Location to be announced";
-  const meetingAccessMessage =
-    event.is_online && !event.meeting_url
-      ? "RSVP with Going to unlock the session link."
-      : null;
-  const actionSummary = useMemo(() => {
-    if (!isAuthenticated) {
-      return "Sign in as a regular user to RSVP.";
-    }
-    if (!isRegularUser) {
-      return "Only regular users can RSVP in V1.";
-    }
-    if (currentRsvpStatus === rsvpStatuses.going) {
-      return "You're marked as going.";
-    }
-    if (currentRsvpStatus === rsvpStatuses.interested) {
-      return "You're following this event.";
-    }
-    return "Reserve your spot or save your interest.";
-  }, [currentRsvpStatus, isAuthenticated, isRegularUser]);
-  const eventTabs = useMemo(
-    () => [
-      {
-        value: "overview",
-        label: "Event detail",
-        description: "Overview, host information, format, and event context.",
-        icon: Calendar,
-      },
-      {
-        value: "rsvp",
-        label: "RSVP and access",
-        description: "Participation status, spot availability, and access actions.",
-        icon: Users,
-        badge: event.current_attendees || 0,
-      },
-    ],
-    [event.current_attendees],
-  );
-  const { activeTab, setActiveTab } = useDetailPageTab(
-    eventTabs.map((tab) => tab.value),
-    "overview",
-  );
 
   return (
     <ModuleDetailShell

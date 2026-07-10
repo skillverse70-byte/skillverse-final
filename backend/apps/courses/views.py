@@ -7,11 +7,28 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 
-from apps.common.enums import CourseProgramStatus, PaymentTransactionStatus, Role
+from apps.audit.services import record_audit_log
+from apps.common.enums import (
+    CourseInstructorInvitationStatus,
+    CourseProgramStatus,
+    PaymentTransactionStatus,
+    Role,
+)
 from apps.common.permissions import IsOrganizationActor, IsRegularUser, normalize_actor_role
 from apps.common.trust import get_paid_course_enrollment_gate
-from apps.courses.models import CourseModule, CourseProgram, Enrollment, LessonItem
+from apps.courses.models import (
+    CourseInstructorInvitation,
+    CourseModule,
+    CourseProgram,
+    Enrollment,
+    LessonItem,
+)
 from apps.courses.serializers import (
+    CourseInstructorInvitationCreateSerializer,
+    CourseInstructorInvitationPreviewSerializer,
+    CourseInstructorInvitationRespondSerializer,
+    CourseInstructorInvitationSerializer,
+    CourseInstructorInvitationTokenQuerySerializer,
     CourseProgramDetailSerializer,
     CourseProgramSummarySerializer,
     CourseProgramWriteSerializer,
@@ -19,7 +36,18 @@ from apps.courses.serializers import (
     OrganizationEnrollmentSerializer,
     EnrollmentSummarySerializer,
 )
-from apps.courses.services import complete_lesson_for_enrollment, sync_enrollment_state
+from apps.courses.services import (
+    assert_user_can_enroll_as_learner,
+    complete_lesson_for_enrollment,
+    create_course_instructor_invitation,
+    get_course_instructor_invitation_by_token,
+    is_user_assigned_course_instructor,
+    respond_to_course_instructor_invitation,
+    resend_course_instructor_invitation,
+    revoke_course_instructor_invitation,
+    sync_course_instructor_invitations_for_course,
+    sync_enrollment_state,
+)
 from apps.organizations.models import Organization
 from apps.payments.models import PaymentTransaction
 
@@ -33,7 +61,14 @@ def course_program_queryset():
             "admin_reviewed_by",
         )
         .prefetch_related(
-            Prefetch("modules", queryset=CourseModule.objects.prefetch_related("lesson_items"))
+            Prefetch("modules", queryset=CourseModule.objects.prefetch_related("lesson_items")),
+            Prefetch(
+                "instructor_invitations",
+                queryset=CourseInstructorInvitation.objects.select_related(
+                    "user",
+                    "invited_by",
+                ).order_by("-created_at", "-id"),
+            ),
         )
         .annotate(
             total_lessons=Count("modules__lesson_items", distinct=True),
@@ -45,6 +80,10 @@ def course_program_queryset():
 def learner_enrollment_queryset(user):
     return (
         Enrollment.objects.filter(user=user)
+        .exclude(
+            course_program__instructor_invitations__user=user,
+            course_program__instructor_invitations__status=CourseInstructorInvitationStatus.ACCEPTED,
+        )
         .select_related("course_program", "course_program__organization")
         .prefetch_related(
             "lesson_progresses",
@@ -53,6 +92,7 @@ def learner_enrollment_queryset(user):
                 queryset=CourseModule.objects.prefetch_related("lesson_items"),
             ),
         )
+        .distinct()
         .order_by("-updated_at", "-id")
     )
 
@@ -87,8 +127,16 @@ def can_view_course_content(user, course_program):
     if role == Role.ORGANIZATION and course_program.organization.owner_id == user.id:
         return True
     if role == Role.REGULAR_USER:
+        if is_user_assigned_course_instructor(user, course_program):
+            return True
         return Enrollment.objects.filter(user=user, course_program=course_program).exists()
     return False
+
+
+def instructor_assignment_conflict_response():
+    raise PermissionDenied(
+        detail="Assigned instructors cannot enroll in or track progress for their own course as learners."
+    )
 
 
 def parse_course_write_data(request):
@@ -312,6 +360,223 @@ class OrganizationCourseProgramDetailView(RetrieveUpdateDestroyAPIView):
 @extend_schema_view(
     get=extend_schema(
         tags=["courses"],
+        operation_id="courses_manage_instructor_list",
+        responses={200: CourseInstructorInvitationSerializer(many=True)},
+    ),
+    post=extend_schema(
+        tags=["courses"],
+        operation_id="courses_manage_instructor_invite",
+        request=CourseInstructorInvitationCreateSerializer,
+        responses={201: CourseInstructorInvitationSerializer},
+    ),
+)
+class OrganizationCourseInstructorInvitationListCreateView(GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsOrganizationActor]
+    serializer_class = CourseInstructorInvitationSerializer
+
+    def get_course_program(self):
+        return course_program_queryset().filter(
+            id=self.kwargs["pk"],
+            organization__owner=self.request.user,
+            organization__is_suspended=False,
+        ).first()
+
+    def get(self, request, pk):
+        course_program = self.get_course_program()
+        if course_program is None:
+            return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        invitations = sync_course_instructor_invitations_for_course(course_program)
+        serializer = CourseInstructorInvitationSerializer(invitations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, pk):
+        course_program = self.get_course_program()
+        if course_program is None:
+            return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CourseInstructorInvitationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            invitation = create_course_instructor_invitation(
+                course_program=course_program,
+                invited_by=request.user,
+                invited_email=serializer.validated_data["email"],
+            )
+        except ValueError as exc:
+            raise ValidationError({"email": str(exc)}) from exc
+
+        response_serializer = CourseInstructorInvitationSerializer(invitation)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema_view(
+    post=extend_schema(
+        tags=["courses"],
+        operation_id="courses_manage_instructor_resend",
+        responses={200: CourseInstructorInvitationSerializer},
+    ),
+    delete=extend_schema(
+        tags=["courses"],
+        operation_id="courses_manage_instructor_revoke",
+        responses={204: None},
+    ),
+)
+class OrganizationCourseInstructorInvitationDetailView(GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsOrganizationActor]
+    serializer_class = CourseInstructorInvitationSerializer
+
+    def get_course_program(self):
+        return CourseProgram.objects.filter(
+            id=self.kwargs["pk"],
+            organization__owner=self.request.user,
+            organization__is_suspended=False,
+        ).first()
+
+    def get_invitation(self):
+        course_program = self.get_course_program()
+        if course_program is None:
+            return None
+        invitation = (
+            CourseInstructorInvitation.objects.select_related("user", "course_program")
+            .filter(
+                id=self.kwargs["invitation_id"],
+                course_program=course_program,
+            )
+            .first()
+        )
+        if invitation is not None:
+            invitation.sync_expired_status()
+        return invitation
+
+    def post(self, request, pk, invitation_id):
+        invitation = self.get_invitation()
+        if invitation is None:
+            return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            invitation = resend_course_instructor_invitation(
+                invitation,
+                resent_by=request.user,
+            )
+        except ValueError as exc:
+            raise ValidationError({"detail": str(exc)}) from exc
+
+        serializer = CourseInstructorInvitationSerializer(invitation)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk, invitation_id):
+        invitation = self.get_invitation()
+        if invitation is None:
+            return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            revoke_course_instructor_invitation(invitation)
+        except ValueError as exc:
+            raise ValidationError({"detail": str(exc)}) from exc
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["courses"],
+        operation_id="courses_instructor_invitation_preview",
+        parameters=[CourseInstructorInvitationTokenQuerySerializer],
+        responses={200: CourseInstructorInvitationPreviewSerializer},
+    ),
+    post=extend_schema(
+        tags=["courses"],
+        operation_id="courses_instructor_invitation_respond",
+        request=CourseInstructorInvitationRespondSerializer,
+        responses={200: CourseInstructorInvitationPreviewSerializer},
+    ),
+)
+class CourseInstructorInvitationResponseView(GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return CourseInstructorInvitationRespondSerializer
+        return CourseInstructorInvitationPreviewSerializer
+
+    def get_invitation(self, token):
+        invitation = get_course_instructor_invitation_by_token(token)
+        if invitation is None:
+            return None
+        return invitation
+
+    def get(self, request):
+        query_serializer = CourseInstructorInvitationTokenQuerySerializer(
+            data=request.query_params
+        )
+        query_serializer.is_valid(raise_exception=True)
+        invitation = self.get_invitation(query_serializer.validated_data["token"])
+        if invitation is None:
+            return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CourseInstructorInvitationPreviewSerializer(
+            invitation,
+            context={"request": request},
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = CourseInstructorInvitationRespondSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        invitation = self.get_invitation(serializer.validated_data["token"])
+        if invitation is None:
+            return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        response_user = None
+        if (
+            request.user.is_authenticated
+            and normalize_actor_role(request.user) == Role.REGULAR_USER
+            and str(request.user.email or "").strip().lower() == invitation.invited_email
+        ):
+            response_user = request.user
+
+        try:
+            invitation = respond_to_course_instructor_invitation(
+                invitation,
+                user=response_user,
+                action=serializer.validated_data["action"],
+            )
+        except PermissionError as exc:
+            raise PermissionDenied(detail=str(exc)) from exc
+        except ValueError as exc:
+            raise ValidationError({"detail": str(exc)}) from exc
+
+        action_value = serializer.validated_data["action"]
+        past_tense = "accepted" if action_value == "accept" else "declined"
+        record_audit_log(
+            actor=response_user,
+            action=f"course.instructor_invitation.{action_value}",
+            target_type="course_instructor_invitation",
+            target_id=invitation.id,
+            summary=(
+                f"{(response_user.full_name or response_user.email) if response_user else invitation.invited_email} "
+                f"{past_tense} an instructor invitation for "
+                f"{invitation.course_program.title}."
+            ),
+            metadata={
+                "course_program_id": invitation.course_program_id,
+                "organization_id": invitation.course_program.organization_id,
+                "status": invitation.status,
+                "invited_email": invitation.invited_email,
+                "responded_with_link_only": response_user is None,
+            },
+        )
+
+        response_serializer = CourseInstructorInvitationPreviewSerializer(
+            invitation,
+            context={"request": request},
+        )
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["courses"],
         operation_id="courses_enrollment_list",
         responses={200: EnrollmentSummarySerializer(many=True)},
     )
@@ -359,6 +624,10 @@ class RegularUserCourseEnrollmentDetailView(GenericAPIView):
     serializer_class = EnrollmentDetailSerializer
 
     def get(self, request, pk):
+        course_program = course_program_queryset().filter(pk=pk).first()
+        if course_program and is_user_assigned_course_instructor(request.user, course_program):
+            instructor_assignment_conflict_response()
+
         enrollment = learner_enrollment_queryset(request.user).filter(course_program_id=pk).first()
         if enrollment is None:
             return Response({"detail": "Enrollment not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -388,6 +657,11 @@ class RegularUserCourseEnrollmentCreateView(GenericAPIView):
         ).first()
         if course_program is None:
             return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            assert_user_can_enroll_as_learner(request.user, course_program)
+        except PermissionError as exc:
+            raise PermissionDenied(detail=str(exc)) from exc
 
         gate = get_paid_course_enrollment_gate(
             course_program.organization,
@@ -443,6 +717,10 @@ class RegularUserLessonCompletionView(GenericAPIView):
     serializer_class = EnrollmentDetailSerializer
 
     def post(self, request, pk, lesson_id):
+        course_program = course_program_queryset().filter(pk=pk).first()
+        if course_program and is_user_assigned_course_instructor(request.user, course_program):
+            instructor_assignment_conflict_response()
+
         enrollment = learner_enrollment_queryset(request.user).filter(course_program_id=pk).first()
         if enrollment is None:
             return Response({"detail": "Enrollment not found."}, status=status.HTTP_404_NOT_FOUND)

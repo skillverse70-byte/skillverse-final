@@ -9,6 +9,7 @@ from rest_framework.test import APITestCase
 
 from apps.accounts.models import RegularUserProfile
 from apps.common.enums import (
+    CourseInstructorInvitationStatus,
     CourseProgramStatus,
     ExperienceLevel,
     FinancialAccountStatus,
@@ -23,7 +24,14 @@ from apps.common.enums import (
     SkillDirection,
     SkillSwapStatus,
 )
-from apps.courses.models import CourseModule, CourseProgram, Enrollment, EnrollmentLessonProgress, LessonItem
+from apps.courses.models import (
+    CourseInstructorInvitation,
+    CourseModule,
+    CourseProgram,
+    Enrollment,
+    EnrollmentLessonProgress,
+    LessonItem,
+)
 from apps.events.models import Event, EventRSVP
 from apps.opportunities.models import JobApplication, Opportunity
 from apps.organizations.models import Organization, OrganizationVerificationRequest
@@ -203,6 +211,15 @@ class DashboardApiTests(APITestCase):
             scheduled_end_at=timezone.now() + timedelta(days=3, hours=1),
             meeting_url="https://example.com/session",
         )
+        self.instructor_invitation = CourseInstructorInvitation.objects.create(
+            course_program=self.course,
+            user=self.regular_user,
+            invited_by=self.organization_user,
+            invited_email=self.regular_user.email,
+            status=CourseInstructorInvitationStatus.PENDING,
+            token="dashboard-instructor-token",
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
 
         self.verification_request = OrganizationVerificationRequest.objects.create(
             organization=self.organization,
@@ -236,6 +253,12 @@ class DashboardApiTests(APITestCase):
         self.assertEqual(response.data["stats"]["upcoming_sessions"], 1)
         self.assertEqual(response.data["applications"][0]["opportunity_title"], self.opportunity.title)
         self.assertEqual(response.data["rsvps"][0]["event_title"], self.event.title)
+        self.assertEqual(response.data["instructor_invitations"][0]["id"], self.instructor_invitation.id)
+        self.assertTrue(
+            response.data["instructor_invitations"][0]["action_url"].endswith(
+                f"/instructor-invitations/accept?token={self.instructor_invitation.token}"
+            )
+        )
         self.assertIn("Product", response.data["recommendation_signals"]["profile_fields"])
         self.assertIn("Python", response.data["recommendation_signals"]["offered_skills"])
         self.assertIn("event_attendance", response.data["recommendation_signals"]["activity_signals"])

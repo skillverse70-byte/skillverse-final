@@ -1,0 +1,17 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<p style="margin:0 0 16px;">Hello {{ greeting_name }},</p>
+<p style="margin:0 0 16px;">
+    {{ organization_name }} invited you to join <strong>{{ course_title }}</strong> as an instructor on SkillVerse.
+</p>
+<p style="margin:0 0 16px;color:#475569;">
+    Use the button below to review and accept the invitation once you are ready.
+</p>
+<p style="margin:0 0 16px;">
+    <a href="{{ accept_url }}" style="display:inline-block;padding:12px 18px;background-color:#0f172a;border-radius:8px;color:#ffffff;text-decoration:none;font-weight:700;">
+        Review instructor invitation
+    </a>
+</p>
+<p style="margin:0;color:#475569;">{{ expiry_text }}</p>
+{% endblock %}

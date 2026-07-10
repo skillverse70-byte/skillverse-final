@@ -1,6 +1,7 @@
 import { authenticatedApiRequest } from "@/services/auth/backend-auth-client";
 import {
   fetchAdminAuditLogs,
+  fetchAdminCourseInstructorInvitations,
   fetchAdminCourses,
   fetchAdminJobs,
   fetchAdminOrganizations,
@@ -11,6 +12,7 @@ import {
 import {
   normalizeCourse,
   normalizeEnrollment,
+  normalizeInstructorInvitationPreview,
 } from "@/services/courses/courses.service";
 import { normalizeEvent, normalizeRsvp } from "@/services/events/events.service";
 import {
@@ -162,6 +164,9 @@ function normalizeRegularDashboard(payload = {}) {
     enrollments: Array.isArray(payload.enrollments)
       ? payload.enrollments.map(normalizeEnrollment)
       : [],
+    instructorInvitations: Array.isArray(payload.instructor_invitations)
+      ? payload.instructor_invitations.map(normalizeInstructorInvitationPreview)
+      : [],
     sessions: Array.isArray(payload.sessions) ? payload.sessions : [],
     swapRequests: Array.isArray(payload.swap_requests) ? payload.swap_requests : [],
     applications: Array.isArray(payload.applications)
@@ -211,6 +216,9 @@ function normalizeAdminDashboard(payload = {}) {
     moderatedOrganizations: Array.isArray(payload.moderated_organizations)
       ? payload.moderated_organizations
       : [],
+    instructorInvitations: Array.isArray(payload.instructor_invitations)
+      ? payload.instructor_invitations
+      : [],
     courses: Array.isArray(payload.courses) ? payload.courses : [],
     jobs: Array.isArray(payload.jobs) ? payload.jobs : [],
     taxonomySuggestions: Array.isArray(payload.taxonomy_suggestions)
@@ -250,6 +258,7 @@ export async function fetchAdminDashboardData() {
     analyticsPayload,
     users,
     moderatedOrganizations,
+    instructorInvitations,
     courses,
     jobs,
     taxonomySuggestions,
@@ -260,6 +269,7 @@ export async function fetchAdminDashboardData() {
     authenticatedApiRequest("/dashboard/admin/analytics/", { method: "GET" }),
     fetchAdminUsers(),
     fetchAdminOrganizations(),
+    fetchAdminCourseInstructorInvitations(),
     fetchAdminCourses(),
     fetchAdminJobs(),
     fetchAdminTaxonomySuggestions(),
@@ -272,6 +282,7 @@ export async function fetchAdminDashboardData() {
     analytics: analyticsPayload,
     users,
     moderated_organizations: moderatedOrganizations,
+    instructor_invitations: instructorInvitations,
     courses,
     jobs,
     taxonomy_suggestions: taxonomySuggestions,

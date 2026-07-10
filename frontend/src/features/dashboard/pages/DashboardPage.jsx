@@ -17,6 +17,7 @@ import {
   MessageCircle,
   ShieldCheck,
   Sparkles,
+  UserCheck,
   Users,
 } from "lucide-react";
 import AIAdaptiveMonitoringPanel from "@/components/shared/AIAdaptiveMonitoringPanel";
@@ -53,7 +54,15 @@ import { fetchCertificatePortfolio } from "@/services/certificates/certificates.
 import { fetchCommunities } from "@/services/communities/communities.service";
 import moment from "moment";
 
-const validTabs = ["overview", "learning", "sessions", "swaps", "applications", "events"];
+const validTabs = [
+  "overview",
+  "learning",
+  "teaching",
+  "sessions",
+  "swaps",
+  "applications",
+  "events",
+];
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -63,6 +72,7 @@ export default function DashboardPage() {
     stats,
     recommendationSignals,
     enrollments,
+    instructorInvitations = [],
     sessions = [],
     swapRequests = [],
     applications,
@@ -187,6 +197,25 @@ export default function DashboardPage() {
         ),
     [sessions],
   );
+  const teachingGroups = useMemo(() => {
+    const pending = [];
+    const accepted = [];
+    const history = [];
+
+    instructorInvitations.forEach((invitation) => {
+      if (invitation.status === "pending") {
+        pending.push(invitation);
+        return;
+      }
+      if (invitation.status === "accepted") {
+        accepted.push(invitation);
+        return;
+      }
+      history.push(invitation);
+    });
+
+    return { pending, accepted, history };
+  }, [instructorInvitations]);
   const learningSummary = useMemo(() => {
     const activeEnrollments = enrollments.filter((item) => item.status === "active");
     const completedEnrollments = enrollments.filter((item) => item.status === "completed");
@@ -298,6 +327,12 @@ export default function DashboardPage() {
       label: "Learning",
       icon: BookOpen,
       description: "Courses and progress.",
+    },
+    {
+      value: "teaching",
+      label: "Teaching",
+      icon: UserCheck,
+      description: "Instructor invitations.",
     },
     {
       value: "sessions",
@@ -454,6 +489,12 @@ export default function DashboardPage() {
                   onAction={() => setActiveTab("sessions")}
                 />
                 <AttentionRow
+                  label="Instructor invitations"
+                  value={teachingGroups.pending.length}
+                  actionLabel="Open teaching"
+                  onAction={() => setActiveTab("teaching")}
+                />
+                <AttentionRow
                   label="Applications in progress"
                   value={applications.length}
                   actionLabel="Open applications"
@@ -523,6 +564,18 @@ export default function DashboardPage() {
                 onAction={() => navigate("/skill-swap")}
               />
             )}
+
+            {teachingGroups.pending.length > 0 ? (
+              <TeachingInvitationSection
+                title="Instructor invitations waiting on you"
+                description="These assignments are ready for your response and will show up in your teaching workspace."
+                invitations={teachingGroups.pending.slice(0, 2)}
+                emptyTitle="No pending instructor invitations"
+                emptyDescription="When an organization invites you to teach, the invitation will appear here."
+                actionLabel="Open teaching workspace"
+                onAction={() => setActiveTab("teaching")}
+              />
+            ) : null}
 
             <AIRecommendationDeck
               title="Recommended next steps"
@@ -673,6 +726,54 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
+      </TabsContent>
+
+      <TabsContent value="teaching" className="mt-0 space-y-6">
+        <div className="grid gap-4 md:grid-cols-3">
+          <MetricPanel
+            icon={UserCheck}
+            label="Pending invitations"
+            value={teachingGroups.pending.length}
+            description="Assignments still waiting for your response."
+          />
+          <MetricPanel
+            icon={ShieldCheck}
+            label="Accepted roles"
+            value={teachingGroups.accepted.length}
+            description="Courses where you are already attached as an instructor."
+          />
+          <MetricPanel
+            icon={Clock3}
+            label="Closed history"
+            value={teachingGroups.history.length}
+            description="Declined, revoked, and expired invitation records."
+          />
+        </div>
+
+        <TeachingInvitationSection
+          title="Pending instructor invitations"
+          description="Open the secure invitation page to accept or decline each teaching assignment."
+          invitations={teachingGroups.pending}
+          emptyTitle="No pending instructor invitations"
+          emptyDescription="When organizations invite you to teach, those invitations will show up here."
+        />
+
+        <TeachingInvitationSection
+          title="Accepted instructor roles"
+          description="These courses already recognize you as an instructor."
+          invitations={teachingGroups.accepted}
+          emptyTitle="No accepted instructor roles yet"
+          emptyDescription="Accepted invitations will stay here so you can jump back into the course."
+          accepted
+        />
+
+        <TeachingInvitationSection
+          title="Invitation history"
+          description="Older outcomes stay visible so you can keep track of what happened."
+          invitations={teachingGroups.history}
+          emptyTitle="No invitation history yet"
+          emptyDescription="Closed invitation records will show up here after you respond or an invite expires."
+        />
       </TabsContent>
 
       <TabsContent value="sessions" className="mt-0">
@@ -1081,6 +1182,128 @@ function AttentionRow({ label, value, actionLabel, onAction }) {
   );
 }
 
+function MetricPanel({ icon: Icon, label, value, description }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-white p-5 text-left">
+      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+        <Icon className="h-4 w-4 text-teal-600" />
+        {label}
+      </div>
+      <p className="mt-2 font-heading text-3xl font-bold text-foreground">{value}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+function TeachingInvitationSection({
+  title,
+  description,
+  invitations,
+  emptyTitle,
+  emptyDescription,
+  actionLabel,
+  onAction,
+  accepted = false,
+}) {
+  if (!invitations.length) {
+    return (
+      <EmptyState
+        icon={UserCheck}
+        title={emptyTitle}
+        description={emptyDescription}
+        actionLabel={actionLabel}
+        onAction={onAction}
+      />
+    );
+  }
+
+  return (
+    <section className="space-y-4 rounded-3xl border border-border/60 bg-white p-6 shadow-sm shadow-black/5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-heading text-xl font-semibold text-foreground">{title}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        </div>
+        {actionLabel && onAction ? (
+          <button
+            type="button"
+            onClick={onAction}
+            className="inline-flex items-center gap-2 text-sm font-medium text-teal-700"
+          >
+            {actionLabel}
+            <ExternalLink className="h-4 w-4" />
+          </button>
+        ) : null}
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {invitations.map((invitation) => (
+          <div
+            key={invitation.id}
+            className="rounded-2xl border border-border/50 bg-secondary/10 p-4"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-heading text-lg font-semibold text-foreground">
+                {invitation.course_program?.title || "Course invitation"}
+              </h3>
+              <StatusBadge status={invitation.status} />
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {invitation.course_program?.organization_name || "Organization"} invited{" "}
+              {invitation.invited_email}.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-white px-4 py-3">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Last activity
+                </div>
+                <div className="mt-1 text-sm font-medium text-foreground">
+                  {formatDate(
+                    invitation.last_sent_at || invitation.accepted_at || invitation.declined_at,
+                  )}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-white px-4 py-3">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Expires
+                </div>
+                <div className="mt-1 text-sm font-medium text-foreground">
+                  {invitation.expires_at ? formatDate(invitation.expires_at) : "Closed"}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {accepted ? (
+                <Link
+                  to={`/courses/${invitation.course_program?.id || ""}`}
+                  className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700"
+                >
+                  Open course
+                  <ExternalLink className="h-4 w-4" />
+                </Link>
+              ) : invitation.action_url ? (
+                <a
+                  href={invitation.action_url}
+                  className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700"
+                >
+                  Review invitation
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              ) : null}
+              <Link
+                to={`/courses/${invitation.course_program?.id || ""}`}
+                className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2 text-sm font-medium text-foreground"
+              >
+                View course
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function RequestGroup({
   title,
   description,
@@ -1170,4 +1393,22 @@ function TrustPreview({ title, item, emptyText, linkForItem, subtitleForItem }) 
       )}
     </div>
   );
+}
+
+function formatDate(value) {
+  if (!value) {
+    return "Not available";
+  }
+
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
 }

@@ -12,6 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from apps.accounts.models import AccountActionToken
 from apps.accounts.services import issue_password_reset_token, issue_verification_token
 from apps.common.enums import Role
+from apps.courses.services import attach_course_invitations_to_user
 
 User = get_user_model()
 VERIFICATION_RESEND_COOLDOWN_SECONDS = 120
@@ -82,6 +83,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             role=Role.REGULAR_USER,
             **validated_data,
         )
+        attach_course_invitations_to_user(user)
         issue_verification_token(user)
         return user
 
@@ -137,6 +139,7 @@ class TokenPairWithUserResponseSerializer(serializers.Serializer):
 
 
 def build_token_pair_response_data(user):
+    attach_course_invitations_to_user(user)
     refresh = TokenObtainPairSerializer.get_token(user)
     return {
         "refresh": str(refresh),
@@ -290,6 +293,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
                 code="email_not_verified",
             )
 
+        attach_course_invitations_to_user(self.user)
         update_last_login(None, self.user)
         data["user"] = AuthUserSerializer(self.user).data
         return data

@@ -7,6 +7,7 @@ export function useDashboardData() {
     stats: {},
     recommendationSignals: {},
     enrollments: [],
+    instructorInvitations: [],
     swapRequests: [],
     applications: [],
     rsvps: [],

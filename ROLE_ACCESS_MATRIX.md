@@ -25,6 +25,7 @@ Legend:
 | `/forgot-password` | Yes | Redirect | Redirect | Redirect | Public password recovery |
 | `/reset-password` | Yes | Redirect | Redirect | Redirect | Public reset completion |
 | `/verify-email` | Yes | Redirect | Redirect | Redirect | Public verification completion page |
+| `/instructor-invitations/accept` | Yes | Yes | Redirect | Redirect | Invitation landing page for course instructors; guests can open the link, but only the invited regular-user account may accept or decline |
 | `/discover` | Yes | Yes | Yes | Yes | Public browse surface with tabs for general exploration and personalized discovery |
 | `/courses` | Yes | Yes | Yes | Yes | Public browse surface |
 | `/courses/:id` | Yes | Yes | Yes | Yes | Public course detail and trust visibility; authenticated regular-user view uses a tabbed course workspace for overview, recommendations, learning guidance, and adaptive focus state |

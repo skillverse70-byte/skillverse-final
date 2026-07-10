@@ -1,5 +1,6 @@
 import React from "react";
-import { Plus, BookOpen, Edit2, Building } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { BookOpen, Building, Edit2, Plus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/shared/EmptyState";
 import PageHeader from "@/components/shared/PageHeader";
@@ -10,8 +11,67 @@ import { useCourseBuilder } from "@/hooks/courses/useCourseBuilder";
 import { isVerifiedOrganization } from "@/lib/trust-state";
 
 export default function CourseBuilderPage() {
-  const { organization, courses, editing, setEditing, loading, handleSaved } =
-    useCourseBuilder();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedCourseId = searchParams.get("course") || "";
+  const requestedTab = searchParams.get("tab") || "details";
+  const {
+    organization,
+    courses,
+    editing,
+    setEditing,
+    loading,
+    handleSaved,
+  } = useCourseBuilder({ courseId: requestedCourseId });
+
+  const newCourseTemplate = {
+    title: "",
+    description: "",
+    category: "",
+    difficulty: "beginner",
+    is_free: true,
+    price: 0,
+    price_currency: "ETB",
+    status: "draft",
+    enrollment_open: true,
+    tags: [],
+    modules: [],
+    instructor_name: "",
+  };
+
+  const updateEditorParams = ({ courseId = "", tab = "" } = {}) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (courseId) {
+      nextParams.set("course", String(courseId));
+    } else {
+      nextParams.delete("course");
+    }
+    if (tab) {
+      nextParams.set("tab", tab);
+    } else {
+      nextParams.delete("tab");
+    }
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const openNewCourse = () => {
+    updateEditorParams({ tab: "details" });
+    setEditing(newCourseTemplate);
+  };
+
+  const openCourseEditor = (course, tab = "details") => {
+    updateEditorParams({ courseId: course.id, tab });
+    setEditing(course);
+  };
+
+  const handleEditorSaved = (course) => {
+    handleSaved(course);
+    updateEditorParams();
+  };
+
+  const handleEditorCancel = () => {
+    updateEditorParams();
+    setEditing(null);
+  };
 
   if (loading) {
     return <PageLoader />;
@@ -38,28 +98,20 @@ export default function CourseBuilderPage() {
       <CourseEditor
         course={editing}
         org={organization}
-        onSaved={handleSaved}
-        onCancel={() => setEditing(null)}
+        onSaved={handleEditorSaved}
+        onCancel={handleEditorCancel}
+        activeTab={requestedTab}
+        onTabChange={(tab) =>
+          updateEditorParams({
+            courseId: editing?.id || requestedCourseId,
+            tab,
+          })
+        }
       />
     );
   }
 
   const organizationVerified = isVerifiedOrganization(organization);
-
-  const newCourseTemplate = {
-    title: "",
-    description: "",
-    category: "",
-    difficulty: "beginner",
-    is_free: true,
-    price: 0,
-    price_currency: "ETB",
-    status: "draft",
-    enrollment_open: true,
-    tags: [],
-    modules: [],
-    instructor_name: "",
-  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
@@ -69,7 +121,7 @@ export default function CourseBuilderPage() {
         actions={
           <Button
             className="bg-teal-600 hover:bg-teal-700 gap-2"
-            onClick={() => setEditing(newCourseTemplate)}
+            onClick={openNewCourse}
           >
             <Plus className="w-4 h-4" /> New Course
           </Button>
@@ -89,34 +141,69 @@ export default function CourseBuilderPage() {
           title="No courses yet"
           description="Create your first course to start reaching learners."
           actionLabel="Create Course"
-          onAction={() => setEditing(newCourseTemplate)}
+          onAction={openNewCourse}
         />
       ) : (
         <div className="space-y-3">
           {courses.map((course) => (
             <div
               key={course.id}
-              className="bg-white rounded-xl border border-border/50 p-4 flex items-center gap-4 card-hover"
+              className="rounded-xl border border-border/50 bg-white p-4 card-hover"
             >
-              <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-                <BookOpen className="w-5 h-5 text-teal-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm truncate">{course.title}</div>
-                <div className="text-xs text-muted-foreground">
-                  {course.category || "Uncategorized"} · {course.modules?.length || 0} modules ·{" "}
-                  {course.total_lessons || 0} lessons
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                <div className="flex min-w-0 flex-1 items-center gap-4">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-teal-50">
+                    <BookOpen className="w-5 h-5 text-teal-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">{course.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {course.category || "Uncategorized"} · {course.modules?.length || 0} modules ·{" "}
+                      {course.total_lessons || 0} lessons
+                      {course.instructors?.length
+                        ? ` · ${course.instructors.length} instructors`
+                        : ""}
+                    </div>
+                    {course.instructors?.length ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {course.instructors.slice(0, 3).map((instructor) => (
+                          <span
+                            key={instructor.id || instructor.email || instructor.full_name}
+                            className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-foreground"
+                          >
+                            {instructor.full_name || instructor.email}
+                          </span>
+                        ))}
+                        {course.instructors.length > 3 ? (
+                          <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                            +{course.instructors.length - 3} more
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge status={course.status} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openCourseEditor(course, "instructors")}
+                    className="gap-1.5"
+                  >
+                    <Users className="w-3.5 h-3.5" /> Instructors
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openCourseEditor(course, "details")}
+                    className="gap-1.5"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" /> Edit
+                  </Button>
                 </div>
               </div>
-              <StatusBadge status={course.status} />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditing(course)}
-                className="gap-1.5"
-              >
-                <Edit2 className="w-3.5 h-3.5" /> Edit
-              </Button>
             </div>
           ))}
         </div>

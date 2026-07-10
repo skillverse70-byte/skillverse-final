@@ -1,9 +1,11 @@
 from decimal import Decimal
 
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.common.enums import (
+    CourseInstructorInvitationStatus,
     CourseOfferingType,
     CourseProgramStatus,
     LessonItemType,
@@ -11,8 +13,18 @@ from apps.common.enums import (
     Role,
 )
 from apps.common.trust import can_organization_create_paid_course
-from apps.courses.models import CourseModule, CourseProgram, Enrollment, LessonItem
-from apps.courses.services import calculate_progression_state
+from apps.courses.models import (
+    CourseInstructorInvitation,
+    CourseModule,
+    CourseProgram,
+    Enrollment,
+    LessonItem,
+)
+from apps.courses.services import (
+    accepted_course_instructors,
+    build_course_instructor_invitation_action_url,
+    calculate_progression_state,
+)
 
 
 class LessonItemSerializer(serializers.ModelSerializer):
@@ -177,6 +189,8 @@ class CourseProgramSummarySerializer(serializers.ModelSerializer):
         read_only=True,
     )
     financial_account = serializers.SerializerMethodField()
+    instructor_name = serializers.SerializerMethodField()
+    instructors = serializers.SerializerMethodField()
 
     class Meta:
         model = CourseProgram
@@ -191,6 +205,7 @@ class CourseProgramSummarySerializer(serializers.ModelSerializer):
             "category",
             "difficulty",
             "instructor_name",
+            "instructors",
             "tags",
             "offering_type",
             "is_free",
@@ -230,6 +245,29 @@ class CourseProgramSummarySerializer(serializers.ModelSerializer):
             "provider": financial_account.provider,
             "status": financial_account.status,
         }
+
+    @extend_schema_field(serializers.CharField(allow_blank=True))
+    def get_instructor_name(self, obj):
+        accepted = accepted_course_instructors(obj)
+        if accepted:
+            names = [
+                instructor.full_name or instructor.email
+                for instructor in accepted
+            ]
+            return ", ".join(names)
+        return obj.instructor_name
+
+    @extend_schema_field(serializers.ListField())
+    def get_instructors(self, obj):
+        instructors = []
+        for instructor in accepted_course_instructors(obj):
+            instructors.append(
+                {
+                    "id": instructor.id,
+                    "full_name": instructor.full_name or instructor.email,
+                }
+            )
+        return instructors
 
 
 class CourseProgramDetailSerializer(CourseProgramSummarySerializer):
@@ -470,6 +508,149 @@ class CourseProgramWriteSerializer(serializers.ModelSerializer):
 
 class EnrollmentCourseProgramSerializer(CourseProgramSummarySerializer):
     pass
+
+
+class CourseInstructorInvitationUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    full_name = serializers.CharField()
+    email = serializers.EmailField()
+    role = serializers.CharField()
+
+
+class CourseInstructorInvitationSerializer(serializers.ModelSerializer):
+    invited_user = serializers.SerializerMethodField()
+    is_expired = serializers.SerializerMethodField()
+    is_public = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CourseInstructorInvitation
+        fields = [
+            "id",
+            "invited_email",
+            "status",
+            "expires_at",
+            "last_sent_at",
+            "sent_count",
+            "accepted_at",
+            "declined_at",
+            "revoked_at",
+            "created_at",
+            "updated_at",
+            "invited_user",
+            "is_expired",
+            "is_public",
+        ]
+        read_only_fields = fields
+
+    @extend_schema_field(CourseInstructorInvitationUserSerializer(allow_null=True))
+    def get_invited_user(self, obj):
+        if obj.user is None:
+            return None
+        return {
+            "id": obj.user.id,
+            "full_name": obj.user.full_name or obj.user.email,
+            "email": obj.user.email,
+            "role": obj.user.role,
+        }
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_expired(self, obj):
+        return obj.expires_at <= timezone.now()
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_public(self, obj):
+        return obj.status == CourseInstructorInvitationStatus.ACCEPTED
+
+
+class CourseInstructorInvitationCreateSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class CourseInstructorInvitationTokenQuerySerializer(serializers.Serializer):
+    token = serializers.CharField(trim_whitespace=True)
+
+
+class CourseInstructorInvitationRespondSerializer(serializers.Serializer):
+    token = serializers.CharField(trim_whitespace=True)
+    action = serializers.ChoiceField(choices=["accept", "decline"])
+
+
+class CourseInstructorInvitationPreviewSerializer(serializers.Serializer):
+    id = serializers.IntegerField(source="pk", read_only=True)
+    invited_email = serializers.EmailField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    expires_at = serializers.DateTimeField(read_only=True)
+    is_expired = serializers.SerializerMethodField()
+    course_program = serializers.SerializerMethodField()
+    invited_user = serializers.SerializerMethodField()
+    can_respond = serializers.SerializerMethodField()
+    response_actor_matches = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_expired(self, obj):
+        return obj.is_expired
+
+    @extend_schema_field(serializers.JSONField())
+    def get_course_program(self, obj):
+        return {
+            "id": obj.course_program_id,
+            "title": obj.course_program.title,
+            "organization_id": obj.course_program.organization_id,
+            "organization_name": obj.course_program.organization.name,
+        }
+
+    @extend_schema_field(CourseInstructorInvitationUserSerializer(allow_null=True))
+    def get_invited_user(self, obj):
+        if obj.user is None:
+            return None
+        return {
+            "id": obj.user.id,
+            "full_name": obj.user.full_name or obj.user.email,
+            "email": obj.user.email,
+            "role": obj.user.role,
+        }
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_can_respond(self, obj):
+        return obj.status == CourseInstructorInvitationStatus.PENDING and not obj.is_expired
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_response_actor_matches(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not getattr(user, "is_authenticated", False):
+            return True
+        return str(user.email or "").strip().lower() == obj.invited_email
+
+
+class DashboardInstructorInvitationSerializer(serializers.Serializer):
+    id = serializers.IntegerField(source="pk", read_only=True)
+    invited_email = serializers.EmailField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    expires_at = serializers.DateTimeField(read_only=True)
+    last_sent_at = serializers.DateTimeField(read_only=True)
+    accepted_at = serializers.DateTimeField(read_only=True)
+    declined_at = serializers.DateTimeField(read_only=True)
+    is_expired = serializers.SerializerMethodField()
+    action_url = serializers.SerializerMethodField()
+    course_program = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_expired(self, obj):
+        return obj.is_expired
+
+    @extend_schema_field(serializers.CharField())
+    def get_action_url(self, obj):
+        return build_course_instructor_invitation_action_url(obj)
+
+    @extend_schema_field(serializers.JSONField())
+    def get_course_program(self, obj):
+        return {
+            "id": obj.course_program_id,
+            "title": obj.course_program.title,
+            "organization_id": obj.course_program.organization_id,
+            "organization_name": obj.course_program.organization.name,
+        }
 
 
 class EnrollmentSummarySerializer(serializers.ModelSerializer):

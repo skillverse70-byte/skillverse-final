@@ -418,6 +418,59 @@ def notify_enrollment_activated(enrollment, *, payment_transaction=None):
     return notification
 
 
+def notify_course_instructor_invited(invitation):
+    if invitation.user is None:
+        return None
+
+    course_program = invitation.course_program
+    organization = course_program.organization
+    return create_notification(
+        user=invitation.user,
+        notification_type=NotificationType.COURSE,
+        title=f"Instructor invitation for {course_program.title}",
+        message=(
+            f"{organization.name} invited you to join {course_program.title} as an instructor."
+        ),
+        action_url=f"/instructor-invitations/accept?token={invitation.token}",
+        metadata={
+            "course_program_id": course_program.id,
+            "organization_id": organization.id,
+            "invitation_id": invitation.id,
+            "status": invitation.status,
+        },
+    )
+
+
+def notify_course_instructor_response(invitation, *, action):
+    organization_owner = invitation.course_program.organization.owner
+    instructor_name = (
+        invitation.user.full_name
+        if invitation.user and invitation.user.full_name
+        else invitation.invited_email
+    )
+    if action == "accept":
+        title = f"Instructor accepted for {invitation.course_program.title}"
+        message = f"{instructor_name} accepted the instructor invitation."
+    else:
+        title = f"Instructor declined for {invitation.course_program.title}"
+        message = f"{instructor_name} declined the instructor invitation."
+
+    return create_notification(
+        user=organization_owner,
+        notification_type=NotificationType.COURSE,
+        title=title,
+        message=message,
+        action_url=f"/org?tab=courses&course={invitation.course_program_id}",
+        metadata={
+            "course_program_id": invitation.course_program_id,
+            "organization_id": invitation.course_program.organization_id,
+            "invitation_id": invitation.id,
+            "status": invitation.status,
+            "action": action,
+        },
+    )
+
+
 def notify_course_completed(enrollment):
     course_program = enrollment.course_program
     return create_notification(

@@ -1,7 +1,12 @@
+import secrets
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from apps.common.enums import (
+    CourseInstructorInvitationStatus,
     CourseOfferingType,
     CourseProgramStatus,
     EnrollmentStatus,
@@ -57,6 +62,81 @@ class CourseProgram(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class CourseInstructorInvitation(models.Model):
+    course_program = models.ForeignKey(
+        CourseProgram,
+        on_delete=models.CASCADE,
+        related_name="instructor_invitations",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="course_instructor_invitations",
+    )
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_course_instructor_invitations",
+    )
+    invited_email = models.EmailField()
+    status = models.CharField(
+        max_length=16,
+        choices=CourseInstructorInvitationStatus.choices,
+        default=CourseInstructorInvitationStatus.PENDING,
+    )
+    token = models.CharField(max_length=128, unique=True)
+    expires_at = models.DateTimeField()
+    last_sent_at = models.DateTimeField(default=timezone.now)
+    sent_count = models.PositiveIntegerField(default=1)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    declined_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["course_program", "status"]),
+            models.Index(fields=["invited_email", "status"]),
+            models.Index(fields=["token"]),
+            models.Index(fields=["expires_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.course_program.title} -> {self.invited_email}"
+
+    @property
+    def is_expired(self):
+        return self.expires_at <= timezone.now()
+
+    @property
+    def is_active(self):
+        return (
+            self.status == CourseInstructorInvitationStatus.PENDING
+            and not self.is_expired
+        )
+
+    def sync_expired_status(self):
+        if (
+            self.status == CourseInstructorInvitationStatus.PENDING
+            and self.is_expired
+        ):
+            self.status = CourseInstructorInvitationStatus.EXPIRED
+            self.save(update_fields=["status", "updated_at"])
+        return self.status
+
+    @classmethod
+    def issue_token(cls):
+        return secrets.token_urlsafe(32)
+
+    @classmethod
+    def default_expiry(cls):
+        return timezone.now() + timedelta(hours=24)
 
 
 class CourseModule(models.Model):

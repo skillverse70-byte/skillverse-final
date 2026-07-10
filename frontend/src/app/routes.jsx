@@ -12,6 +12,7 @@ const RegisterPage = lazy(() => import("@/features/auth/pages/RegisterPage"));
 const ForgetPasswordPage = lazy(() => import("@/features/auth/pages/ForgetPasswordPage"));
 const ResetPasswordPage = lazy(() => import("@/features/auth/pages/ResetPasswordPage"));
 const VerifyEmailPage = lazy(() => import("@/features/auth/pages/VerifyEmailPage"));
+const InstructorInvitationPage = lazy(() => import("@/features/auth/pages/InstructorInvitationPage"));
 const OrganizationOnboardingPage = lazy(() =>
   import("@/features/onboarding/pages/OrganizationOnboardingPage"));
 const SkillSwapPage = lazy(() => import("@/features/skills/pages/SkillSwapPage"));
@@ -43,6 +44,7 @@ export const guestRoutes = [
   { path: "/forgot-password", element: <ForgetPasswordPage />, access: "public" },
   { path: "/reset-password", element: <ResetPasswordPage />, access: "public" },
   { path: "/verify-email", element: <VerifyEmailPage />, access: "public" },
+  { path: "/instructor-invitations/accept", element: <InstructorInvitationPage />, access: "public" },
 ];
 
 export const publicBrowseRoutes = [
